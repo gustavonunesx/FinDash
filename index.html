@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinDash</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+</head>
+<body>
+
+<!-- ══ HEADER ══════════════════════════════════════════════ -->
+<header class="app-header">
+  <div class="app-logo">Fin<span>Dash</span></div>
+  <nav>
+    <ul class="nav-tabs">
+      <li>
+        <a href="#" data-tab="gastos" class="active">
+          <i class="ti ti-list-check"></i> Meus Gastos
+        </a>
+      </li>
+      <li>
+        <a href="#" data-tab="salario">
+          <i class="ti ti-calculator"></i> Calculadora
+        </a>
+      </li>
+      <li>
+        <a href="#" data-tab="extra">
+          <i class="ti ti-trending-up"></i> Renda Extra
+        </a>
+      </li>
+      <li>
+        <a href="#" data-tab="fundos">
+          <i class="ti ti-wallet"></i> Meus Fundos
+        </a>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<!-- ══ MAIN ════════════════════════════════════════════════ -->
+<main class="app-main">
+
+  <!-- ── ABA: MEUS GASTOS ──────────────────────────────── -->
+  <section id="tab-gastos" class="section active">
+    <div class="section-header">
+      <h1 class="section-title">Meus Gastos</h1>
+      <button class="btn btn-primary" id="btn-novo-gasto">
+        <i class="ti ti-plus"></i> Novo Gasto
+      </button>
+    </div>
+
+    <div id="alertas-gastos"></div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Categoria</th>
+              <th>Valor</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody-gastos">
+            <tr><td colspan="4" class="empty-state">Carregando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Totais por categoria -->
+      <div class="grid-3" id="totais-categorias">
+        <div class="bloco-card amber">
+          <div class="bloco-title">Necessidades</div>
+          <div class="bloco-alocado" id="total-necessidade">R$ 0</div>
+        </div>
+        <div class="bloco-card green">
+          <div class="bloco-title">Objetivos</div>
+          <div class="bloco-alocado" id="total-objetivo">R$ 0</div>
+        </div>
+        <div class="bloco-card blue">
+          <div class="bloco-title">Qualidade de Vida</div>
+          <div class="bloco-alocado" id="total-qualidade">R$ 0</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ABA: CALCULADORA DE SALÁRIO ─────────────────────── -->
+  <section id="tab-salario" class="section">
+    <div class="section-header">
+      <h1 class="section-title">Calculadora de Salário</h1>
+    </div>
+
+    <div class="salary-row">
+      <label for="input-salario">Salário mensal</label>
+      <div class="salary-input-wrap">
+        <span class="salary-prefix">R$</span>
+        <input type="number" id="input-salario" placeholder="0,00" min="0" step="0.01" />
+      </div>
+    </div>
+
+    <div id="alertas-salario"></div>
+
+    <div class="grid-3" id="blocos-salario">
+      <!-- Necessidades -->
+      <div class="bloco-card amber" id="bloco-nec">
+        <div class="bloco-title">Necessidades · 50%</div>
+        <div class="bloco-row">
+          <div class="bloco-alocado" id="sal-nec-alocado">R$ 0</div>
+          <div class="bloco-meta">Limite: <span class="num" id="sal-nec-limite">R$ 0</span></div>
+        </div>
+        <div class="bloco-comprometido">
+          Comprometido: <span class="num" id="sal-nec-gasto">R$ 0</span>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span id="sal-nec-pct">0%</span>
+            <span>50%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill amber" id="prog-nec" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="bloco-status">
+          <div class="dot green" id="dot-nec"></div>
+          <span class="status-text green" id="status-nec">OK</span>
+        </div>
+      </div>
+
+      <!-- Objetivos -->
+      <div class="bloco-card green" id="bloco-obj">
+        <div class="bloco-title">Objetivos · 30%</div>
+        <div class="bloco-row">
+          <div class="bloco-alocado" id="sal-obj-alocado">R$ 0</div>
+          <div class="bloco-meta">Mínimo: <span class="num" id="sal-obj-minimo">R$ 0</span></div>
+        </div>
+        <div class="bloco-comprometido">
+          Comprometido: <span class="num" id="sal-obj-gasto">R$ 0</span>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span id="sal-obj-pct">0%</span>
+            <span>30%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill green" id="prog-obj" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="bloco-status">
+          <div class="dot green" id="dot-obj"></div>
+          <span class="status-text green" id="status-obj">OK</span>
+        </div>
+      </div>
+
+      <!-- Qualidade -->
+      <div class="bloco-card blue" id="bloco-qual">
+        <div class="bloco-title">Qualidade de Vida · 20%</div>
+        <div class="bloco-row">
+          <div class="bloco-alocado" id="sal-qual-alocado">R$ 0</div>
+          <div class="bloco-meta">Alocado: <span class="num" id="sal-qual-gasto">R$ 0</span></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label">
+            <span id="sal-qual-pct">0%</span>
+            <span>20%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill blue" id="prog-qual" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="saldo-livre">
+      <span class="saldo-livre-label">Saldo livre após todos os gastos</span>
+      <span class="saldo-livre-val positive" id="saldo-livre-val">R$ 0</span>
+    </div>
+  </section>
+
+  <!-- ── ABA: RENDA EXTRA ─────────────────────────────────── -->
+  <section id="tab-extra" class="section">
+    <div class="section-header">
+      <h1 class="section-title">Calculadora de Renda Extra</h1>
+    </div>
+
+    <div class="salary-row">
+      <label for="input-extra">Valor recebido</label>
+      <div class="salary-input-wrap">
+        <span class="salary-prefix">R$</span>
+        <input type="number" id="input-extra" placeholder="0,00" min="0" step="0.01" />
+      </div>
+    </div>
+
+    <div class="fase-toggle">
+      <label>Fase atual:</label>
+      <label class="toggle-switch">
+        <input type="checkbox" id="toggle-fase" />
+        <span class="toggle-slider"></span>
+      </label>
+      <span class="fase-label" id="fase-label">Construindo reserva</span>
+      <div style="margin-left:auto;" class="text-subtle" id="fase-hint">
+        Reserva &lt; R$ 3.600
+      </div>
+    </div>
+
+    <div id="blocos-extra"></div>
+  </section>
+
+  <!-- ── ABA: MEUS FUNDOS ─────────────────────────────────── -->
+  <section id="tab-fundos" class="section">
+    <div class="section-header">
+      <h1 class="section-title">Meus Fundos</h1>
+      <button class="btn btn-primary" id="btn-novo-fundo">
+        <i class="ti ti-plus"></i> Novo Fundo
+      </button>
+    </div>
+
+    <div class="grid-fundos" id="grid-fundos">
+      <!-- cards gerados por JS -->
+    </div>
+  </section>
+
+</main>
+
+<!-- ══ MODAL: GASTO ═══════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-gasto">
+  <div class="modal">
+    <div class="modal-title" id="modal-gasto-title">Novo Gasto</div>
+    <input type="hidden" id="gasto-edit-id" />
+    <div class="form-group">
+      <label>Nome</label>
+      <input type="text" id="gasto-nome" placeholder="Ex: Internet, Aluguel…" maxlength="60" />
+    </div>
+    <div class="form-group">
+      <label>Valor (R$)</label>
+      <input type="number" id="gasto-valor" placeholder="0,00" min="0" step="0.01" />
+    </div>
+    <div class="form-group">
+      <label>Categoria</label>
+      <select id="gasto-categoria">
+        <option value="necessidade">Necessidade</option>
+        <option value="objetivo">Objetivo</option>
+        <option value="qualidade">Qualidade de Vida</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancelar-gasto">Cancelar</button>
+      <button class="btn btn-primary" id="btn-salvar-gasto">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: FUNDO ════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-fundo">
+  <div class="modal">
+    <div class="modal-title" id="modal-fundo-title">Novo Fundo</div>
+    <input type="hidden" id="fundo-edit-id" />
+    <div class="form-group">
+      <label>Nome</label>
+      <input type="text" id="fundo-nome" placeholder="Ex: Viagem, Casa…" maxlength="60" />
+    </div>
+    <div class="form-group">
+      <label>Saldo Atual (R$)</label>
+      <input type="number" id="fundo-saldo" placeholder="0,00" min="0" step="0.01" />
+    </div>
+    <div class="form-group">
+      <label>Meta (R$)</label>
+      <input type="number" id="fundo-meta" placeholder="0,00" min="0" step="0.01" />
+    </div>
+    <div class="form-group">
+      <label>Aporte Mensal (R$)</label>
+      <input type="number" id="fundo-aporte" placeholder="0,00" min="0" step="0.01" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="btn-cancelar-fundo">Cancelar</button>
+      <button class="btn btn-primary" id="btn-salvar-fundo">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCRIPTS ════════════════════════════════════════════ -->
+<script src="data/defaults.js"></script>
+<script src="modules/storage.js"></script>
+<script src="modules/gastos.js"></script>
+<script src="modules/calculadora.js"></script>
+<script src="modules/fundos.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
