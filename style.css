@@ -639,9 +639,9 @@ tbody td { padding: 11px 12px; }
   /* Main padding */
   .app-main { padding: var(--gap); }
 
-  /* Grids → coluna única */
-  .grid-3 { grid-template-columns: 1fr; }
-  .grid-2 { grid-template-columns: 1fr; }
+  /* Grids → 2 colunas no mobile */
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
 
   /* Section header — título + botão em linha compacta */
   .section-header { margin-bottom: var(--gap); }
