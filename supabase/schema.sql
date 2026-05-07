@@ -1,6 +1,3 @@
--- FinDash v2.0 — Database Schema
--- Execute este script no Supabase SQL Editor:
--- supabase.com > seu projeto > SQL Editor > New query
 
 -- ============================================================
 -- TABELAS
