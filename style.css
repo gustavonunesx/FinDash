@@ -639,9 +639,10 @@ tbody td { padding: 11px 12px; }
   /* Main padding */
   .app-main { padding: var(--gap); }
 
-  /* Grids → 2 colunas no mobile */
+  /* Grids → 2 colunas no mobile, itens não ultrapassam a coluna */
   .grid-3 { grid-template-columns: repeat(2, 1fr); }
   .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 > *, .grid-2 > * { min-width: 0; }
 
   /* Section header — título + botão em linha compacta */
   .section-header { margin-bottom: var(--gap); }
@@ -652,8 +653,13 @@ tbody td { padding: 11px 12px; }
   thead th:nth-child(2),
   tbody td:nth-child(2) { display: none; }
 
-  /* Blocos calculadora — valores menores */
-  .bloco-alocado { font-size: 1.15rem; }
+  /* Blocos calculadora — empilha valor + meta verticalmente */
+  .bloco-card { padding: 12px; }
+  .bloco-alocado { font-size: 1.05rem; }
+  .bloco-row { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .bloco-meta { font-size: 0.75rem; }
+  .bloco-comprometido { font-size: 0.73rem; }
+  .bloco-title { font-size: 0.7rem; margin-bottom: 6px; }
 
   /* Salário row — empilha label + input */
   .salary-row { flex-direction: column; align-items: stretch; gap: 6px; }
