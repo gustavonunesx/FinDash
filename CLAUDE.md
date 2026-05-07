@@ -9,7 +9,7 @@
 - Tailwind v4 — NO `tailwind.config.ts`; all tokens in `app/globals.css` via `@theme inline`
 - shadcn/ui v4 — `toast` is deprecated, use `sonner`
 - Supabase Auth + PostgreSQL + RLS (`@supabase/ssr`)
-- Stripe (Milestone 5, keys empty in `.env.local`)
+- Stripe (subscriptions + webhook + portal, keys filled in `.env.local`)
 
 ## Next.js 16 Breaking Changes (already applied)
 - `middleware.ts` → renamed to `proxy.ts`, export named `proxy` (not `middleware` or default)
@@ -47,11 +47,11 @@ button, input, label, card, badge, alert, separator, dialog, select, switch, pro
 
 ## Milestone Status
 - [x] M1 — Base & Auth (scaffold, design tokens, Supabase clients, SQL schema, auth pages, proxy)
-- [ ] M2 — Dashboard & Gastos
-- [ ] M3 — Calculadoras
-- [ ] M4 — Fundos
-- [ ] M5 — Stripe & Assinatura
-- [ ] M6 — Premium & Polish
+- [x] M2 — Dashboard & Gastos (layout, CRUD gastos, CategoryTotals, UpgradeModal, free limit 10)
+- [x] M3 — Calculadoras (lib/finance.ts, CalculadoraSalario, CalculadoraRendaExtra, 50/30/20)
+- [x] M4 — Fundos (FundoCard, FundoModal, FundosGrid, phase auto-detection, free limit 3)
+- [x] M5 — Stripe & Assinatura (checkout, webhook, portal, /precos, /configuracoes)
+- [x] M6 — Premium & Polish (histórico+Recharts, PDF export, landing page, loading skeletons, 404)
 
 ## Key Files
 - `proxy.ts` — route protection
@@ -60,4 +60,10 @@ button, input, label, card, badge, alert, separator, dialog, select, switch, pro
 - `lib/supabase/seed-defaults.ts` — inserts 8 default gastos + 3 default fundos
 - `supabase/schema.sql` — full DB schema (run once in Supabase SQL Editor)
 - `types/index.ts` — all TypeScript types
-- `.env.local` — Supabase keys filled; Stripe keys empty (M5)
+- `.env.local` — all keys filled (Supabase + Stripe)
+- `lib/stripe.ts` — Stripe instance + getOrCreateStripeCustomer
+- `app/api/stripe/checkout/route.ts` — creates Checkout Session (14d trial)
+- `app/api/stripe/webhook/route.ts` — handles subscription lifecycle events
+- `app/api/stripe/portal/route.ts` — Billing Portal session
+- `components/marketing/PrecosClient.tsx` — pricing toggle + checkout CTA
+- `components/configuracoes/ConfiguracoesClient.tsx` — account + subscription management

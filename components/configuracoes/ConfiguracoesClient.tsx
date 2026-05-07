@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { IconSparkles, IconExternalLink } from "@tabler/icons-react"
+import { IconSparkles, IconExternalLink, IconFileTypePdf } from "@tabler/icons-react"
 import { salvarNome, salvarCustoVida } from "@/app/(app)/configuracoes/actions"
 
 const STATUS_LABEL: Record<string, string> = {
@@ -36,6 +36,7 @@ export function ConfiguracoesClient({ email, nome: nomeInicial, plano, assinatur
   const [custoVida, setCustoVida] = useState(String(custoVidaInicial))
   const [isPending, startTransition] = useTransition()
   const [portalPending, setPortalPending] = useState(false)
+  const [pdfPending, setPdfPending] = useState(false)
 
   function handleSalvarNome() {
     if (!nome.trim() || nome === nomeInicial) return
@@ -55,6 +56,23 @@ export function ConfiguracoesClient({ email, nome: nomeInicial, plano, assinatur
       if (res.error) toast.error("Erro ao salvar custo de vida")
       else toast.success("Custo de vida atualizado")
     })
+  }
+
+  async function handleExportarPdf() {
+    setPdfPending(true)
+    try {
+      const res = await fetch("/api/exportar-pdf")
+      if (!res.ok) { toast.error("Erro ao gerar PDF"); return }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `findash-${new Date().toISOString().slice(0,7)}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } finally {
+      setPdfPending(false)
+    }
   }
 
   async function handlePortal() {
@@ -176,6 +194,17 @@ export function ConfiguracoesClient({ email, nome: nomeInicial, plano, assinatur
             </Link>
           )}
         </div>
+
+        {plano === "premium" && (
+          <button
+            onClick={handleExportarPdf}
+            disabled={pdfPending}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors"
+          >
+            <IconFileTypePdf size={16} />
+            {pdfPending ? "Gerando PDF…" : "Exportar relatório PDF"}
+          </button>
+        )}
 
         {plano === "free" && (
           <div className="rounded-md bg-primary/10 border border-primary/20 px-4 py-3 text-sm text-muted-foreground">
