@@ -1,0 +1,306 @@
+
+<style>
+  .wrap { padding: 1.5rem 0; font-family: var(--font-sans); }
+  .sec-label { font-size: 12px; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; font-weight: 500; }
+  .input-row { display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; }
+  .prefix { font-size: 15px; color: var(--color-text-secondary); }
+  .sal-input { font-size: 22px; font-weight: 500; border: none; border-bottom: 2px solid var(--color-border-primary); background: transparent; color: var(--color-text-primary); width: 180px; outline: none; padding: 4px 0; }
+  .sal-input:focus { border-bottom-color: #1d9e75; }
+  .blocos { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.5rem; }
+  .bloco { border-radius: var(--border-radius-lg); overflow: hidden; border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-primary); }
+  .bloco-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; user-select: none; }
+  .bloco-left { display: flex; align-items: center; gap: 10px; }
+  .bloco-icon { font-size: 18px; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .icon-nec { background: #faeeda; color: #ba7517; }
+  .icon-obj { background: #e1f5ee; color: #0f6e56; }
+  .icon-vida { background: #e6f1fb; color: #185fa5; }
+  .bloco-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+  .bloco-sub { font-size: 11px; color: var(--color-text-secondary); }
+  .bloco-right { text-align: right; }
+  .bloco-val { font-size: 20px; font-weight: 500; color: var(--color-text-primary); }
+  .bloco-pct { font-size: 11px; color: var(--color-text-tertiary); }
+  .bloco-body { padding: 0 16px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.3s ease; }
+  .bloco-body.open { max-height: 600px; padding: 0 16px 14px; }
+  .bloco-divider { border: none; border-top: 0.5px solid var(--color-border-tertiary); margin-bottom: 12px; }
+  .item-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 4px 0; }
+  .item-name { color: var(--color-text-secondary); }
+  .item-val { color: var(--color-text-primary); font-weight: 500; }
+  .item-add { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+  .item-add input[type=text] { font-size: 13px; flex: 1; padding: 5px 8px; }
+  .item-add input[type=number] { font-size: 13px; width: 90px; padding: 5px 8px; }
+  .add-btn { font-size: 12px; padding: 5px 12px; cursor: pointer; }
+  .rem-btn { font-size: 11px; color: var(--color-text-tertiary); cursor: pointer; background: none; border: none; padding: 0 4px; }
+  .rem-btn:hover { color: #e24b4a; }
+  .bar-track { height: 10px; border-radius: 5px; background: var(--color-background-secondary); overflow: hidden; display: flex; margin-bottom: 6px; }
+  .bar-seg { height: 100%; transition: width 0.4s ease; }
+  .bar-nec { background: #ba7517; }
+  .bar-obj { background: #1d9e75; }
+  .bar-vida { background: #378add; }
+  .bar-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 1.5rem; }
+  .leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--color-text-secondary); }
+  .leg-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+  .alert-box { border-radius: var(--border-radius-md); padding: 10px 14px; font-size: 13px; margin-bottom: 1.5rem; border-left: 3px solid; }
+  .alert-ok { background: var(--color-background-success); color: var(--color-text-success); border-color: #1d9e75; }
+  .alert-warn { background: var(--color-background-warning); color: var(--color-text-warning); border-color: #ba7517; }
+  .alert-bad { background: var(--color-background-danger); color: var(--color-text-danger); border-color: #e24b4a; }
+  .proj-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .proj-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px 14px; }
+  .proj-label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 4px; }
+  .proj-val { font-size: 16px; font-weight: 500; color: var(--color-text-primary); }
+  .proj-sub { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; }
+  .chevron { font-size: 14px; color: var(--color-text-tertiary); transition: transform 0.2s; }
+  .chevron.open { transform: rotate(180deg); }
+</style>
+
+<div class="wrap">
+  <h2 class="sr-only">Calculadora de distribuição de salário 50/30/20</h2>
+
+  <p class="sec-label">salário mensal</p>
+  <div class="input-row">
+    <span class="prefix">R$</span>
+    <input class="sal-input" type="number" id="salInput" value="1700" min="0" max="999999" step="100" />
+  </div>
+
+  <div class="blocos">
+
+    <!-- NECESSIDADES -->
+    <div class="bloco">
+      <div class="bloco-header" onclick="toggle('nec')">
+        <div class="bloco-left">
+          <div class="bloco-icon icon-nec" aria-hidden="true"><i class="ti ti-home"></i></div>
+          <div>
+            <div class="bloco-title">Necessidades</div>
+            <div class="bloco-sub">contas fixas e essenciais</div>
+          </div>
+        </div>
+        <div class="bloco-right">
+          <div class="bloco-val" id="valNec">R$ 850</div>
+          <div class="bloco-pct" id="pctNecReal">50% da meta · <span id="pctNecUso">—</span> usado</div>
+        </div>
+        <i class="ti ti-chevron-down chevron" id="chevNec" aria-hidden="true"></i>
+      </div>
+      <div class="bloco-body" id="bodyNec">
+        <hr class="bloco-divider" />
+        <div id="listNec"></div>
+        <div class="item-add">
+          <input type="text" id="addNecNome" placeholder="ex: internet" />
+          <input type="number" id="addNecVal" placeholder="R$" min="0" step="10" />
+          <button class="add-btn" onclick="addItem('nec')">+ add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- OBJETIVOS -->
+    <div class="bloco">
+      <div class="bloco-header" onclick="toggle('obj')">
+        <div class="bloco-left">
+          <div class="bloco-icon icon-obj" aria-hidden="true"><i class="ti ti-trending-up"></i></div>
+          <div>
+            <div class="bloco-title">Objetivos e metas</div>
+            <div class="bloco-sub">reserva, alianças, PC, investimentos</div>
+          </div>
+        </div>
+        <div class="bloco-right">
+          <div class="bloco-val" id="valObj">R$ 510</div>
+          <div class="bloco-pct" id="pctObjReal">30% da meta · <span id="pctObjUso">—</span> usado</div>
+        </div>
+        <i class="ti ti-chevron-down chevron" id="chevObj" aria-hidden="true"></i>
+      </div>
+      <div class="bloco-body" id="bodyObj">
+        <hr class="bloco-divider" />
+        <div id="listObj"></div>
+        <div class="item-add">
+          <input type="text" id="addObjNome" placeholder="ex: reserva" />
+          <input type="number" id="addObjVal" placeholder="R$" min="0" step="10" />
+          <button class="add-btn" onclick="addItem('obj')">+ add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUALIDADE DE VIDA -->
+    <div class="bloco">
+      <div class="bloco-header" onclick="toggle('vida')">
+        <div class="bloco-left">
+          <div class="bloco-icon icon-vida" aria-hidden="true"><i class="ti ti-mood-smile"></i></div>
+          <div>
+            <div class="bloco-title">Qualidade de vida</div>
+            <div class="bloco-sub">lazer, rolê, desejo sem culpa</div>
+          </div>
+        </div>
+        <div class="bloco-right">
+          <div class="bloco-val" id="valVida">R$ 340</div>
+          <div class="bloco-pct" id="pctVidaReal">20% da meta · <span id="pctVidaUso">—</span> usado</div>
+        </div>
+        <i class="ti ti-chevron-down chevron" id="chevVida" aria-hidden="true"></i>
+      </div>
+      <div class="bloco-body" id="bodyVida">
+        <hr class="bloco-divider" />
+        <div id="listVida"></div>
+        <div class="item-add">
+          <input type="text" id="addVidaNome" placeholder="ex: cinema" />
+          <input type="number" id="addVidaVal" placeholder="R$" min="0" step="10" />
+          <button class="add-btn" onclick="addItem('vida')">+ add</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bar-track">
+    <div class="bar-seg bar-nec" id="barNec" style="width:50%"></div>
+    <div class="bar-seg bar-obj" id="barObj" style="width:30%"></div>
+    <div class="bar-seg bar-vida" id="barVida" style="width:20%"></div>
+  </div>
+  <div class="bar-legend">
+    <span class="leg-item"><span class="leg-dot" style="background:#ba7517"></span>Necessidades</span>
+    <span class="leg-item"><span class="leg-dot" style="background:#1d9e75"></span>Objetivos</span>
+    <span class="leg-item"><span class="leg-dot" style="background:#378add"></span>Qualidade de vida</span>
+  </div>
+
+  <div class="alert-box alert-ok" id="alertBox">
+    Distribuição equilibrada. Continue assim.
+  </div>
+
+  <p class="sec-label">projeção anual</p>
+  <div class="proj-grid">
+    <div class="proj-card">
+      <div class="proj-label"><i class="ti ti-shield" aria-hidden="true"></i> Guardado em 12 meses</div>
+      <div class="proj-val" id="proj12">—</div>
+      <div class="proj-sub">bloco objetivos × 12</div>
+    </div>
+    <div class="proj-card">
+      <div class="proj-label"><i class="ti ti-calendar" aria-hidden="true"></i> Reserva completa em</div>
+      <div class="proj-val" id="projRes">—</div>
+      <div class="proj-sub">meta R$ 3.600 (falta R$ 3.302)</div>
+    </div>
+    <div class="proj-card">
+      <div class="proj-label"><i class="ti ti-arrow-up" aria-hidden="true"></i> Salário +20%</div>
+      <div class="proj-val" id="projAum">—</div>
+      <div class="proj-sub">extra vai para objetivos</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const items = { nec: [], obj: [], vida: [] };
+
+  const defaults = {
+    nec: [
+      { nome: 'Faculdade', val: 529 },
+      { nome: 'Gasolina', val: 100 },
+      { nome: 'Academia', val: 109.90 },
+      { nome: 'Cabelo', val: 35 },
+      { nome: 'Recorrente 1', val: 39.70 },
+      { nome: 'Recorrente 2', val: 47.94 },
+    ],
+    obj: [
+      { nome: 'Reserva de emergência', val: 300 },
+      { nome: 'Alianças', val: 200 },
+    ],
+    vida: []
+  };
+
+  Object.keys(defaults).forEach(k => { items[k] = defaults[k].map(i => ({...i})); });
+
+  function fmt(v) { return 'R$ ' + Math.round(v).toLocaleString('pt-BR'); }
+
+  function renderList(key) {
+    const el = document.getElementById('list' + key.charAt(0).toUpperCase() + key.slice(1));
+    el.innerHTML = '';
+    items[key].forEach((item, i) => {
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.innerHTML = `<span class="item-name">${item.nome}</span><span style="display:flex;align-items:center;gap:6px"><span class="item-val">${fmt(item.val)}</span><button class="rem-btn" onclick="removeItem('${key}',${i})" aria-label="remover">×</button></span>`;
+      el.appendChild(row);
+    });
+  }
+
+  function addItem(key) {
+    const nomeEl = document.getElementById('addNecNome'.replace('Nec', key.charAt(0).toUpperCase() + key.slice(1)));
+    const valEl  = document.getElementById('addNecVal'.replace('Nec',  key.charAt(0).toUpperCase() + key.slice(1)));
+    const nomeId = 'add' + key.charAt(0).toUpperCase() + key.slice(1) + 'Nome';
+    const valId  = 'add' + key.charAt(0).toUpperCase() + key.slice(1) + 'Val';
+    const nome = document.getElementById(nomeId).value.trim();
+    const val  = parseFloat(document.getElementById(valId).value);
+    if (!nome || isNaN(val) || val <= 0) return;
+    items[key].push({ nome, val });
+    document.getElementById(nomeId).value = '';
+    document.getElementById(valId).value = '';
+    renderList(key);
+    calc();
+  }
+
+  function removeItem(key, i) {
+    items[key].splice(i, 1);
+    renderList(key);
+    calc();
+  }
+
+  function toggle(key) {
+    const body = document.getElementById('body' + key.charAt(0).toUpperCase() + key.slice(1));
+    const chev = document.getElementById('chev' + key.charAt(0).toUpperCase() + key.slice(1));
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    chev.classList.toggle('open', !isOpen);
+    if (!isOpen) renderList(key);
+  }
+
+  function sumItems(key) { return items[key].reduce((a, i) => a + i.val, 0); }
+
+  function calc() {
+    const sal = parseFloat(document.getElementById('salInput').value) || 0;
+    const metaNec  = sal * 0.50;
+    const metaObj  = sal * 0.30;
+    const metaVida = sal * 0.20;
+
+    document.getElementById('valNec').textContent  = fmt(metaNec);
+    document.getElementById('valObj').textContent  = fmt(metaObj);
+    document.getElementById('valVida').textContent = fmt(metaVida);
+
+    const usoNec  = sumItems('nec');
+    const usoObj  = sumItems('obj');
+    const usoVida = sumItems('vida');
+
+    const pctNec  = metaNec  > 0 ? Math.round(usoNec  / metaNec  * 100) : 0;
+    const pctObj  = metaObj  > 0 ? Math.round(usoObj  / metaObj  * 100) : 0;
+    const pctVida = metaVida > 0 ? Math.round(usoVida / metaVida * 100) : 0;
+
+    document.getElementById('pctNecUso').textContent  = pctNec  + '%';
+    document.getElementById('pctObjUso').textContent  = pctObj  + '%';
+    document.getElementById('pctVidaUso').textContent = pctVida + '%';
+
+    const totalUso = usoNec + usoObj + usoVida;
+    const pctNecBar  = sal > 0 ? (usoNec  / sal * 100) : 50;
+    const pctObjBar  = sal > 0 ? (usoObj  / sal * 100) : 30;
+    const pctVidaBar = sal > 0 ? (usoVida / sal * 100) : 20;
+
+    document.getElementById('barNec').style.width  = Math.min(pctNecBar,  100) + '%';
+    document.getElementById('barObj').style.width  = Math.min(pctObjBar,  100) + '%';
+    document.getElementById('barVida').style.width = Math.min(pctVidaBar, 100) + '%';
+
+    const alertEl = document.getElementById('alertBox');
+    if (usoNec > metaNec * 1.05) {
+      alertEl.className = 'alert-box alert-bad';
+      alertEl.textContent = 'Necessidades acima de 50%. Tente reduzir algum custo fixo ou aumentar a renda.';
+    } else if (usoNec > metaNec * 0.95) {
+      alertEl.className = 'alert-box alert-warn';
+      alertEl.textContent = 'Necessidades no limite dos 50%. Qualquer imprevisto vai apertar o mês.';
+    } else if (usoObj >= metaObj * 0.80) {
+      alertEl.className = 'alert-box alert-ok';
+      alertEl.textContent = 'Bloco de objetivos bem alimentado. Patrimônio em construção.';
+    } else {
+      alertEl.className = 'alert-box alert-ok';
+      alertEl.textContent = 'Distribuição equilibrada. Continue assim.';
+    }
+
+    document.getElementById('proj12').textContent = fmt(metaObj * 12);
+    const faltaRes = Math.max(0, 3600 - 298);
+    const meses = metaObj > 0 ? Math.ceil(faltaRes / metaObj) : 0;
+    document.getElementById('projRes').textContent = meses > 0 ? meses + ' meses' : 'já atingiu!';
+    const aumento = sal * 1.20;
+    const extraObj = (aumento * 0.30) - metaObj;
+    document.getElementById('projAum').textContent = '+' + fmt(extraObj) + '/mês';
+  }
+
+  calc();
+</script>
