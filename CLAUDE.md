@@ -53,6 +53,23 @@ button, input, label, card, badge, alert, separator, dialog, select, switch, pro
 - [x] M5 — Stripe & Assinatura (checkout, webhook, portal, /precos, /configuracoes)
 - [x] M6 — Premium & Polish (histórico+Recharts, PDF export, landing page, loading skeletons, 404)
 
+## Environment Variables (.env)
+- `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon key
+- `NEXT_PUBLIC_APP_URL` — app base URL (ex: `http://localhost:3000` em dev, domínio real em prod)
+- `STRIPE_SECRET_KEY` — Stripe secret key (`sk_test_...`)
+- `STRIPE_WEBHOOK_SECRET` — Stripe webhook signing secret (`whsec_...`)
+- `STRIPE_PRICE_MONTHLY` — Price ID do plano mensal (`price_...`)
+- `STRIPE_PRICE_ANNUAL` — Price ID do plano anual (`price_...`)
+
+## Stripe Setup Notes
+- Webhook events ouvidos: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
+- Em dev local: usar `stripe listen --forward-to localhost:3000/api/stripe/webhook` (CLI gera o `whsec_` temporário)
+- Em produção: registrar endpoint no Dashboard com URL pública + copiar o Signing Secret
+- Price IDs: Stripe Dashboard → Product catalog → produto → seção Pricing
+- Cartões de teste: `4242 4242 4242 4242` (aprovado), `4000 0000 0000 0002` (recusado)
+- Supabase: desativar "Confirm email" em Authentication → Providers → Email para dev local
+
 ## Key Files
 - `proxy.ts` — route protection
 - `app/(auth)/actions.ts` — signIn, signUp, signInWithGoogle, resetPassword, signOut
