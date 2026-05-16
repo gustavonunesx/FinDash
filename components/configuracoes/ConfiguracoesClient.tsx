@@ -6,8 +6,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { IconSparkles, IconExternalLink, IconFileTypePdf } from "@tabler/icons-react"
+import { IconSparkles, IconExternalLink, IconFileTypePdf, IconUser, IconCreditCard, IconArrowRight } from "@tabler/icons-react"
 import { salvarNome, salvarCustoVida } from "@/app/(app)/configuracoes/actions"
 
 const STATUS_LABEL: Record<string, string> = {
@@ -87,18 +86,24 @@ export function ConfiguracoesClient({ email, nome: nomeInicial, plano, assinatur
   return (
     <div className="space-y-6">
       {/* Seção Conta */}
-      <section className="rounded-lg border border-border bg-card p-5 space-y-4">
-        <h2 className="font-semibold text-foreground">Conta</h2>
-        <Separator className="bg-border" />
-
-        <div className="space-y-1.5">
-          <Label>Email</Label>
-          <p className="text-sm text-muted-foreground font-mono">{email}</p>
+      <section className="rounded-xl border border-border bg-card p-6 space-y-5 transition-all hover:border-foreground/10">
+        <div className="flex items-center gap-3">
+          <div className="size-10 rounded-lg bg-muted/50 flex items-center justify-center">
+            <IconUser size={20} className="text-muted-foreground" />
+          </div>
+          <h2 className="font-semibold text-foreground text-lg">Conta</h2>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="conf-nome">Nome</Label>
-          <div className="flex gap-2">
+        <div className="h-px bg-border" />
+
+        <div className="space-y-2">
+          <Label className="text-muted-foreground text-xs uppercase tracking-wide">Email</Label>
+          <p className="text-sm text-foreground font-mono bg-muted/30 px-3 py-2 rounded-lg">{email}</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="conf-nome" className="text-muted-foreground text-xs uppercase tracking-wide">Nome</Label>
+          <div className="flex gap-3">
             <Input
               id="conf-nome"
               value={nome}
@@ -117,10 +122,10 @@ export function ConfiguracoesClient({ email, nome: nomeInicial, plano, assinatur
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="conf-custo">Custo de vida mensal (R$)</Label>
-          <p className="text-xs text-muted-foreground">Usado para calcular o tamanho da sua reserva de emergência (3×).</p>
-          <div className="flex gap-2">
+        <div className="space-y-2">
+          <Label htmlFor="conf-custo" className="text-muted-foreground text-xs uppercase tracking-wide">Custo de vida mensal (R$)</Label>
+          <p className="text-xs text-muted-foreground">Usado para calcular o tamanho da sua reserva de emergência (3x).</p>
+          <div className="flex gap-3">
             <Input
               id="conf-custo"
               type="number"
@@ -144,25 +149,33 @@ export function ConfiguracoesClient({ email, nome: nomeInicial, plano, assinatur
       </section>
 
       {/* Seção Assinatura */}
-      <section className="rounded-lg border border-border bg-card p-5 space-y-4">
-        <h2 className="font-semibold text-foreground">Assinatura</h2>
-        <Separator className="bg-border" />
+      <section className="rounded-xl border border-border bg-card p-6 space-y-5 transition-all hover:border-foreground/10">
+        <div className="flex items-center gap-3">
+          <div className="size-10 rounded-lg bg-muted/50 flex items-center justify-center">
+            <IconCreditCard size={20} className="text-muted-foreground" />
+          </div>
+          <h2 className="font-semibold text-foreground text-lg">Assinatura</h2>
+        </div>
+
+        <div className="h-px bg-border" />
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-muted-foreground">Plano atual</p>
-            <div className="flex items-center gap-2 mt-1">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Plano atual</p>
+            <div className="flex items-center gap-2">
               {plano === "premium" ? (
                 <>
-                  <IconSparkles size={16} className="text-primary" />
+                  <div className="size-8 rounded-lg bg-primary/15 flex items-center justify-center">
+                    <IconSparkles size={16} className="text-primary" />
+                  </div>
                   <span className="font-semibold text-foreground">Premium</span>
                   {assinaturaStatus && (
                     <span
-                      className="text-xs px-2 py-0.5 rounded-full border font-medium"
+                      className="text-xs px-2.5 py-1 rounded-full border font-medium"
                       style={{
                         color: STATUS_COLOR[assinaturaStatus] ?? "var(--fd-green)",
-                        borderColor: `${STATUS_COLOR[assinaturaStatus] ?? "var(--fd-green)"}40`,
-                        backgroundColor: `${STATUS_COLOR[assinaturaStatus] ?? "var(--fd-green)"}15`,
+                        borderColor: `${STATUS_COLOR[assinaturaStatus] ?? "var(--fd-green)"}30`,
+                        backgroundColor: `${STATUS_COLOR[assinaturaStatus] ?? "var(--fd-green)"}10`,
                       }}
                     >
                       {STATUS_LABEL[assinaturaStatus] ?? assinaturaStatus}
@@ -179,18 +192,19 @@ export function ConfiguracoesClient({ email, nome: nomeInicial, plano, assinatur
             <button
               onClick={handlePortal}
               disabled={portalPending}
-              className="flex items-center gap-1.5 text-sm text-primary hover:underline disabled:opacity-50"
+              className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 disabled:opacity-50 transition-colors"
             >
               <IconExternalLink size={14} />
-              {portalPending ? "Abrindo…" : "Gerenciar assinatura"}
+              {portalPending ? "Abrindo..." : "Gerenciar assinatura"}
             </button>
           ) : (
             <Link
               href="/precos"
-              className="text-sm px-3 py-1.5 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors flex items-center gap-1.5"
+              className="group text-sm px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-all flex items-center gap-2 hover:shadow-lg hover:shadow-primary/20"
             >
               <IconSparkles size={14} />
               Ver planos
+              <IconArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
           )}
         </div>
@@ -199,19 +213,22 @@ export function ConfiguracoesClient({ email, nome: nomeInicial, plano, assinatur
           <button
             onClick={handleExportarPdf}
             disabled={pdfPending}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors px-4 py-2.5 rounded-lg border border-border hover:border-foreground/20 hover:bg-muted/30"
           >
-            <IconFileTypePdf size={16} />
-            {pdfPending ? "Gerando PDF…" : "Exportar relatório PDF"}
+            <IconFileTypePdf size={18} />
+            {pdfPending ? "Gerando PDF..." : "Exportar relatório PDF"}
           </button>
         )}
 
         {plano === "free" && (
-          <div className="rounded-md bg-primary/10 border border-primary/20 px-4 py-3 text-sm text-muted-foreground">
-            Com o Premium você desbloqueia gastos ilimitados, histórico mensal e exportação PDF.{" "}
-            <Link href="/precos" className="text-primary hover:underline">
-              Saiba mais →
-            </Link>
+          <div className="rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 px-5 py-4 text-sm text-muted-foreground">
+            <p className="text-foreground font-medium mb-1">Desbloqueie todo o potencial do FinDash</p>
+            <p className="text-muted-foreground">
+              Gastos ilimitados, histórico mensal e exportação PDF.{" "}
+              <Link href="/precos" className="text-primary hover:text-primary/80 font-medium transition-colors">
+                Saiba mais
+              </Link>
+            </p>
           </div>
         )}
       </section>

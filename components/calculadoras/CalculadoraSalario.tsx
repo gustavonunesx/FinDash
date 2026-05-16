@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { calcularSalario } from "@/lib/finance"
 import { salvarSalario } from "@/app/(app)/calculadora/actions"
+import { IconAlertTriangle, IconShoppingBag, IconTarget, IconSparkles } from "@tabler/icons-react"
 import type { TotaisPorCategoria } from "@/types"
 
 const STATUS_COLOR = {
@@ -14,10 +15,10 @@ const STATUS_COLOR = {
   vermelho: "var(--fd-red)",
 }
 
-const STATUS_BG = {
-  verde: "rgba(29,158,117,0.12)",
-  amarelo: "rgba(186,117,23,0.12)",
-  vermelho: "rgba(226,75,74,0.12)",
+const CATEGORY_ICONS = {
+  "Necessidades": IconShoppingBag,
+  "Objetivos": IconTarget,
+  "Qualidade de vida": IconSparkles,
 }
 
 interface Props {
@@ -55,6 +56,7 @@ export function CalculadoraSalario({ salarioInicial, totais }: Props) {
       limite: resultado.limiteNecessidades,
       comprometido: resultado.comprometidoNecessidades,
       status: resultado.statusNecessidades,
+      color: "var(--fd-amber)",
     },
     {
       label: "Objetivos",
@@ -62,6 +64,7 @@ export function CalculadoraSalario({ salarioInicial, totais }: Props) {
       limite: resultado.limiteObjetivos,
       comprometido: resultado.comprometidoObjetivos,
       status: resultado.statusObjetivos,
+      color: "var(--fd-green)",
     },
     {
       label: "Qualidade de vida",
@@ -69,21 +72,22 @@ export function CalculadoraSalario({ salarioInicial, totais }: Props) {
       limite: resultado.limiteQualidade,
       comprometido: resultado.comprometidoQualidade,
       status: null,
+      color: "var(--fd-blue)",
     },
   ]
 
   return (
-    <div className="rounded-lg border border-border bg-card p-5 space-y-5">
+    <div className="rounded-xl border border-border bg-card p-5 space-y-6 transition-all hover:border-foreground/10">
       <div>
-        <h2 className="font-semibold text-foreground">Calculadora de Salário</h2>
-        <p className="text-xs text-muted-foreground mt-0.5">
+        <h2 className="font-semibold text-foreground text-lg">Calculadora de Salário</h2>
+        <p className="text-sm text-muted-foreground mt-1">
           Distribuição 50/30/20: necessidades · objetivos · qualidade de vida
         </p>
       </div>
 
       {/* Salary input */}
-      <div className="max-w-xs space-y-1.5">
-        <Label htmlFor="salario">Salário mensal (R$)</Label>
+      <div className="max-w-xs space-y-2">
+        <Label htmlFor="salario" className="text-sm font-medium">Salário mensal (R$)</Label>
         <Input
           id="salario"
           type="number"
@@ -94,56 +98,72 @@ export function CalculadoraSalario({ salarioInicial, totais }: Props) {
           value={salario}
           onChange={(e) => setSalario(e.target.value)}
           onBlur={handleBlur}
-          className="font-mono"
+          className="font-mono text-base"
         />
       </div>
 
       {salarioNum > 0 ? (
         <>
           {/* 3 category blocks */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {blocos.map(({ label, percentual, limite, comprometido, status }) => {
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {blocos.map(({ label, percentual, limite, comprometido, status, color }) => {
               const fill = limite > 0 ? Math.min((comprometido / limite) * 100, 100) : 0
               const cor = status?.cor ?? "verde"
               const barColor = STATUS_COLOR[cor]
+              const Icon = CATEGORY_ICONS[label as keyof typeof CATEGORY_ICONS]
 
               return (
-                <div key={label} className="rounded-lg border border-border p-4 space-y-3">
+                <div 
+                  key={label} 
+                  className="group rounded-xl border border-border p-4 space-y-4 transition-all duration-200 hover:border-foreground/15 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5"
+                  style={{ borderLeftColor: color, borderLeftWidth: 3 }}
+                >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      {label}
-                    </span>
-                    <span className="text-xs font-medium text-muted-foreground">{percentual}%</span>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="size-8 rounded-lg flex items-center justify-center transition-transform group-hover:scale-105"
+                        style={{ backgroundColor: `${color}15` }}
+                      >
+                        <Icon size={16} style={{ color }} strokeWidth={1.5} />
+                      </div>
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        {label}
+                      </span>
+                    </div>
+                    <span className="text-xs font-semibold text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">{percentual}%</span>
                   </div>
 
                   <div>
-                    <p className="font-mono text-lg font-bold text-foreground">{fmt(comprometido)}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="font-mono text-xl font-bold text-foreground">{fmt(comprometido)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
                       limite: {fmt(limite)}
                     </p>
                   </div>
 
-                  <div className="space-y-1">
-                    <div className="h-1.5 rounded-full bg-border overflow-hidden">
+                  <div className="space-y-2">
+                    <div className="h-2 rounded-full bg-muted/50 overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-all duration-300"
-                        style={{ width: `${fill}%`, backgroundColor: barColor }}
+                        className="h-full rounded-full progress-animate"
+                        style={{ 
+                          width: `${fill}%`, 
+                          backgroundColor: barColor,
+                          boxShadow: `0 0 8px ${barColor}30`
+                        }}
                       />
                     </div>
-                    <p className="text-xs text-right" style={{ color: barColor }}>
-                      {Math.round(fill)}% usado
-                    </p>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground font-medium">{Math.round(fill)}% usado</span>
+                      {status && (
+                        <div className="flex items-center gap-1.5">
+                          <div
+                            className="size-2 rounded-full"
+                            style={{ backgroundColor: STATUS_COLOR[status.cor] }}
+                          />
+                          <span className="capitalize" style={{ color: STATUS_COLOR[status.cor] }}>{status.cor}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-
-                  {status && (
-                    <div className="flex items-center gap-1.5">
-                      <div
-                        className="size-2 rounded-full shrink-0"
-                        style={{ backgroundColor: STATUS_COLOR[status.cor] }}
-                      />
-                      <span className="text-xs text-muted-foreground capitalize">{status.cor}</span>
-                    </div>
-                  )}
                 </div>
               )
             })}
@@ -155,14 +175,13 @@ export function CalculadoraSalario({ salarioInicial, totais }: Props) {
               {alertas.map((msg) => (
                 <div
                   key={msg}
-                  className="flex items-start gap-2 rounded-md px-3 py-2.5 text-sm border-l-2"
+                  className="flex items-start gap-3 rounded-xl px-4 py-3 text-sm border border-fd-amber/20"
                   style={{
-                    borderColor: "var(--fd-amber)",
                     backgroundColor: "rgba(186,117,23,0.08)",
-                    color: "var(--fd-amber)",
                   }}
                 >
-                  ⚠ {msg}
+                  <IconAlertTriangle size={18} className="text-fd-amber shrink-0 mt-0.5" />
+                  <span className="text-fd-amber">{msg}</span>
                 </div>
               ))}
             </div>
@@ -170,15 +189,15 @@ export function CalculadoraSalario({ salarioInicial, totais }: Props) {
 
           {/* Saldo livre */}
           <div
-            className="rounded-lg px-4 py-3 flex items-center justify-between"
+            className="rounded-xl px-5 py-4 flex items-center justify-between transition-all"
             style={{
-              backgroundColor: resultado.saldoLivre >= 0 ? STATUS_BG.verde : STATUS_BG.vermelho,
+              backgroundColor: resultado.saldoLivre >= 0 ? "rgba(29,158,117,0.08)" : "rgba(226,75,74,0.08)",
               borderLeft: `3px solid ${resultado.saldoLivre >= 0 ? STATUS_COLOR.verde : STATUS_COLOR.vermelho}`,
             }}
           >
             <span className="text-sm text-foreground font-medium">Saldo livre</span>
             <span
-              className="font-mono text-lg font-bold"
+              className="font-mono text-xl font-bold"
               style={{ color: resultado.saldoLivre >= 0 ? STATUS_COLOR.verde : STATUS_COLOR.vermelho }}
             >
               {fmt(resultado.saldoLivre)}
@@ -186,9 +205,11 @@ export function CalculadoraSalario({ salarioInicial, totais }: Props) {
           </div>
         </>
       ) : (
-        <p className="text-sm text-muted-foreground">
-          Informe seu salário para ver a distribuição 50/30/20.
-        </p>
+        <div className="py-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            Informe seu salário para ver a distribuição 50/30/20.
+          </p>
+        </div>
       )}
     </div>
   )
