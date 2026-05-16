@@ -122,7 +122,7 @@ export default async function DashboardPage({
             {(fundos ?? []).map((f) => {
               const progresso = f.meta > 0 ? Math.min((f.saldo_atual / f.meta) * 100, 100) : 0
               return (
-                <div key={f.nome} className="space-y-1">
+                <div key={f.id} className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
                       <div className="size-2 rounded-full" style={{ backgroundColor: f.cor }} />
