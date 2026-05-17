@@ -26,14 +26,14 @@ export function FundosGrid({ fundos, plano }: Props) {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-5">
         <p className="text-sm text-muted-foreground">
           {fundos.length} {fundos.length === 1 ? "fundo" : "fundos"}
-          {plano === "free" && " · limite: 3"}
+          {plano === "free" && <span className="text-muted-foreground/60"> · limite: 3</span>}
         </p>
         <Button
           size="sm"
-          className="bg-primary hover:bg-primary/90 text-white gap-1.5"
+          className="gap-1.5"
           onClick={() => setCriando(true)}
         >
           <IconPlus size={15} />
@@ -43,14 +43,19 @@ export function FundosGrid({ fundos, plano }: Props) {
 
       {fundos.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <IconPigMoney size={40} className="text-muted-foreground/40 mb-3" />
-          <p className="text-muted-foreground text-sm">Nenhum fundo cadastrado.</p>
+          <div className="size-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+            <IconPigMoney size={32} className="text-muted-foreground/50" />
+          </div>
+          <h3 className="text-sm font-medium text-foreground mb-1">Nenhum fundo cadastrado</h3>
+          <p className="text-muted-foreground text-sm mb-4">Comece criando seu primeiro fundo</p>
           <Button
-            variant="link"
-            className="text-primary mt-1 text-sm h-auto p-0"
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
             onClick={() => setCriando(true)}
           >
-            Criar primeiro fundo
+            <IconPlus size={14} />
+            Criar fundo
           </Button>
         </div>
       ) : (

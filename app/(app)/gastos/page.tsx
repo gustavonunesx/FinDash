@@ -26,16 +26,16 @@ export default async function GastosPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Gastos mensais</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
+      <div className="space-y-1">
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Gastos mensais</h1>
+        <p className="text-sm text-muted-foreground">
           Seus gastos organizados por categoria
         </p>
       </div>
 
       <CategoryTotals gastos={lista} />
 
-      <div className="rounded-lg border border-border bg-card p-4">
+      <div className="rounded-xl border border-border bg-card p-5 transition-all hover:border-foreground/10">
         <GastosTable gastos={lista} plano={plano as "free" | "premium"} />
       </div>
     </div>

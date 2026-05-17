@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { GastoModal } from "./GastoModal"
 import { UpgradeModal } from "@/components/ui/UpgradeModal"
@@ -41,16 +40,16 @@ export function GastosTable({ gastos, plano }: Props) {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-5">
         <div>
           <p className="text-sm text-muted-foreground">
             {gastos.length} {gastos.length === 1 ? "gasto" : "gastos"}
-            {plano === "free" && ` · limite: 10`}
+            {plano === "free" && <span className="text-muted-foreground/60"> · limite: 10</span>}
           </p>
         </div>
         <Button
           size="sm"
-          className="bg-primary hover:bg-primary/90 text-white gap-1.5"
+          className="gap-1.5"
           onClick={() => setCriando(true)}
         >
           <IconPlus size={15} />
@@ -60,63 +59,68 @@ export function GastosTable({ gastos, plano }: Props) {
 
       {gastos.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <IconReceipt2 size={40} className="text-muted-foreground/40 mb-3" />
-          <p className="text-muted-foreground text-sm">Nenhum gasto cadastrado.</p>
+          <div className="size-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+            <IconReceipt2 size={32} className="text-muted-foreground/50" />
+          </div>
+          <h3 className="text-sm font-medium text-foreground mb-1">Nenhum gasto cadastrado</h3>
+          <p className="text-muted-foreground text-sm mb-4">Comece adicionando seu primeiro gasto</p>
           <Button
-            variant="link"
-            className="text-primary mt-1 text-sm h-auto p-0"
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
             onClick={() => setCriando(true)}
           >
-            Adicionar primeiro gasto
+            <IconPlus size={14} />
+            Adicionar gasto
           </Button>
         </div>
       ) : (
-        <div className="rounded-lg border border-border overflow-hidden">
+        <div className="rounded-xl border border-border overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-card/50">
-                <th className="text-left px-4 py-2.5 text-muted-foreground font-medium">Nome</th>
-                <th className="text-left px-4 py-2.5 text-muted-foreground font-medium hidden sm:table-cell">Categoria</th>
-                <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">Valor</th>
-                <th className="px-4 py-2.5 w-20" />
+              <tr className="border-b border-border bg-muted/30">
+                <th className="text-left px-4 py-3 text-muted-foreground font-medium text-xs uppercase tracking-wide">Nome</th>
+                <th className="text-left px-4 py-3 text-muted-foreground font-medium text-xs uppercase tracking-wide hidden sm:table-cell">Categoria</th>
+                <th className="text-right px-4 py-3 text-muted-foreground font-medium text-xs uppercase tracking-wide">Valor</th>
+                <th className="px-4 py-3 w-20" />
               </tr>
             </thead>
             <tbody>
-              {gastos.map((g, i) => {
+              {gastos.map((g) => {
                 const meta = categoriaMeta[g.categoria]
                 return (
                   <tr
                     key={g.id}
-                    className={`border-b border-border last:border-0 ${i % 2 === 0 ? "bg-card" : "bg-card/60"}`}
+                    className="border-b border-border/50 last:border-0 transition-colors hover:bg-muted/20"
                   >
-                    <td className="px-4 py-3 font-medium text-foreground">{g.nome}</td>
-                    <td className="px-4 py-3 hidden sm:table-cell">
+                    <td className="px-4 py-3.5 font-medium text-foreground">{g.nome}</td>
+                    <td className="px-4 py-3.5 hidden sm:table-cell">
                       <span
-                        className="inline-flex items-center text-xs px-2 py-0.5 rounded-full border font-medium"
-                        style={{ color: meta.color, borderColor: `${meta.color}40`, backgroundColor: `${meta.color}15` }}
+                        className="inline-flex items-center text-xs px-2.5 py-1 rounded-full border font-medium transition-colors"
+                        style={{ color: meta.color, borderColor: `${meta.color}30`, backgroundColor: `${meta.color}10` }}
                       >
                         {meta.label}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right font-mono font-medium text-foreground">
+                    <td className="px-4 py-3.5 text-right font-mono font-semibold text-foreground">
                       {g.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center justify-end gap-0.5">
                         <button
                           onClick={() => setEditando(g)}
-                          className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-border/50 transition-colors"
+                          className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-150"
                           title="Editar"
                         >
-                          <IconPencil size={14} />
+                          <IconPencil size={15} />
                         </button>
                         <button
                           onClick={() => handleDelete(g.id)}
                           disabled={deletingId === g.id || isPending}
-                          className="p-1.5 rounded text-muted-foreground hover:text-fd-red hover:bg-fd-red/10 transition-colors disabled:opacity-50"
+                          className="p-2 rounded-lg text-muted-foreground hover:text-fd-red hover:bg-fd-red/10 transition-all duration-150 disabled:opacity-50"
                           title="Remover"
                         >
-                          <IconTrash size={14} />
+                          <IconTrash size={15} />
                         </button>
                       </div>
                     </td>
