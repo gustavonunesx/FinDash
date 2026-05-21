@@ -24,9 +24,9 @@ export default async function CalculadoraPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Calculadoras</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Analise sua distribuição de renda</p>
+      <div className="space-y-1">
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Calculadoras</h1>
+        <p className="text-sm text-muted-foreground">Analise sua distribuição de renda</p>
       </div>
 
       <CalculadoraSalario

@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { adicionarGasto, editarGasto } from "@/app/(app)/gastos/actions"
+import { IconCurrencyReal, IconTag } from "@tabler/icons-react"
 import type { Gasto, Categoria } from "@/types"
 
 interface Props {
@@ -28,10 +29,10 @@ interface Props {
   onLimitReached?: () => void
 }
 
-const categorias: { value: Categoria; label: string }[] = [
-  { value: "necessidade", label: "Necessidade" },
-  { value: "objetivo", label: "Objetivo" },
-  { value: "qualidade", label: "Qualidade de Vida" },
+const categorias: { value: Categoria; label: string; color: string }[] = [
+  { value: "necessidade", label: "Necessidade", color: "var(--fd-amber)" },
+  { value: "objetivo", label: "Objetivo", color: "var(--fd-green)" },
+  { value: "qualidade", label: "Qualidade de Vida", color: "var(--fd-blue)" },
 ]
 
 export function GastoModal({ open, onClose, gasto, onLimitReached }: Props) {
@@ -82,41 +83,49 @@ export function GastoModal({ open, onClose, gasto, onLimitReached }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DialogContent className="max-w-sm bg-card border-border">
+      <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Editar gasto" : "Novo gasto"}</DialogTitle>
+          <DialogTitle className="text-xl">{isEdit ? "Editar gasto" : "Novo gasto"}</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="nome">Nome</Label>
-            <Input
-              id="nome"
-              placeholder="Ex: Academia"
-              value={nome}
-              onChange={(e) => setNome(e.target.value)}
-              required
-              autoFocus
-            />
+        <form onSubmit={handleSubmit} className="space-y-5 pt-2">
+          <div className="space-y-2">
+            <Label htmlFor="nome" className="text-sm font-medium">Nome</Label>
+            <div className="relative">
+              <IconTag className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                id="nome"
+                placeholder="Ex: Academia, Aluguel..."
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                required
+                autoFocus
+                className="pl-10"
+              />
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="valor">Valor (R$)</Label>
-            <Input
-              id="valor"
-              type="number"
-              inputMode="decimal"
-              placeholder="0,00"
-              min="0.01"
-              step="0.01"
-              value={valor}
-              onChange={(e) => setValor(e.target.value)}
-              required
-            />
+          <div className="space-y-2">
+            <Label htmlFor="valor" className="text-sm font-medium">Valor (R$)</Label>
+            <div className="relative">
+              <IconCurrencyReal className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                id="valor"
+                type="number"
+                inputMode="decimal"
+                placeholder="0,00"
+                min="0.01"
+                step="0.01"
+                value={valor}
+                onChange={(e) => setValor(e.target.value)}
+                required
+                className="pl-10 font-mono"
+              />
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label>Categoria</Label>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Categoria</Label>
             <Select value={categoria} onValueChange={(v) => setCategoria(v as Categoria)}>
               <SelectTrigger className="w-full">
                 <SelectValue />
@@ -124,23 +133,26 @@ export function GastoModal({ open, onClose, gasto, onLimitReached }: Props) {
               <SelectContent>
                 {categorias.map((c) => (
                   <SelectItem key={c.value} value={c.value}>
-                    {c.label}
+                    <div className="flex items-center gap-2">
+                      <div className="size-2 rounded-full" style={{ backgroundColor: c.color }} />
+                      {c.label}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          <div className="flex gap-2 pt-2">
-            <Button type="button" variant="ghost" className="flex-1" onClick={handleClose}>
+          <div className="flex gap-3 pt-3">
+            <Button type="button" variant="outline" className="flex-1" onClick={handleClose}>
               Cancelar
             </Button>
             <Button
               type="submit"
-              className="flex-1 bg-primary hover:bg-primary/90 text-white"
+              className="flex-1"
               disabled={isPending}
             >
-              {isPending ? "Salvando…" : isEdit ? "Salvar" : "Adicionar"}
+              {isPending ? "Salvando..." : isEdit ? "Salvar" : "Adicionar"}
             </Button>
           </div>
         </form>

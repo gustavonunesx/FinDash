@@ -12,6 +12,8 @@ import {
   IconSettings,
   IconLogout,
 } from "@tabler/icons-react"
+import { NavLink } from "@/components/layout/NavLink"
+import { MobileNavLink } from "@/components/layout/MobileNavLink"
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard", icon: IconLayoutDashboard },
@@ -42,36 +44,36 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Desktop header */}
-      <header className="hidden md:flex sticky top-0 z-40 h-14 items-center border-b border-border bg-background/95 backdrop-blur px-6">
-        <Link href="/dashboard" className="mr-8 text-lg font-bold shrink-0">
-          <span className="font-mono text-primary">Fin</span>Dash
+      <header className="hidden md:flex sticky top-0 z-40 h-14 items-center border-b border-border/50 glass px-6">
+        <Link 
+          href="/dashboard" 
+          className="mr-10 text-lg font-bold shrink-0 transition-opacity hover:opacity-80"
+        >
+          <span className="font-mono text-primary">Fin</span>
+          <span className="text-foreground">Dash</span>
         </Link>
 
         <nav className="flex items-center gap-1 flex-1">
           {navLinks.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              className="px-3 py-1.5 text-sm rounded-md text-muted-foreground hover:text-foreground hover:bg-card transition-colors"
-            >
+            <NavLink key={href} href={href}>
               {label}
-            </Link>
+            </NavLink>
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           {profile?.plano === "premium" && (
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30">
+            <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/15 text-primary border border-primary/20 transition-colors hover:bg-primary/20">
               Premium
             </span>
           )}
-          <div className="size-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-xs font-bold text-primary">
+          <div className="size-8 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 border border-primary/30 flex items-center justify-center text-xs font-bold text-primary transition-transform hover:scale-105">
             {initials}
           </div>
           <form action={signOut}>
             <button
               type="submit"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-muted-foreground hover:text-foreground transition-all duration-150 hover:scale-105 p-1 rounded-md hover:bg-muted"
               title="Sair"
             >
               <IconLogout size={18} />
@@ -81,16 +83,22 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </header>
 
       {/* Mobile header */}
-      <header className="md:hidden sticky top-0 z-40 h-12 flex items-center justify-between border-b border-border bg-background/95 backdrop-blur px-4">
-        <Link href="/dashboard" className="text-base font-bold">
-          <span className="font-mono text-primary">Fin</span>Dash
+      <header className="md:hidden sticky top-0 z-40 h-12 flex items-center justify-between border-b border-border/50 glass px-4">
+        <Link href="/dashboard" className="text-base font-bold transition-opacity hover:opacity-80">
+          <span className="font-mono text-primary">Fin</span>
+          <span className="text-foreground">Dash</span>
         </Link>
-        <div className="flex items-center gap-2">
-          <div className="size-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-xs font-bold text-primary">
+        <div className="flex items-center gap-3">
+          {profile?.plano === "premium" && (
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/20">
+              PRO
+            </span>
+          )}
+          <div className="size-7 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 border border-primary/30 flex items-center justify-center text-xs font-bold text-primary">
             {initials}
           </div>
           <form action={signOut}>
-            <button type="submit" className="text-muted-foreground p-1">
+            <button type="submit" className="text-muted-foreground p-1 hover:text-foreground transition-colors">
               <IconLogout size={16} />
             </button>
           </form>
@@ -103,17 +111,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </main>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border/50 glass safe-area-pb">
         <div className="grid grid-cols-5 h-16">
           {navLinks.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Icon size={20} />
-              <span className="text-[10px]">{label}</span>
-            </Link>
+            <MobileNavLink key={href} href={href} label={label}>
+              <Icon size={20} strokeWidth={1.5} />
+            </MobileNavLink>
           ))}
         </div>
       </nav>

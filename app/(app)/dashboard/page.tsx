@@ -12,14 +12,11 @@ import {
   IconPigMoney,
   IconChartPie,
   IconSparkles,
+  IconArrowRight,
 } from "@tabler/icons-react"
 
-function getHour() {
-  return new Date().getHours()
-}
-
 function getGreeting(nome: string) {
-  const h = getHour()
+  const h = new Date().getHours()
   const period = h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite"
   return `${period}, ${nome}`
 }
@@ -102,7 +99,6 @@ export default async function DashboardPage({
     data: g.created_at,
   }))
 
-  // Streak mock — 7 dias, last = today. Marcar como checked se há gasto naquele dia.
   const today = new Date()
   const streakDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(today)
@@ -111,7 +107,7 @@ export default async function DashboardPage({
     const hasGasto = allGastos.some(
       (g) => g.created_at && g.created_at.slice(0, 10) === dateStr
     )
-    return hasGasto || i === 6 // today sempre true se há dados
+    return hasGasto || i === 6
   })
   const streak = streakDays.filter(Boolean).length
 
@@ -162,7 +158,19 @@ export default async function DashboardPage({
       label: "Score 50/30/20",
       value: Math.round(scorePct),
       formatted: `${Math.round(scorePct)}`,
-      icon: <IconChartPie size={18} style={{ color: score.variant === "success" ? "var(--fd-green)" : score.variant === "warning" ? "var(--fd-amber)" : "var(--fd-red)" }} />,
+      icon: (
+        <IconChartPie
+          size={18}
+          style={{
+            color:
+              score.variant === "success"
+                ? "var(--fd-green)"
+                : score.variant === "warning"
+                  ? "var(--fd-amber)"
+                  : "var(--fd-red)",
+          }}
+        />
+      ),
       accentColor:
         score.variant === "success"
           ? "var(--fd-green)"
@@ -192,17 +200,19 @@ export default async function DashboardPage({
       {profile?.plano === "free" && (
         <Link
           href="/precos"
-          className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/8
-            px-4 py-3.5 hover:bg-primary/12 transition-colors animate-fade-up group"
+          className="group flex items-center gap-3 rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-3.5 hover:border-primary/30 hover:from-primary/15 hover:to-primary/10 transition-all duration-200 animate-fade-up"
           style={{ animationDelay: "40ms" }}
         >
-          <IconSparkles size={18} className="text-primary shrink-0" />
+          <div className="size-9 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+            <IconSparkles size={18} className="text-primary" />
+          </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-foreground">Desbloqueie o histórico mensal</p>
             <p className="text-xs text-muted-foreground mt-0.5">Gráficos, relatórios e exportação PDF com o Premium</p>
           </div>
-          <span className="text-xs text-primary font-semibold shrink-0 group-hover:translate-x-0.5 transition-transform">
-            Ver planos →
+          <span className="text-xs text-primary font-medium shrink-0 flex items-center gap-1 group-hover:gap-2 transition-all">
+            Ver planos
+            <IconArrowRight size={14} />
           </span>
         </Link>
       )}

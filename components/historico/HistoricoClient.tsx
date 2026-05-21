@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts"
+import { IconChartLine } from "@tabler/icons-react"
 import type { HistoricoMensal } from "@/types"
 
 interface Props {
@@ -31,11 +32,12 @@ function fmt(n: number) {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="rounded-lg border border-border bg-card px-3 py-2 text-xs shadow-lg">
-      <p className="font-medium text-foreground mb-1">{label}</p>
+    <div className="rounded-xl border border-border bg-card/95 backdrop-blur-sm px-4 py-3 text-xs shadow-premium">
+      <p className="font-medium text-foreground mb-2">{label}</p>
       {payload.map((p: any) => (
-        <p key={p.dataKey} style={{ color: p.color }}>
-          {p.name}: {fmt(p.value)}
+        <p key={p.dataKey} className="flex items-center justify-between gap-4" style={{ color: p.color }}>
+          <span>{p.name}:</span>
+          <span className="font-mono font-medium">{fmt(p.value)}</span>
         </p>
       ))}
     </div>
@@ -45,9 +47,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export function HistoricoClient({ historico }: Props) {
   if (historico.length === 0) {
     return (
-      <div className="rounded-lg border border-border bg-card p-8 text-center">
+      <div className="rounded-xl border border-dashed border-border bg-card/50 p-12 text-center">
+        <div className="size-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
+          <IconChartLine size={28} className="text-muted-foreground/60" />
+        </div>
+        <h3 className="text-sm font-medium text-foreground mb-1">Nenhum dado ainda</h3>
         <p className="text-muted-foreground text-sm">
-          Nenhum dado ainda. Volte no próximo mês para ver sua evolução.
+          Volte no próximo mês para ver sua evolução financeira.
         </p>
       </div>
     )
@@ -64,83 +70,87 @@ export function HistoricoClient({ historico }: Props) {
   return (
     <div className="space-y-6">
       {/* Linha: evolução de renda vs gastos */}
-      <div className="rounded-lg border border-border bg-card p-4">
-        <h2 className="text-sm font-semibold text-foreground mb-4">Renda vs Gastos</h2>
-        <ResponsiveContainer width="100%" height={220}>
+      <div className="rounded-xl border border-border bg-card p-5 transition-all hover:border-foreground/10">
+        <h2 className="text-sm font-semibold text-foreground mb-5">Renda vs Gastos</h2>
+        <ResponsiveContainer width="100%" height={240}>
           <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-            <XAxis dataKey="mes" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" strokeOpacity={0.5} />
+            <XAxis dataKey="mes" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={{ stroke: "var(--border)" }} tickLine={{ stroke: "var(--border)" }} />
             <YAxis
               tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
               tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
               width={52}
+              axisLine={{ stroke: "var(--border)" }}
+              tickLine={{ stroke: "var(--border)" }}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ fontSize: 12 }} />
+            <Legend wrapperStyle={{ fontSize: 12, paddingTop: 16 }} />
             <Line
               type="monotone"
               dataKey="salario"
               name="Renda"
               stroke="var(--fd-green)"
-              strokeWidth={2}
-              dot={{ r: 3 }}
-              activeDot={{ r: 5 }}
+              strokeWidth={2.5}
+              dot={{ r: 4, fill: "var(--fd-green)", strokeWidth: 0 }}
+              activeDot={{ r: 6, fill: "var(--fd-green)", stroke: "var(--background)", strokeWidth: 2 }}
             />
             <Line
               type="monotone"
               dataKey="gastos"
               name="Gastos"
               stroke="var(--fd-amber)"
-              strokeWidth={2}
-              dot={{ r: 3 }}
-              activeDot={{ r: 5 }}
+              strokeWidth={2.5}
+              dot={{ r: 4, fill: "var(--fd-amber)", strokeWidth: 0 }}
+              activeDot={{ r: 6, fill: "var(--fd-amber)", stroke: "var(--background)", strokeWidth: 2 }}
             />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
       {/* Barra: saldo livre por mês */}
-      <div className="rounded-lg border border-border bg-card p-4">
-        <h2 className="text-sm font-semibold text-foreground mb-4">Saldo Livre por Mês</h2>
-        <ResponsiveContainer width="100%" height={200}>
+      <div className="rounded-xl border border-border bg-card p-5 transition-all hover:border-foreground/10">
+        <h2 className="text-sm font-semibold text-foreground mb-5">Saldo Livre por Mês</h2>
+        <ResponsiveContainer width="100%" height={220}>
           <BarChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-            <XAxis dataKey="mes" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" strokeOpacity={0.5} />
+            <XAxis dataKey="mes" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={{ stroke: "var(--border)" }} tickLine={{ stroke: "var(--border)" }} />
             <YAxis
               tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
               tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
               width={52}
+              axisLine={{ stroke: "var(--border)" }}
+              tickLine={{ stroke: "var(--border)" }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Bar
               dataKey="saldo"
               name="Saldo livre"
               fill="var(--fd-blue)"
-              radius={[3, 3, 0, 0]}
+              radius={[4, 4, 0, 0]}
             />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       {/* Tabela resumo */}
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <div className="rounded-xl border border-border bg-card overflow-hidden transition-all hover:border-foreground/10">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border">
-              <th className="text-left px-4 py-2.5 text-xs text-muted-foreground font-medium">Mês</th>
-              <th className="text-right px-4 py-2.5 text-xs text-muted-foreground font-medium">Renda</th>
-              <th className="text-right px-4 py-2.5 text-xs text-muted-foreground font-medium">Gastos</th>
-              <th className="text-right px-4 py-2.5 text-xs text-muted-foreground font-medium">Saldo</th>
+            <tr className="border-b border-border bg-muted/30">
+              <th className="text-left px-4 py-3 text-xs text-muted-foreground font-medium uppercase tracking-wide">Mês</th>
+              <th className="text-right px-4 py-3 text-xs text-muted-foreground font-medium uppercase tracking-wide">Renda</th>
+              <th className="text-right px-4 py-3 text-xs text-muted-foreground font-medium uppercase tracking-wide">Gastos</th>
+              <th className="text-right px-4 py-3 text-xs text-muted-foreground font-medium uppercase tracking-wide">Saldo</th>
             </tr>
           </thead>
           <tbody>
             {data.map((row, i) => (
-              <tr key={i} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                <td className="px-4 py-2.5 font-medium text-foreground">{row.mes}</td>
-                <td className="px-4 py-2.5 text-right font-mono text-fd-green">{fmt(row.salario)}</td>
-                <td className="px-4 py-2.5 text-right font-mono text-fd-amber">{fmt(row.gastos)}</td>
+              <tr key={i} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
+                <td className="px-4 py-3.5 font-medium text-foreground">{row.mes}</td>
+                <td className="px-4 py-3.5 text-right font-mono text-fd-green">{fmt(row.salario)}</td>
+                <td className="px-4 py-3.5 text-right font-mono text-fd-amber">{fmt(row.gastos)}</td>
                 <td
-                  className="px-4 py-2.5 text-right font-mono font-medium"
+                  className="px-4 py-3.5 text-right font-mono font-semibold"
                   style={{ color: row.saldo >= 0 ? "var(--fd-green)" : "var(--fd-red)" }}
                 >
                   {fmt(row.saldo)}

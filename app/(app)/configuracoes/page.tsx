@@ -14,9 +14,9 @@ export default async function ConfiguracoesPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Configurações</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Gerencie sua conta e assinatura</p>
+      <div className="space-y-1">
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Configurações</h1>
+        <p className="text-sm text-muted-foreground">Gerencie sua conta e assinatura</p>
       </div>
 
       <ConfiguracoesClient
