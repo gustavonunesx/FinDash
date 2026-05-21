@@ -1,16 +1,36 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
-import { IconSparkles, IconTrendingUp, IconWallet, IconReceipt2, IconPigMoney } from "@tabler/icons-react"
 import { UpgradeToast } from "@/components/ui/UpgradeToast"
+import { MetricCard } from "@/components/dashboard/MetricCard"
+import { Rule502030 } from "@/components/dashboard/Rule502030"
+import { StreakBar } from "@/components/dashboard/StreakBar"
+import { RecentTransactions } from "@/components/dashboard/RecentTransactions"
+import {
+  IconWallet,
+  IconReceipt2,
+  IconPigMoney,
+  IconChartPie,
+  IconSparkles,
+} from "@tabler/icons-react"
 
-function fmt(n: number) {
-  return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+function getHour() {
+  return new Date().getHours()
 }
 
-function pct(val: number, total: number) {
-  if (total <= 0) return 0
-  return Math.round((val / total) * 100)
+function getGreeting(nome: string) {
+  const h = getHour()
+  const period = h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite"
+  return `${period}, ${nome}`
+}
+
+function scoreLabel(nec: number, obj: number, sal: number): { text: string; variant: "success" | "warning" | "danger" } {
+  if (sal === 0) return { text: "Configure renda", variant: "warning" }
+  const necPct = (nec / sal) * 100
+  const objPct = (obj / sal) * 100
+  if (necPct <= 50 && objPct >= 30) return { text: "No caminho certo", variant: "success" }
+  if (necPct <= 55) return { text: "Atenção", variant: "warning" }
+  return { text: "Revise os gastos", variant: "danger" }
 }
 
 export default async function DashboardPage({
@@ -20,195 +40,216 @@ export default async function DashboardPage({
 }) {
   const { upgraded } = await searchParams
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
   const [{ data: profile }, { data: config }, { data: gastos }, { data: fundos }] =
     await Promise.all([
       supabase.from("profiles").select("nome, plano").eq("id", user.id).single(),
       supabase.from("configuracoes").select("salario, renda_extra").eq("user_id", user.id).single(),
-      supabase.from("gastos").select("valor, categoria").eq("user_id", user.id),
-      supabase.from("fundos").select("nome, saldo_atual, meta, cor").eq("user_id", user.id).order("ordem").limit(3),
+      supabase
+        .from("gastos")
+        .select("id, nome, valor, categoria, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("fundos")
+        .select("nome, saldo_atual, meta, cor")
+        .eq("user_id", user.id)
+        .order("ordem")
+        .limit(3),
     ])
 
   const salario = (config?.salario ?? 0) + (config?.renda_extra ?? 0)
-  const totalGastos = (gastos ?? []).reduce((s, g) => s + g.valor, 0)
+  const allGastos = gastos ?? []
+  const totalGastos = allGastos.reduce((s, g) => s + g.valor, 0)
   const saldoLivre = salario - totalGastos
 
-  const necessidades = (gastos ?? []).filter((g) => g.categoria === "necessidade").reduce((s, g) => s + g.valor, 0)
-  const objetivos = (gastos ?? []).filter((g) => g.categoria === "objetivo").reduce((s, g) => s + g.valor, 0)
+  const necessidades = allGastos
+    .filter((g) => g.categoria === "necessidade")
+    .reduce((s, g) => s + g.valor, 0)
+  const objetivos = allGastos
+    .filter((g) => g.categoria === "objetivo")
+    .reduce((s, g) => s + g.valor, 0)
+  const qualidade = allGastos
+    .filter((g) => g.categoria === "qualidade")
+    .reduce((s, g) => s + g.valor, 0)
 
+  const fundosAtivos = (fundos ?? []).length
   const primeiroNome = (profile?.nome ?? user.email ?? "").split(" ")[0]
 
+  const score = scoreLabel(necessidades, objetivos, salario)
+  const scorePct =
+    salario > 0
+      ? Math.max(
+          0,
+          100 -
+            Math.abs((necessidades / salario) * 100 - 50) -
+            Math.abs((objetivos / salario) * 100 - 30)
+        )
+      : 0
+
+  const gastosProgressPct = salario > 0 ? Math.min((totalGastos / salario) * 100, 100) : 0
+  const fundosProgressPct = Math.min((fundosAtivos / 3) * 100, 100)
+
+  const recentTransactions = allGastos.slice(0, 6).map((g) => ({
+    id: g.id,
+    nome: g.nome,
+    valor: g.valor,
+    categoria: g.categoria as "necessidade" | "objetivo" | "qualidade",
+    data: g.created_at,
+  }))
+
+  // Streak mock — 7 dias, last = today. Marcar como checked se há gasto naquele dia.
+  const today = new Date()
+  const streakDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today)
+    d.setDate(today.getDate() - (6 - i))
+    const dateStr = d.toISOString().slice(0, 10)
+    const hasGasto = allGastos.some(
+      (g) => g.created_at && g.created_at.slice(0, 10) === dateStr
+    )
+    return hasGasto || i === 6 // today sempre true se há dados
+  })
+  const streak = streakDays.filter(Boolean).length
+
+  const metrics = [
+    {
+      label: "Saldo livre",
+      value: Math.max(saldoLivre, 0),
+      formatted: saldoLivre.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
+      icon: <IconWallet size={18} style={{ color: "var(--fd-green)" }} />,
+      accentColor: "var(--fd-green)",
+      badge:
+        salario > 0
+          ? {
+              text: `${Math.round(((salario - totalGastos) / salario) * 100)}% livre`,
+              variant: saldoLivre >= 0 ? ("success" as const) : ("danger" as const),
+            }
+          : undefined,
+      progress: salario > 0 ? Math.round(((salario - totalGastos) / salario) * 100) : undefined,
+    },
+    {
+      label: "Gastos do mês",
+      value: totalGastos,
+      formatted: totalGastos.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }),
+      icon: <IconReceipt2 size={18} style={{ color: "var(--fd-amber)" }} />,
+      accentColor: "var(--fd-amber)",
+      badge:
+        salario > 0
+          ? {
+              text: `${Math.round(gastosProgressPct)}% da renda`,
+              variant: gastosProgressPct > 90 ? ("danger" as const) : ("neutral" as const),
+            }
+          : undefined,
+      progress: gastosProgressPct,
+    },
+    {
+      label: "Fundos ativos",
+      value: fundosAtivos,
+      formatted: String(fundosAtivos),
+      icon: <IconPigMoney size={18} style={{ color: "var(--fd-blue)" }} />,
+      accentColor: "var(--fd-blue)",
+      badge:
+        fundosAtivos > 0
+          ? { text: `${fundosAtivos} de 3`, variant: "info" as const }
+          : { text: "Nenhum ainda", variant: "neutral" as const },
+      progress: fundosProgressPct,
+    },
+    {
+      label: "Score 50/30/20",
+      value: Math.round(scorePct),
+      formatted: `${Math.round(scorePct)}`,
+      icon: <IconChartPie size={18} style={{ color: score.variant === "success" ? "var(--fd-green)" : score.variant === "warning" ? "var(--fd-amber)" : "var(--fd-red)" }} />,
+      accentColor:
+        score.variant === "success"
+          ? "var(--fd-green)"
+          : score.variant === "warning"
+            ? "var(--fd-amber)"
+            : "var(--fd-red)",
+      badge: { text: score.text, variant: score.variant },
+      progress: Math.round(scorePct),
+    },
+  ]
+
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
       {upgraded === "1" && <UpgradeToast />}
+
       {/* Greeting */}
-      <div>
-        <h1 className="text-xl font-bold text-foreground">
-          Olá, {primeiroNome} 👋
+      <div className="animate-fade-up">
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">
+          {getGreeting(primeiroNome)} 👋
         </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Aqui está seu resumo financeiro</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
+        </p>
       </div>
 
       {/* Premium banner */}
       {profile?.plano === "free" && (
         <Link
           href="/precos"
-          className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 hover:bg-primary/15 transition-colors"
+          className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/8
+            px-4 py-3.5 hover:bg-primary/12 transition-colors animate-fade-up group"
+          style={{ animationDelay: "40ms" }}
         >
           <IconSparkles size={18} className="text-primary shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">Desbloqueie o histórico mensal</p>
-            <p className="text-xs text-muted-foreground">Acesse gráficos e relatórios com o Premium</p>
+            <p className="text-sm font-semibold text-foreground">Desbloqueie o histórico mensal</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Gráficos, relatórios e exportação PDF com o Premium</p>
           </div>
-          <span className="text-xs text-primary font-medium shrink-0">Ver planos →</span>
+          <span className="text-xs text-primary font-semibold shrink-0 group-hover:translate-x-0.5 transition-transform">
+            Ver planos →
+          </span>
         </Link>
       )}
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <SummaryCard
-          label="Renda total"
-          value={fmt(salario)}
-          icon={<IconWallet size={18} className="text-fd-green" />}
-          color="var(--fd-green)"
-        />
-        <SummaryCard
-          label="Total de gastos"
-          value={fmt(totalGastos)}
-          icon={<IconReceipt2 size={18} className="text-fd-amber" />}
-          color="var(--fd-amber)"
-        />
-        <SummaryCard
-          label="Saldo livre"
-          value={fmt(saldoLivre)}
-          icon={<IconTrendingUp size={18} className={saldoLivre >= 0 ? "text-fd-green" : "text-fd-red"} />}
-          color={saldoLivre >= 0 ? "var(--fd-green)" : "var(--fd-red)"}
-        />
+      {/* Metric cards grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {metrics.map((m, i) => (
+          <MetricCard key={m.label} {...m} index={i} />
+        ))}
       </div>
 
-      {/* Category quick stats */}
-      {salario > 0 && (
-        <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-foreground">Distribuição dos gastos</h2>
-          <CategoryBar
-            label="Necessidades"
-            valor={necessidades}
-            salario={salario}
-            limite={50}
-            color="var(--fd-amber)"
-          />
-          <CategoryBar
-            label="Objetivos"
-            valor={objetivos}
-            salario={salario}
-            limite={30}
-            color="var(--fd-green)"
-          />
-        </div>
-      )}
-
-      {/* Mini fund list */}
-      {(fundos ?? []).length > 0 && (
-        <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-foreground">Fundos</h2>
-            <Link href="/fundos" className="text-xs text-primary hover:underline">
-              Ver todos →
-            </Link>
-          </div>
-          <div className="space-y-3">
-            {(fundos ?? []).map((f) => {
-              const progresso = f.meta > 0 ? Math.min((f.saldo_atual / f.meta) * 100, 100) : 0
-              return (
-                <div key={f.nome} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="size-2 rounded-full" style={{ backgroundColor: f.cor }} />
-                      <span className="text-foreground">{f.nome}</span>
-                    </div>
-                    <span className="font-mono text-muted-foreground text-xs">
-                      {fmt(f.saldo_atual)} / {fmt(f.meta)}
-                    </span>
-                  </div>
-                  <div className="h-1.5 rounded-full bg-border overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{ width: `${progresso}%`, backgroundColor: f.cor }}
-                    />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Empty state: no config */}
-      {salario === 0 && (
-        <div className="rounded-lg border border-border bg-card p-6 text-center">
-          <IconPigMoney size={36} className="text-muted-foreground/40 mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">
-            Configure seu salário na{" "}
-            <Link href="/calculadora" className="text-primary hover:underline">
-              Calculadora
-            </Link>{" "}
-            para ver seu resumo.
-          </p>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function SummaryCard({ label, value, icon, color }: {
-  label: string
-  value: string
-  icon: React.ReactNode
-  color: string
-}) {
-  return (
-    <div
-      className="rounded-lg bg-card border border-border p-4 flex items-center gap-3"
-      style={{ borderLeftColor: color, borderLeftWidth: 3 }}
-    >
-      <div className="shrink-0">{icon}</div>
-      <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="font-mono text-lg font-semibold text-foreground truncate">{value}</p>
+      {/* Middle section: 50/30/20 + Streak */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Rule502030
+          necessidades={necessidades}
+          objetivos={objetivos}
+          qualidade={qualidade}
+          salario={salario}
+        />
+        <StreakBar streak={streak} checkIns={streakDays} />
       </div>
-    </div>
-  )
-}
 
-function CategoryBar({ label, valor, salario, limite, color }: {
-  label: string
-  valor: number
-  salario: number
-  limite: number
-  color: string
-}) {
-  const percentual = pct(valor, salario)
-  const excede = percentual > limite
+      {/* Últimas transações */}
+      <RecentTransactions transactions={recentTransactions} />
 
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-muted-foreground">{label}</span>
-        <span className={excede ? "font-medium" : "text-muted-foreground"} style={excede ? { color: "var(--fd-red)" } : {}}>
-          {percentual}% / {limite}% limite
-        </span>
-      </div>
-      <div className="h-1.5 rounded-full bg-border overflow-hidden">
+      {/* Empty state */}
+      {salario === 0 && allGastos.length === 0 && (
         <div
-          className="h-full rounded-full transition-all"
-          style={{
-            width: `${Math.min(percentual, 100)}%`,
-            backgroundColor: excede ? "var(--fd-red)" : color,
-          }}
-        />
-      </div>
+          className="rounded-xl border border-border bg-card p-8 text-center animate-fade-up"
+          style={{ animationDelay: "300ms" }}
+        >
+          <div className="size-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+            <IconPigMoney size={28} className="text-primary" />
+          </div>
+          <p className="text-sm font-medium text-foreground">Comece configurando sua renda</p>
+          <p className="text-xs text-muted-foreground mt-1 mb-4">
+            Configure seu salário para ver seu resumo financeiro completo.
+          </p>
+          <Link
+            href="/calculadora"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-primary
+              border border-primary/30 rounded-lg px-4 py-2 hover:bg-primary/10 transition-colors"
+          >
+            Ir para Calculadora →
+          </Link>
+        </div>
+      )}
     </div>
   )
 }
