@@ -91,27 +91,27 @@ export function MetricCard({
 
       <div className="p-4 pt-5 space-y-3">
         {/* header */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="size-9 rounded-lg flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `color-mix(in srgb, ${accentColor} 15%, transparent)` }}
-            >
-              {icon}
-            </div>
+        <div className="flex items-start gap-2.5">
+          <div
+            className="size-9 rounded-lg flex items-center justify-center shrink-0"
+            style={{ backgroundColor: `color-mix(in srgb, ${accentColor} 15%, transparent)` }}
+          >
+            {icon}
+          </div>
+          <div className="flex-1 min-w-0 flex flex-col gap-1">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider leading-tight">
               {label}
             </span>
+            {badge && (
+              <span className={`self-start text-[10px] font-semibold px-2 py-0.5 rounded-full ${badgeStyles[badge.variant]}`}>
+                {badge.text}
+              </span>
+            )}
           </div>
-          {badge && (
-            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${badgeStyles[badge.variant]}`}>
-              {badge.text}
-            </span>
-          )}
         </div>
 
         {/* value */}
-        <div className="font-mono text-2xl font-semibold text-foreground tabular-nums tracking-tight">
+        <div className="font-mono text-xl font-semibold text-foreground tabular-nums tracking-tight">
           {isCurrency ? animatedFormatted : displayRaw}
         </div>
 

@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server"
 import { UpgradeToast } from "@/components/ui/UpgradeToast"
 import { MetricCard } from "@/components/dashboard/MetricCard"
 import { Rule502030 } from "@/components/dashboard/Rule502030"
-import { StreakBar } from "@/components/dashboard/StreakBar"
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions"
 import {
   IconWallet,
@@ -98,18 +97,6 @@ export default async function DashboardPage({
     categoria: g.categoria as "necessidade" | "objetivo" | "qualidade",
     data: g.created_at,
   }))
-
-  const today = new Date()
-  const streakDays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today)
-    d.setDate(today.getDate() - (6 - i))
-    const dateStr = d.toISOString().slice(0, 10)
-    const hasGasto = allGastos.some(
-      (g) => g.created_at && g.created_at.slice(0, 10) === dateStr
-    )
-    return hasGasto || i === 6
-  })
-  const streak = streakDays.filter(Boolean).length
 
   const metrics = [
     {
@@ -218,22 +205,19 @@ export default async function DashboardPage({
       )}
 
       {/* Metric cards grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {metrics.map((m, i) => (
           <MetricCard key={m.label} {...m} index={i} />
         ))}
       </div>
 
-      {/* Middle section: 50/30/20 + Streak */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Rule502030
-          necessidades={necessidades}
-          objetivos={objetivos}
-          qualidade={qualidade}
-          salario={salario}
-        />
-        <StreakBar streak={streak} checkIns={streakDays} />
-      </div>
+      {/* Regra 50/30/20 */}
+      <Rule502030
+        necessidades={necessidades}
+        objetivos={objetivos}
+        qualidade={qualidade}
+        salario={salario}
+      />
 
       {/* Últimas transações */}
       <RecentTransactions transactions={recentTransactions} />

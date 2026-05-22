@@ -28,7 +28,8 @@
 - `--foreground: #F0F0F5` / `--muted-foreground: #8888A0`
 - `--primary: #1D9E75` (green)
 - `--fd-amber: #BA7517` / `--fd-green: #1D9E75` / `--fd-blue: #378ADD` / `--fd-red: #E24B4A`
-- Fonts: DM Sans (body, `var(--font-sans)`) + DM Mono (numbers, `var(--font-mono)`)
+- Fonts: Plus Jakarta Sans (body, `var(--font-sans)`) + JetBrains Mono (numbers, `var(--font-mono)`)
+- Loaded via `next/font/google` em `app/layout.tsx` como `--font-sans` e `--font-mono`
 
 ## shadcn Components Installed
 button, input, label, card, badge, alert, separator, dialog, select, switch, progress, sonner
@@ -52,6 +53,7 @@ button, input, label, card, badge, alert, separator, dialog, select, switch, pro
 - [x] M4 — Fundos (FundoCard, FundoModal, FundosGrid, phase auto-detection, free limit 3)
 - [x] M5 — Stripe & Assinatura (checkout, webhook, portal, /precos, /configuracoes)
 - [x] M6 — Premium & Polish (histórico+Recharts, PDF export, landing page, loading skeletons, 404)
+- [x] M7 — Dashboard Visual Upgrade (MetricCard animado, Rule502030, StreakBar, RecentTransactions, novas fontes)
 
 ## Environment Variables (.env)
 - `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
@@ -69,6 +71,20 @@ button, input, label, card, badge, alert, separator, dialog, select, switch, pro
 - Price IDs: Stripe Dashboard → Product catalog → produto → seção Pricing
 - Cartões de teste: `4242 4242 4242 4242` (aprovado), `4000 0000 0000 0002` (recusado)
 - Supabase: desativar "Confirm email" em Authentication → Providers → Email para dev local
+
+## Dashboard Components (components/dashboard/)
+- `MetricCard.tsx` — card animado: fadeUp escalonado, counter rAF, barra elástica, badge contextual, hover glow
+- `Rule502030.tsx` — 3 barras animadas (necessidades/objetivos/qualidade), status verde/âmbar/vermelho, badges EXCEDIDO/ATENÇÃO
+- `StreakBar.tsx` — pílulas dos últimos 7 dias, pulse no dia atual, checkins calculados pelos gastos do dia
+- `RecentTransactions.tsx` — lista com emoji por categoria, valor negativo em vermelho, data relativa, hover row
+
+## CSS Utilities (globals.css)
+- `.animate-fade-up` — fadeUp 0.5s cubic-bezier(0.22,1,0.36,1), use `animationDelay` inline para escalonar
+- `.animate-progress` — largura de 0% até valor real, cubic-bezier elástico, delay 0.4s
+- `.animate-pulse-soft` — glow pulsante suave (usado no dia atual do StreakBar)
+- `.glass` / `.glass-subtle` — glassmorphism utilities
+- `.hover-lift` — translateY(-2px) no hover
+- `.text-gradient` — gradiente verde→azul no texto
 
 ## Key Files
 - `proxy.ts` — route protection
