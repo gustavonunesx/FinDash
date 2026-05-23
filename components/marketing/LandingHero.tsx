@@ -86,18 +86,14 @@ export default function LandingHero({ isLoggedIn }: LandingHeroProps) {
   }, [])
 
   return (
-    <section
-      ref={heroRef}
-      className="relative overflow-hidden max-w-7xl mx-auto px-4 pt-20 pb-24 lg:pt-28 lg:pb-32"
-    >
-      {/* Multi-layer background */}
-      <div className="pointer-events-none select-none" aria-hidden>
+    <section ref={heroRef} className="relative">
+      {/* Full-width particle layer — cobre toda a largura da tela */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none select-none" aria-hidden>
+        {/* Gradientes de fundo */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_20%_10%,rgba(29,158,117,0.10),transparent)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_80%_80%,rgba(55,138,221,0.07),transparent)]" />
-      </div>
 
-      {/* Floating particles */}
-      <div className="pointer-events-none select-none" aria-hidden>
+        {/* Partículas flutuantes */}
         {PARTICLES.map((p, i) => (
           <span
             key={i}
@@ -114,11 +110,12 @@ export default function LandingHero({ isLoggedIn }: LandingHeroProps) {
         ))}
       </div>
 
-      {/* Content grid */}
-      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      {/* Content container centralizado */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 pt-20 pb-24 lg:pt-28 lg:pb-32">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
         {/* Left — text */}
-        <div className="space-y-8">
+        <div className="space-y-8 text-center lg:text-left">
           <div className="hero-badge inline-flex items-center gap-2 text-xs font-medium text-primary bg-primary/10 border border-primary/25 rounded-full px-4 py-1.5">
             <IconSparkles size={12} />
             Dashboard financeiro inteligente
@@ -136,7 +133,7 @@ export default function LandingHero({ isLoggedIn }: LandingHeroProps) {
             Use a regra 50/30/20 para distribuir gastos, criar fundos com metas e acompanhar sua evolução mês a mês.
           </p>
 
-          <div className="hero-ctas flex flex-col sm:flex-row gap-3">
+          <div className="hero-ctas flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
             <Link
               href="/cadastro"
               className="group inline-flex items-center justify-center gap-2 bg-primary text-white rounded-xl px-8 py-4 font-semibold text-sm hover:bg-primary/90 transition-all hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-0.5"
@@ -152,15 +149,15 @@ export default function LandingHero({ isLoggedIn }: LandingHeroProps) {
             </Link>
           </div>
 
-          <p className="hero-trust text-xs text-muted-foreground flex items-center gap-3">
+          <p className="hero-trust text-xs text-muted-foreground flex items-center gap-3 justify-center lg:justify-start">
             <span className="flex items-center gap-1"><span className="text-primary">✓</span> Sem cartão de crédito</span>
             <span className="text-border">•</span>
             <span className="flex items-center gap-1"><span className="text-primary">✓</span> 14 dias de Premium grátis</span>
           </p>
         </div>
 
-        {/* Right — mock dashboard */}
-        <div className="hero-mock relative">
+        {/* Right — mock dashboard (oculto no mobile) */}
+        <div className="hero-mock relative hidden lg:block">
           {/* Glow behind card */}
           <div className="absolute -inset-4 bg-primary/5 rounded-3xl blur-2xl" />
 
@@ -219,6 +216,7 @@ export default function LandingHero({ isLoggedIn }: LandingHeroProps) {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </section>
   )

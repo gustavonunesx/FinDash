@@ -1,11 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
-import { gsap } from "gsap"
-import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { IconWallet, IconPigMoney, IconChartBar } from "@tabler/icons-react"
-
-gsap.registerPlugin(ScrollTrigger)
 
 const features = [
   {
@@ -35,64 +30,14 @@ const stats = [
 ]
 
 export default function LandingFeatures() {
-  const sectionRef = useRef<HTMLDivElement>(null)
-  const statsRef   = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const ctx = gsap.context(() => {
-      // Stats bar entrance
-      gsap.from(".stat-item", {
-        y: 20,
-        opacity: 0,
-        stagger: 0.15,
-        duration: 0.6,
-        ease: "power2.out",
-        scrollTrigger: {
-          trigger: statsRef.current,
-          start: "top 85%",
-          once: true,
-        },
-      })
-
-      // Feature cards stagger
-      gsap.from(".feature-card", {
-        y: 40,
-        opacity: 0,
-        stagger: 0.14,
-        duration: 0.7,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: ".features-grid",
-          start: "top 80%",
-          once: true,
-        },
-      })
-
-      // Section title
-      gsap.from(".features-title", {
-        y: 24,
-        opacity: 0,
-        duration: 0.7,
-        ease: "power2.out",
-        scrollTrigger: {
-          trigger: ".features-title",
-          start: "top 85%",
-          once: true,
-        },
-      })
-    }, sectionRef)
-
-    return () => ctx.revert()
-  }, [])
-
   return (
-    <div ref={sectionRef}>
+    <div>
       {/* Stats bar */}
-      <div ref={statsRef} className="border-y border-border/50 bg-card/30 backdrop-blur-sm">
+      <div className="border-y border-border/50 bg-card/30 backdrop-blur-sm">
         <div className="max-w-5xl mx-auto px-4 py-5">
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12">
             {stats.map((s, i) => (
-              <div key={s.label} className="stat-item flex items-center gap-3">
+              <div key={s.label} className="stat-item flex items-center gap-3 animate-fade-up" style={{ animationDelay: `${i * 100}ms` }}>
                 {i > 0 && <span className="hidden sm:block text-border/60 text-lg">•</span>}
                 <div className="text-center sm:text-left">
                   <span className="font-extrabold font-mono text-foreground text-lg">{s.value}</span>
@@ -106,7 +51,7 @@ export default function LandingFeatures() {
 
       {/* Features section */}
       <section className="max-w-5xl mx-auto px-4 py-20">
-        <div className="text-center mb-14 features-title">
+        <div className="text-center mb-14 features-title animate-fade-up">
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight mb-3">
             Tudo que você precisa para{" "}
             <span className="text-gradient">crescer financeiramente</span>
@@ -117,10 +62,11 @@ export default function LandingFeatures() {
         </div>
 
         <div className="features-grid grid grid-cols-1 sm:grid-cols-3 gap-5">
-          {features.map((f) => (
+          {features.map((f, i) => (
             <div
               key={f.title}
-              className="feature-card group relative rounded-2xl border border-border/60 glass-subtle p-7 space-y-5 transition-all duration-300 hover:border-primary/30 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/20 overflow-hidden cursor-default"
+              className="feature-card group relative rounded-2xl border border-border/60 glass-subtle p-7 space-y-5 transition-all duration-300 hover:border-primary/30 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-black/20 overflow-hidden cursor-default animate-fade-up"
+              style={{ animationDelay: `${i * 120}ms` }}
             >
               {/* Accent glow on hover */}
               <div
