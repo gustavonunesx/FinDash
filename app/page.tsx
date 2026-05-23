@@ -1,33 +1,14 @@
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import {
-  IconChartBar,
-  IconPigMoney,
-  IconSparkles,
-  IconWallet,
-  IconCheck,
   IconArrowRight,
+  IconCheck,
+  IconSparkles,
 } from "@tabler/icons-react"
+import LandingHero from "@/components/marketing/LandingHero"
+import LandingFeatures from "@/components/marketing/LandingFeatures"
 
-const features = [
-  {
-    icon: <IconWallet size={24} strokeWidth={1.5} className="text-primary" />,
-    title: "Regra 50/30/20",
-    desc: "Distribua seus gastos de forma inteligente entre necessidades, objetivos e qualidade de vida.",
-  },
-  {
-    icon: <IconPigMoney size={24} strokeWidth={1.5} className="text-primary" />,
-    title: "Fundos financeiros",
-    desc: "Crie metas para reserva de emergência, viagens, e conquistas. Acompanhe o progresso em tempo real.",
-  },
-  {
-    icon: <IconChartBar size={24} strokeWidth={1.5} className="text-primary" />,
-    title: "Histórico mensal",
-    desc: "Visualize sua evolução financeira com gráficos claros mês a mês. Exclusivo para usuários Premium.",
-  },
-]
-
-const freeFeatures = ["Até 10 gastos", "Até 3 fundos", "Calculadoras 50/30/20", "Renda extra e projeções"]
+const freeFeatures    = ["Até 10 gastos por mês", "Até 3 fundos financeiros", "Calculadoras 50/30/20", "Renda extra e projeções"]
 const premiumFeatures = ["Gastos ilimitados", "Fundos ilimitados", "Histórico mensal com gráficos", "Exportação de relatório PDF"]
 
 export default async function LandingPage() {
@@ -36,23 +17,32 @@ export default async function LandingPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Background gradient */}
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(29,158,117,0.12),transparent)]" />
-      
+      {/* Ambient background */}
+      <div
+        className="fixed inset-0 -z-10 pointer-events-none"
+        aria-hidden
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_100%_60%_at_50%_-10%,rgba(29,158,117,0.08),transparent)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_80%_100%,rgba(55,138,221,0.05),transparent)]" />
+      </div>
+
       {/* Nav */}
-      <header className="sticky top-0 z-10 border-b border-border/50 glass">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-          <span className="text-lg font-bold">
+      <header className="sticky top-0 z-20 border-b border-border/40 glass">
+        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+          <span className="text-lg font-bold tracking-tight">
             <span className="font-mono text-primary">Fin</span>
             <span className="text-foreground">Dash</span>
           </span>
-          <div className="flex items-center gap-4">
+          <nav className="flex items-center gap-5">
+            <Link href="/precos" className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:block">
+              Preços
+            </Link>
             {user ? (
               <Link
                 href="/dashboard"
-                className="group flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/20"
+                className="group flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25"
               >
-                Ir para o app 
+                Ir para o app
                 <IconArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
               </Link>
             ) : (
@@ -62,86 +52,50 @@ export default async function LandingPage() {
                 </Link>
                 <Link
                   href="/cadastro"
-                  className="text-sm px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/20"
+                  className="text-sm px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-all hover:shadow-lg hover:shadow-primary/25"
                 >
                   Criar conta grátis
                 </Link>
               </>
             )}
-          </div>
+          </nav>
         </div>
       </header>
 
       <main className="flex-1">
-        {/* Hero */}
-        <section className="max-w-5xl mx-auto px-4 py-24 text-center">
-          <div className="inline-flex items-center gap-2 text-xs text-primary bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-8 animate-in fade-in-0 slide-in-from-bottom-2 duration-500">
-            <IconSparkles size={12} />
-            Dashboard financeiro pessoal
-          </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6 tracking-tight animate-in fade-in-0 slide-in-from-bottom-4 duration-700">
-            Tome o controle das{" "}
-            <span className="text-primary">suas finanças</span>
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10 animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-100">
-            Use a regra 50/30/20 para organizar gastos, criar fundos com metas e acompanhar sua evolução financeira mês a mês.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-in fade-in-0 slide-in-from-bottom-4 duration-700 delay-200">
-            <Link
-              href="/cadastro"
-              className="group inline-flex items-center justify-center gap-2 bg-primary text-white rounded-xl px-8 py-3.5 font-medium hover:bg-primary/90 transition-all hover:shadow-xl hover:shadow-primary/25 hover:-translate-y-0.5"
-            >
-              Começar grátis
-              <IconArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
-            </Link>
-            <Link
-              href="/precos"
-              className="inline-flex items-center justify-center gap-2 border border-border text-foreground rounded-xl px-8 py-3.5 font-medium hover:bg-card hover:border-foreground/20 transition-all"
-            >
-              Ver planos
-            </Link>
-          </div>
-          <p className="mt-6 text-xs text-muted-foreground animate-in fade-in-0 duration-1000 delay-300">Sem cartão de crédito • 14 dias de Premium grátis</p>
-        </section>
+        {/* Hero — client component com GSAP + partículas */}
+        <LandingHero isLoggedIn={!!user} />
 
-        {/* Features */}
-        <section className="max-w-5xl mx-auto px-4 py-16">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {features.map((f, i) => (
-              <div 
-                key={f.title} 
-                className="group rounded-2xl border border-border bg-card p-6 space-y-4 transition-all duration-200 hover:border-foreground/15 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/5"
-                style={{ animationDelay: `${i * 100}ms` }}
-              >
-                <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center transition-transform group-hover:scale-110">
-                  {f.icon}
-                </div>
-                <h3 className="font-semibold text-foreground text-lg">{f.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* Stats bar + Features cards — client component com ScrollTrigger */}
+        <LandingFeatures />
 
-        {/* Pricing preview */}
-        <section className="max-w-5xl mx-auto px-4 py-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-foreground mb-3 tracking-tight">Planos simples e transparentes</h2>
-            <p className="text-muted-foreground">Comece grátis. Faça upgrade quando precisar de mais.</p>
+        {/* Pricing */}
+        <section className="max-w-5xl mx-auto px-4 py-20">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center gap-2 text-xs font-medium text-primary bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-5">
+              <IconSparkles size={12} />
+              Planos simples
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight mb-3">
+              Comece grátis.{" "}
+              <span className="text-gradient">Evolua quando quiser.</span>
+            </h2>
+            <p className="text-muted-foreground">Sem surpresas, sem letras miúdas.</p>
           </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
             {/* Free */}
-            <div className="rounded-2xl border border-border bg-card p-7 space-y-5 transition-all hover:border-foreground/15 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/5">
+            <div className="group rounded-2xl border border-border/60 glass-subtle p-7 space-y-6 transition-all duration-300 hover:border-foreground/15 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20">
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-medium">Gratuito</p>
-                <p className="text-4xl font-bold text-foreground">R$0</p>
-                <p className="text-xs text-muted-foreground mt-1">para sempre</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3 font-semibold">Gratuito</p>
+                <p className="text-5xl font-extrabold text-foreground tracking-tight">R$0</p>
+                <p className="text-xs text-muted-foreground mt-1.5">para sempre</p>
               </div>
               <ul className="space-y-3">
                 {freeFeatures.map((f) => (
                   <li key={f} className="flex items-center gap-3 text-sm text-muted-foreground">
-                    <div className="size-5 rounded-full bg-primary/10 flex items-center justify-center">
-                      <IconCheck size={12} className="text-primary" />
+                    <div className="size-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <IconCheck size={11} className="text-primary" />
                     </div>
                     {f}
                   </li>
@@ -149,44 +103,87 @@ export default async function LandingPage() {
               </ul>
               <Link
                 href="/cadastro"
-                className="block text-center text-sm border border-border rounded-xl px-4 py-3 hover:bg-muted/30 hover:border-foreground/20 transition-all font-medium"
+                className="block text-center text-sm border border-border/70 rounded-xl px-4 py-3 hover:bg-card hover:border-foreground/20 transition-all font-semibold"
               >
                 Criar conta grátis
               </Link>
             </div>
 
             {/* Premium */}
-            <div className="rounded-2xl border-2 border-primary bg-card p-7 space-y-5 relative transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/10">
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                <span className="bg-primary text-white text-xs font-medium px-4 py-1.5 rounded-full shadow-lg shadow-primary/30">Recomendado</span>
+            <div className="group relative rounded-2xl border-2 border-primary/70 bg-card p-7 space-y-6 animate-glow-pulse-green transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+              {/* Shimmer top gradient */}
+              <div className="absolute inset-0 bg-gradient-to-b from-primary/6 via-transparent to-transparent pointer-events-none" />
+
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
+                <span className="relative overflow-hidden bg-primary text-white text-xs font-semibold px-5 py-1.5 rounded-full shadow-lg shadow-primary/40 inline-block">
+                  Recomendado
+                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer-slide_2s_ease-in-out_infinite]" />
+                </span>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2 font-medium">Premium</p>
-                <p className="text-4xl font-bold text-foreground">R$19<span className="text-base font-normal text-muted-foreground">/mês</span></p>
-                <p className="text-xs text-muted-foreground mt-1">ou R$149/ano (2 meses grátis)</p>
+
+              <div className="relative">
+                <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3 font-semibold">Premium</p>
+                <p className="text-5xl font-extrabold text-foreground tracking-tight">
+                  R$19<span className="text-base font-normal text-muted-foreground">/mês</span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-1.5">ou R$149/ano — 2 meses grátis</p>
               </div>
-              <ul className="space-y-3">
+
+              <ul className="relative space-y-3">
                 {premiumFeatures.map((f) => (
                   <li key={f} className="flex items-center gap-3 text-sm text-foreground">
-                    <div className="size-5 rounded-full bg-primary/20 flex items-center justify-center">
-                      <IconCheck size={12} className="text-primary" />
+                    <div className="size-5 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                      <IconCheck size={11} className="text-primary" />
                     </div>
                     {f}
                   </li>
                 ))}
               </ul>
+
               <Link
                 href="/precos"
-                className="block text-center text-sm bg-primary text-white rounded-xl px-4 py-3 hover:bg-primary/90 transition-all font-medium hover:shadow-lg hover:shadow-primary/25"
+                className="relative block text-center text-sm bg-primary text-white rounded-xl px-4 py-3 hover:bg-primary/90 transition-all font-semibold hover:shadow-xl hover:shadow-primary/30"
               >
                 Testar 14 dias grátis
               </Link>
             </div>
           </div>
         </section>
+
+        {/* Final CTA */}
+        <section className="max-w-5xl mx-auto px-4 py-16">
+          <div className="relative rounded-3xl border border-primary/20 glass overflow-hidden px-8 py-16 text-center">
+            {/* Background glow */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_50%,rgba(29,158,117,0.08),transparent)] pointer-events-none" />
+
+            <div className="relative space-y-6 max-w-lg mx-auto">
+              <div className="inline-flex items-center gap-2 text-xs font-medium text-primary bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5">
+                <IconSparkles size={12} />
+                Grátis para começar
+              </div>
+
+              <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
+                Pronto para organizar<br />
+                <span className="text-gradient">suas finanças?</span>
+              </h2>
+
+              <p className="text-muted-foreground">
+                Crie sua conta em menos de 1 minuto. Sem cartão de crédito.
+              </p>
+
+              <Link
+                href="/cadastro"
+                className="group inline-flex items-center gap-2 bg-primary text-white rounded-xl px-10 py-4 font-semibold text-sm hover:bg-primary/90 transition-all hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-0.5"
+              >
+                Criar conta grátis — é rápido
+                <IconArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+          </div>
+        </section>
       </main>
 
-      <footer className="border-t border-border/50 py-8 text-center text-sm text-muted-foreground">
+      <footer className="border-t border-border/40 py-8 text-center text-sm text-muted-foreground">
         © {new Date().getFullYear()} FinDash — Todos os direitos reservados
       </footer>
     </div>

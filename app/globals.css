@@ -105,6 +105,28 @@
   .animate-pulse-soft {
     animation: pulse-soft 2s ease-in-out infinite;
   }
+
+  /* Landing page animations */
+  @keyframes float-particle {
+    0%   { transform: translateY(0px) rotate(0deg);   opacity: 0.12; }
+    50%  { transform: translateY(-28px) rotate(180deg); opacity: 0.30; }
+    100% { transform: translateY(0px) rotate(360deg); opacity: 0.12; }
+  }
+  @keyframes glow-pulse-green {
+    0%, 100% { box-shadow: 0 0 20px rgba(29,158,117,0.15), 0 0 60px rgba(29,158,117,0.05); }
+    50%       { box-shadow: 0 0 40px rgba(29,158,117,0.30), 0 0 80px rgba(29,158,117,0.12); }
+  }
+  @keyframes shimmer-slide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+  }
+  .animate-float-particle {
+    animation: float-particle var(--p-duration, 7s) ease-in-out infinite;
+    animation-delay: var(--p-delay, 0s);
+  }
+  .animate-glow-pulse-green {
+    animation: glow-pulse-green 3s ease-in-out infinite;
+  }
 }
 
 /* ===============================================
