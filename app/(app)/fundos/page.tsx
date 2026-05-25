@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { getCdiData } from "@/lib/taxas"
 import { FundosGrid } from "@/components/fundos/FundosGrid"
 
 export default async function FundosPage() {
@@ -7,7 +8,7 @@ export default async function FundosPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
-  const [{ data: fundos }, { data: profile }] = await Promise.all([
+  const [{ data: fundos }, { data: profile }, { cdiDiario }] = await Promise.all([
     supabase
       .from("fundos")
       .select("*")
@@ -18,6 +19,7 @@ export default async function FundosPage() {
       .select("plano")
       .eq("id", user.id)
       .single(),
+    getCdiData(),
   ])
 
   return (
@@ -32,6 +34,7 @@ export default async function FundosPage() {
       <FundosGrid
         fundos={fundos ?? []}
         plano={profile?.plano ?? "free"}
+        cdiDiario={cdiDiario}
       />
     </div>
   )

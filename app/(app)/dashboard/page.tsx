@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
+import { getCdiData } from "@/lib/taxas"
+import { calcularRendimento } from "@/lib/rendimento"
 import { UpgradeToast } from "@/components/ui/UpgradeToast"
 import { MetricCard } from "@/components/dashboard/MetricCard"
 import { Rule502030 } from "@/components/dashboard/Rule502030"
@@ -12,7 +14,9 @@ import {
   IconChartPie,
   IconSparkles,
   IconArrowRight,
+  IconTrendingUp,
 } from "@tabler/icons-react"
+import type { Custodia } from "@/types"
 
 function getGreeting(nome: string) {
   const h = new Date().getHours()
@@ -41,7 +45,7 @@ export default async function DashboardPage({
   } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
-  const [{ data: profile }, { data: config }, { data: gastos }, { data: fundos }] =
+  const [{ data: profile }, { data: config }, { data: gastos }, { data: fundos }, { data: todosFundos }, { cdiDiario }] =
     await Promise.all([
       supabase.from("profiles").select("nome, plano").eq("id", user.id).single(),
       supabase.from("configuracoes").select("salario, renda_extra").eq("user_id", user.id).single(),
@@ -56,6 +60,12 @@ export default async function DashboardPage({
         .eq("user_id", user.id)
         .order("ordem")
         .limit(3),
+      supabase
+        .from("fundos")
+        .select("custodia, saldo_atual")
+        .eq("user_id", user.id)
+        .not("custodia", "is", null),
+      getCdiData(),
     ])
 
   const salario = (config?.salario ?? 0) + (config?.renda_extra ?? 0)
@@ -74,6 +84,12 @@ export default async function DashboardPage({
     .reduce((s, g) => s + g.valor, 0)
 
   const fundosAtivos = (fundos ?? []).length
+
+  const rendimentoMensalTotal = (todosFundos ?? []).reduce((soma, f) => {
+    const custodia = f.custodia as Custodia | null
+    if (!custodia) return soma
+    return soma + calcularRendimento(custodia, cdiDiario).rendimentoMensal
+  }, 0)
   const primeiroNome = (profile?.nome ?? user.email ?? "").split(" ")[0]
 
   const score = scoreLabel(necessidades, objetivos, salario)
@@ -224,41 +240,56 @@ export default async function DashboardPage({
       {/* Mini fundos */}
       {(fundos ?? []).length > 0 && (
         <div
-          className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-up"
+          className="space-y-2 animate-fade-up"
           style={{ animationDelay: "160ms" }}
         >
-          {(fundos ?? []).map((f) => {
-            const pct = f.meta > 0 ? Math.min((f.saldo_atual / f.meta) * 100, 100) : 0
-            return (
-              <div
-                key={f.nome}
-                className="rounded-xl border border-border/60 bg-card/50 px-4 py-3.5 space-y-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-border/80"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span
-                      className="size-2.5 rounded-full shrink-0"
-                      style={{ backgroundColor: f.cor ?? "var(--fd-green)" }}
-                    />
-                    <span className="text-xs font-semibold text-foreground truncate">{f.nome}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {(fundos ?? []).map((f) => {
+              const pct = f.meta > 0 ? Math.min((f.saldo_atual / f.meta) * 100, 100) : 0
+              return (
+                <div
+                  key={f.nome}
+                  className="rounded-xl border border-border/60 bg-card/50 px-4 py-3.5 space-y-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-border/80"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="size-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: f.cor ?? "var(--fd-green)" }}
+                      />
+                      <span className="text-xs font-semibold text-foreground truncate">{f.nome}</span>
+                    </div>
+                    <span className="font-mono text-xs text-muted-foreground shrink-0">
+                      {Math.round(pct)}%
+                    </span>
                   </div>
-                  <span className="font-mono text-xs text-muted-foreground shrink-0">
-                    {Math.round(pct)}%
-                  </span>
+                  <div className="h-1 rounded-full bg-border overflow-hidden">
+                    <div
+                      className="h-full rounded-full animate-progress"
+                      style={{ width: `${pct}%`, backgroundColor: f.cor ?? "var(--fd-green)" }}
+                    />
+                  </div>
+                  <p className="font-mono text-xs text-muted-foreground">
+                    {f.saldo_atual.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                    <span className="text-muted-foreground/50"> / {f.meta.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+                  </p>
                 </div>
-                <div className="h-1 rounded-full bg-border overflow-hidden">
-                  <div
-                    className="h-full rounded-full animate-progress"
-                    style={{ width: `${pct}%`, backgroundColor: f.cor ?? "var(--fd-green)" }}
-                  />
-                </div>
-                <p className="font-mono text-xs text-muted-foreground">
-                  {f.saldo_atual.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-                  <span className="text-muted-foreground/50"> / {f.meta.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
-                </p>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
+
+          {rendimentoMensalTotal > 0 && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+              <IconTrendingUp size={13} className="text-fd-green shrink-0" />
+              <span>
+                Rendendo{" "}
+                <span className="font-mono font-semibold text-fd-green">
+                  {rendimentoMensalTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                </span>{" "}
+                este mês nos fundos com custódia
+              </span>
+            </div>
+          )}
         </div>
       )}
 

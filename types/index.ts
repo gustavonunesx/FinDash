@@ -1,5 +1,14 @@
 export type Categoria = "necessidade" | "objetivo" | "qualidade"
 export type Fase = "construindo" | "investindo"
+export type TipoRendimento = "percentual_cdi" | "prefixado" | "ipca_mais" | "poupanca"
+
+export interface Custodia {
+  instituicao: string
+  tipo: TipoRendimento
+  taxa: number
+  data_inicio: string
+  aporte_inicial: number
+}
 export type Plano = "free" | "premium"
 export type AssinaturaStatus = "active" | "canceled" | "trialing" | null
 
@@ -32,6 +41,7 @@ export interface Fundo {
   cor: string
   ordem: number
   created_at: string
+  custodia: Custodia | null
 }
 
 export interface Configuracoes {

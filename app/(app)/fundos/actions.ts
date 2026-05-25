@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import type { Custodia } from "@/types"
 
 const FREE_LIMIT = 3
 
@@ -11,6 +12,7 @@ type FundoInput = {
   meta: number
   aporte_mensal: number
   cor: string
+  custodia?: Custodia | null
 }
 
 type ActionResult = { error?: string; faseTrocada?: boolean }
@@ -87,6 +89,7 @@ export async function adicionarFundo(data: FundoInput): Promise<ActionResult> {
     aporte_mensal: data.aporte_mensal,
     cor: data.cor,
     ordem: maxOrdem ?? 0,
+    custodia: data.custodia ?? null,
   })
 
   if (error) return { error: error.message }
@@ -107,6 +110,7 @@ export async function editarFundo(id: string, data: FundoInput): Promise<ActionR
       meta: data.meta,
       aporte_mensal: data.aporte_mensal,
       cor: data.cor,
+      custodia: data.custodia ?? null,
     })
     .eq("id", id)
     .eq("user_id", userId)

@@ -12,9 +12,10 @@ import type { Fundo } from "@/types"
 interface Props {
   fundos: Fundo[]
   plano: "free" | "premium"
+  cdiDiario: number
 }
 
-export function FundosGrid({ fundos, plano }: Props) {
+export function FundosGrid({ fundos, plano, cdiDiario }: Props) {
   const [criando, setCriando] = useState(false)
   const [showUpgrade, setShowUpgrade] = useState(false)
 
@@ -64,6 +65,7 @@ export function FundosGrid({ fundos, plano }: Props) {
             <FundoCard
               key={f.id}
               fundo={f}
+              cdiDiario={cdiDiario}
               onLimitReached={() => setShowUpgrade(true)}
               onFaseTrocada={handleFaseTrocada}
             />
