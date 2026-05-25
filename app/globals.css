@@ -29,6 +29,7 @@
   --color-fd-green: var(--fd-green);
   --color-fd-blue: var(--fd-blue);
   --color-fd-red: var(--fd-red);
+  --color-fd-purple: var(--fd-purple);
   --color-fd-success: var(--fd-success);
   --color-fd-warning: var(--fd-warning);
   --color-fd-error: var(--fd-error);
@@ -58,17 +59,18 @@
   --muted-foreground: #8888A0;
   --accent: #2A2A38;
   --accent-foreground: #F0F0F5;
-  --destructive: #E24B4A;
+  --destructive: #C94040;
   --border: #2A2A38;
   --input: #2A2A38;
   --ring: #1D9E75;
   --radius: 0.5rem;
 
   /* FinDash semantic palette */
-  --fd-amber: #BA7517;
+  --fd-amber: #C98A2E;
   --fd-green: #1D9E75;
   --fd-blue: #378ADD;
-  --fd-red: #E24B4A;
+  --fd-red: #C94040;
+  --fd-purple: #7C5CBF;
   --fd-success: #22C55E;
   --fd-warning: #F59E0B;
   --fd-error: #EF4444;

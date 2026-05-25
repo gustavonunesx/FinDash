@@ -27,7 +27,7 @@
 - `--background: #0F0F13` / `--card: #1A1A24` / `--border: #2A2A38`
 - `--foreground: #F0F0F5` / `--muted-foreground: #8888A0`
 - `--primary: #1D9E75` (green)
-- `--fd-amber: #BA7517` / `--fd-green: #1D9E75` / `--fd-blue: #378ADD` / `--fd-red: #E24B4A`
+- `--fd-amber: #C98A2E` / `--fd-green: #1D9E75` / `--fd-blue: #378ADD` / `--fd-red: #C94040` / `--fd-purple: #7C5CBF`
 - Fonts: Plus Jakarta Sans (body, `var(--font-sans)`) + JetBrains Mono (numbers, `var(--font-mono)`)
 - Loaded via `next/font/google` em `app/layout.tsx` como `--font-sans` e `--font-mono`
 
@@ -59,7 +59,7 @@ button, input, label, card, badge, alert, separator, dialog, select, switch, pro
 
 ## Próximos Passos (ver PLAN.md)
 - P1 — Auth: transição animada login ↔ cadastro (AuthCard unificado + GSAP)
-- P2 — Revisão cores: --fd-amber e --fd-red menos saturados, novo --fd-purple
+- ~~P2 — Revisão cores: --fd-amber e --fd-red menos saturados, novo --fd-purple~~ ✓
 - P3 — Fundos: custódia por instituição + rendimento CDI (API BCB gratuita)
 - P4 — Features de retenção: notificações, gastos recorrentes, importação CSV
 
