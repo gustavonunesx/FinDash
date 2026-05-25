@@ -6,11 +6,12 @@
 
 ## Ordem de execução sugerida
 
-1. **P1** — Auth animation (pequeno, alto impacto visual, ~1 sessão)
-2. **P2** — Revisão de cores (pequeno, melhora consistência, ~1 sessão)
-3. **P3a → P3c** — Fundos: schema + cálculo + API CDI (~2 sessões)
-4. **P3d → P3f** — Fundos: UI de custódia completa (~1 sessão)
-5. **P4** — Features de retenção por prioridade
+1. ~~**P1** — Auth animation~~ ✓ concluído
+2. ~~**P2** — Revisão de cores~~ ✓ concluído
+3. ~~**P5** — Calculadora de Renda Extra: redesign dos blocos~~ ✓ concluído
+4. ~~**P3a → P3c** — Fundos: schema + cálculo + API CDI~~ ✓ concluído
+5. ~~**P3d → P3f** — Fundos: UI de custódia completa~~ ✓ concluído
+6. **P4** — Features de retenção por prioridade
 
 ---
 
@@ -53,6 +54,51 @@
 - `components/dashboard/RecentTransactions.tsx` — valor negativo (hoje `--fd-red`)
 - `components/fundos/FundoCard.tsx` — cores das barras de progresso
 - `app/(app)/dashboard/page.tsx` — badges e ícones do score
+
+---
+
+## P5 — Calculadora de Renda Extra: Redesign dos blocos
+
+**Objetivo:** Tornar os blocos de distribuição mais ricos e acionáveis — cada bloco ocupa a section inteira com carousel horizontal, mostrando exatamente quanto vai para onde e o estado atual do destino.
+
+### UX — Carousel de cards
+
+- Section de largura 100%, cada card ocupa `w-full` com `snap-start`
+- Desktop: botões `←` `→` nas laterais para navegar entre cards
+- Mobile: swipe horizontal nativo com `overflow-x-auto scroll-smooth snap-x snap-mandatory`
+- Dots/indicador de posição abaixo do carousel
+
+### Conteúdo de cada card
+
+**Card 1 — Reserva de Emergência** (40% em "construindo" / 10% em "investindo")
+- Valor a separar: `R$ X,XX`
+- Select "Fundo de destino": usuário escolhe qual fundo é a reserva de emergência
+  - Persistir como `fundo_reserva_id` em `profiles` (nova coluna — migration necessária)
+- Saldo atual do fundo selecionado + saldo após aporte
+- Barra de progresso em relação à meta
+
+**Card 2 — Objetivos / Fundos** (30% em ambas as fases)
+- Lista todos os fundos exceto o de reserva (card 1)
+- **Pesos definidos pelo usuário**: input de % por fundo (soma = 100%)
+  - Persistir como coluna `peso_renda_extra numeric` na tabela `fundos`
+- Para cada fundo: valor calculado pelo peso, saldo atual, saldo após
+- **Botão "Confirmar que investi"** por fundo — só atualiza `saldo_atual` quando clicado
+  - Server Action: `confirmarAporteRendaExtra(fundoId, valor)` → `UPDATE fundos SET saldo_atual = saldo_atual + valor` + `revalidatePath`
+  - **Não contabiliza automaticamente** ao preencher o campo de renda extra
+
+**Card 3 — Qualidade de Vida** (20%)
+- Valor separado para gastos de qualidade
+- Texto descritivo (`bloco.descricao`), sem fundo de destino
+
+**Card 4 — Investimentos** (10% em "construindo" / 40% em "investindo")
+- Valor a investir
+- Mesmo padrão do Card 2 (pesos + botão de confirmação por fundo)
+
+### Arquivos
+
+- `components/calculadoras/CalculadoraRendaExtra.tsx` — redesign completo
+- `app/(app)/calculadora/actions.ts` — adicionar `confirmarAporteRendaExtra`
+- `supabase/migrations/add_fundo_reserva_peso.sql` — coluna `fundo_reserva_id` em `profiles` + `peso_renda_extra` em `fundos`
 
 ---
 

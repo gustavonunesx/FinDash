@@ -58,9 +58,10 @@ button, input, label, card, badge, alert, separator, dialog, select, switch, pro
 - [x] M9 — Onboarding pós-cadastro (AuthCard unificado planejado, fluxo 3 passos, schema onboarding_completed)
 
 ## Próximos Passos (ver PLAN.md)
-- P1 — Auth: transição animada login ↔ cadastro (AuthCard unificado + GSAP)
+- ~~P1 — Auth: transição animada login ↔ cadastro (AuthCard unificado + GSAP)~~ ✓
 - ~~P2 — Revisão cores: --fd-amber e --fd-red menos saturados, novo --fd-purple~~ ✓
-- P3 — Fundos: custódia por instituição + rendimento CDI (API BCB gratuita)
+- ~~P3 — Fundos: custódia por instituição + rendimento CDI (API BCB gratuita)~~ ✓
+- ~~P5 — Calculadora de Renda Extra: carousel de cards full-width + confirmação de aporte~~ ✓
 - P4 — Features de retenção: notificações, gastos recorrentes, importação CSV
 
 ## Environment Variables (.env)
