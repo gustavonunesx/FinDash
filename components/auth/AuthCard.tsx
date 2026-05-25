@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { signIn, signUp, signInWithGoogle } from "@/app/(auth)/actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,7 +22,6 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
-  const router = useRouter()
 
   function animateTransition(newMode: Mode) {
     if (!formRef.current) return
@@ -41,7 +39,6 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
         gsap.set(el, { x: -exitX, opacity: 0 })
         setError(null)
         setMode(newMode)
-        router.replace(newMode === "login" ? "/login" : "/cadastro")
       },
     })
   }
@@ -127,7 +124,7 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
           <Button
             variant="outline"
             className="w-full mt-2 border-border"
-            onClick={() => animateTransition("login")}
+            onClick={() => { setSuccess(false); animateTransition("login") }}
           >
             Voltar para o login
           </Button>
@@ -298,13 +295,12 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
           <div className="flex justify-between text-sm pt-1">
             {mode === "login" ? (
               <>
-                <button
-                  type="button"
-                  onClick={() => router.push("/recuperar-senha")}
+                <a
+                  href="/recuperar-senha"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Esqueceu a senha?
-                </button>
+                </a>
                 <button
                   type="button"
                   onClick={() => animateTransition("register")}
