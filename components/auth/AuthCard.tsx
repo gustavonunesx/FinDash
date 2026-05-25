@@ -37,31 +37,32 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
       duration: 0.18,
       ease: "power2.in",
       onComplete: () => {
+        // garante opacity:0 antes do React re-renderizar o conteúdo novo
+        gsap.set(el, { x: -exitX, opacity: 0 })
         setError(null)
         setMode(newMode)
         router.replace(newMode === "login" ? "/login" : "/cadastro")
-        // dois rAF: garante que o React commitou o DOM e o browser pintou
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            gsap.fromTo(
-              el,
-              { x: -exitX, opacity: 0 },
-              { x: 0, opacity: 1, duration: 0.25, ease: "power2.out" }
-            )
-          })
-        })
       },
     })
   }
 
+  const isFirstRender = useRef(true)
+
   useEffect(() => {
     if (!formRef.current) return
-    gsap.fromTo(
-      formRef.current,
-      { x: 0, opacity: 0 },
-      { x: 0, opacity: 1, duration: 0.35, ease: "power2.out" }
-    )
-  }, [])
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      // entrada inicial da página
+      gsap.fromTo(
+        formRef.current,
+        { x: 0, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.35, ease: "power2.out" }
+      )
+      return
+    }
+    // entrada após troca de modo — o gsap.set já deixou opacity:0 e x posicionado
+    gsap.to(formRef.current, { x: 0, opacity: 1, duration: 0.25, ease: "power2.out" })
+  }, [mode])
 
   async function handleLoginSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
