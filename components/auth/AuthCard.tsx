@@ -27,22 +27,31 @@ export default function AuthCard({ initialMode }: AuthCardProps) {
 
   function animateTransition(newMode: Mode) {
     if (!formRef.current) return
+    const el = formRef.current
+    const exitX = newMode === "register" ? -20 : 20
 
-    gsap.fromTo(
-      formRef.current,
-      { x: newMode === "register" ? 20 : -20, opacity: 0 },
-      {
-        x: 0,
-        opacity: 1,
-        duration: 0.3,
-        ease: "power2.out",
-        onStart: () => {
-          setError(null)
-          setMode(newMode)
-          router.replace(newMode === "login" ? "/login" : "/cadastro")
-        },
-      }
-    )
+    // fase 1: saída
+    gsap.to(el, {
+      x: exitX,
+      opacity: 0,
+      duration: 0.18,
+      ease: "power2.in",
+      onComplete: () => {
+        setError(null)
+        setMode(newMode)
+        router.replace(newMode === "login" ? "/login" : "/cadastro")
+        // dois rAF: garante que o React commitou o DOM e o browser pintou
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            gsap.fromTo(
+              el,
+              { x: -exitX, opacity: 0 },
+              { x: 0, opacity: 1, duration: 0.25, ease: "power2.out" }
+            )
+          })
+        })
+      },
+    })
   }
 
   useEffect(() => {
