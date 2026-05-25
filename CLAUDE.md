@@ -54,6 +54,14 @@ button, input, label, card, badge, alert, separator, dialog, select, switch, pro
 - [x] M5 — Stripe & Assinatura (checkout, webhook, portal, /precos, /configuracoes)
 - [x] M6 — Premium & Polish (histórico+Recharts, PDF export, landing page, loading skeletons, 404)
 - [x] M7 — Dashboard Visual Upgrade (MetricCard animado, Rule502030, StreakBar, RecentTransactions, novas fontes)
+- [x] M8 — Landing Page Completa (HowItWorks, Testimonials, FAQ, parallax hero, redesign /precos, ambient bg app)
+- [x] M9 — Onboarding pós-cadastro (AuthCard unificado planejado, fluxo 3 passos, schema onboarding_completed)
+
+## Próximos Passos (ver PLAN.md)
+- P1 — Auth: transição animada login ↔ cadastro (AuthCard unificado + GSAP)
+- P2 — Revisão cores: --fd-amber e --fd-red menos saturados, novo --fd-purple
+- P3 — Fundos: custódia por instituição + rendimento CDI (API BCB gratuita)
+- P4 — Features de retenção: notificações, gastos recorrentes, importação CSV
 
 ## Environment Variables (.env)
 - `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
@@ -89,14 +97,31 @@ button, input, label, card, badge, alert, separator, dialog, select, switch, pro
 ## Key Files
 - `proxy.ts` — route protection
 - `app/(auth)/actions.ts` — signIn, signUp, signInWithGoogle, resetPassword, signOut
-- `app/auth/callback/route.ts` — OAuth callback + seed defaults
+- `app/auth/callback/route.ts` — OAuth callback + seed defaults + redirect to /onboarding for new users
 - `lib/supabase/seed-defaults.ts` — inserts 8 default gastos + 3 default fundos
 - `supabase/schema.sql` — full DB schema (run once in Supabase SQL Editor)
+- `supabase/migrations/` — migrations incrementais (rodar no SQL Editor)
 - `types/index.ts` — all TypeScript types
 - `.env.local` — all keys filled (Supabase + Stripe)
 - `lib/stripe.ts` — Stripe instance + getOrCreateStripeCustomer
 - `app/api/stripe/checkout/route.ts` — creates Checkout Session (14d trial)
 - `app/api/stripe/webhook/route.ts` — handles subscription lifecycle events
 - `app/api/stripe/portal/route.ts` — Billing Portal session
-- `components/marketing/PrecosClient.tsx` — pricing toggle + checkout CTA
+- `components/marketing/PrecosClient.tsx` — pricing toggle + checkout CTA (CSS animate-fade-up, sem GSAP)
+- `components/marketing/LandingHowItWorks.tsx` — 3 passos com GSAP ScrollTrigger + refs diretos
+- `components/marketing/LandingTestimonials.tsx` — grid depoimentos com refs diretos (sem seletores globais)
+- `components/marketing/LandingFaq.tsx` — accordion GSAP height animation
+- `components/onboarding/OnboardingClient.tsx` — fluxo 3 passos pós-cadastro
+- `app/(app)/onboarding/actions.ts` — saveOnboardingSalario, saveOnboardingFundo, completeOnboarding
 - `components/configuracoes/ConfiguracoesClient.tsx` — account + subscription management
+- `PLAN.md` — plano detalhado dos próximos passos (P1–P4)
+
+## GSAP — Regras de uso (aprendidas em produção)
+- NUNCA usar seletores CSS globais (`.classe`) com `gsap.from/to` em componentes Next.js — colide entre componentes
+- SEMPRE usar `ref` diretos (`useRef`) e passar o elemento diretamente ao GSAP
+- SEMPRE usar `gsap.fromTo` (não `gsap.from`) para definir estado inicial explícito
+- Para animações de entrada simples (sem ScrollTrigger), preferir `animate-fade-up` CSS — evita flash de opacity:0
+- `gsap.set(el, { opacity: 0 })` antes do tween se precisar de estado inicial garantido no SSR
+
+## Pending DB Migrations (rodar no Supabase SQL Editor)
+- `supabase/migrations/add_onboarding_completed.sql` — coluna `onboarding_completed` na tabela profiles
