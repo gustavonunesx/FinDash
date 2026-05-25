@@ -50,3 +50,24 @@ export async function salvarFase(fase: Fase): Promise<ActionResult> {
   revalidate()
   return {}
 }
+
+export async function confirmarAporteRendaExtra(fundoId: string, valor: number): Promise<ActionResult> {
+  const { supabase, userId } = await getUid()
+  const { data: fundo, error: fetchError } = await supabase
+    .from("fundos")
+    .select("saldo_atual")
+    .eq("id", fundoId)
+    .eq("user_id", userId)
+    .single()
+  if (fetchError || !fundo) return { error: "Fundo não encontrado" }
+  const { error } = await supabase
+    .from("fundos")
+    .update({ saldo_atual: fundo.saldo_atual + valor })
+    .eq("id", fundoId)
+    .eq("user_id", userId)
+  if (error) return { error: error.message }
+  revalidatePath("/fundos")
+  revalidatePath("/calculadora")
+  revalidatePath("/dashboard")
+  return {}
+}
