@@ -43,6 +43,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* Ambient background — mesma atmosfera da landing */}
+      <div className="fixed inset-0 -z-10 pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_40%_at_50%_-5%,rgba(29,158,117,0.06),transparent)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_40%_30%_at_90%_90%,rgba(55,138,221,0.04),transparent)]" />
+      </div>
       {/* Desktop header */}
       <header className="hidden md:flex sticky top-0 z-40 h-14 items-center border-b border-border/50 glass px-6">
         <Link 

@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { IconArrowRight, IconSparkles, IconTrendingUp } from "@tabler/icons-react"
 import { gsap } from "gsap"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
+
+gsap.registerPlugin(ScrollTrigger)
 
 const PARTICLES = [
   { symbol: "R$", top: "12%", left: "8%",  size: "text-2xl", duration: "7s",  delay: "0s"   },
@@ -69,6 +72,21 @@ export default function LandingHero({ isLoggedIn }: LandingHeroProps) {
         })
       })
 
+      // Parallax nas partículas ao rolar
+      gsap.utils.toArray<HTMLElement>(".hero-particle").forEach((el, i) => {
+        const speed = 0.08 + (i % 4) * 0.04
+        gsap.to(el, {
+          y: () => -(window.innerHeight * speed),
+          ease: "none",
+          scrollTrigger: {
+            trigger: heroRef.current,
+            start: "top top",
+            end: "bottom top",
+            scrub: true,
+          },
+        })
+      })
+
       // Counter R$ 12.450
       const obj = { val: 0 }
       gsap.to(obj, {
@@ -97,7 +115,7 @@ export default function LandingHero({ isLoggedIn }: LandingHeroProps) {
         {PARTICLES.map((p, i) => (
           <span
             key={i}
-            className={`absolute font-mono font-bold text-primary animate-float-particle ${p.size}`}
+            className={`hero-particle absolute font-mono font-bold text-primary animate-float-particle ${p.size}`}
             style={{
               top: p.top,
               left: p.left,

@@ -33,6 +33,8 @@ export async function GET(request: Request) {
           if (!existingGastos?.length) {
             await seedDefaultData(data.user.id)
           }
+
+          return NextResponse.redirect(`${origin}/onboarding`)
         }
       }
 

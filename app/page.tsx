@@ -7,6 +7,9 @@ import {
 } from "@tabler/icons-react"
 import LandingHero from "@/components/marketing/LandingHero"
 import LandingFeatures from "@/components/marketing/LandingFeatures"
+import LandingHowItWorks from "@/components/marketing/LandingHowItWorks"
+import LandingTestimonials from "@/components/marketing/LandingTestimonials"
+import LandingFaq from "@/components/marketing/LandingFaq"
 
 const freeFeatures    = ["Até 10 gastos por mês", "Até 3 fundos financeiros", "Calculadoras 50/30/20", "Renda extra e projeções"]
 const premiumFeatures = ["Gastos ilimitados", "Fundos ilimitados", "Histórico mensal com gráficos", "Exportação de relatório PDF"]
@@ -68,6 +71,12 @@ export default async function LandingPage() {
 
         {/* Stats bar + Features cards — client component com ScrollTrigger */}
         <LandingFeatures />
+
+        {/* How it works */}
+        <LandingHowItWorks />
+
+        {/* Testimonials */}
+        <LandingTestimonials />
 
         {/* Pricing */}
         <section className="max-w-5xl mx-auto px-4 py-20">
@@ -152,6 +161,9 @@ export default async function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* FAQ */}
+        <LandingFaq />
 
         {/* Final CTA — full width */}
         <section className="relative overflow-hidden py-28 text-center">

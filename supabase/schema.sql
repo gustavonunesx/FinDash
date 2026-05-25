@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   stripe_customer_id      text UNIQUE,
   stripe_subscription_id  text UNIQUE,
   assinatura_status       text CHECK (assinatura_status IN ('active', 'canceled', 'trialing')),
+  onboarding_completed    boolean NOT NULL DEFAULT false,
   created_at              timestamptz NOT NULL DEFAULT now()
 );
 

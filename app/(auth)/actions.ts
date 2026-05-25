@@ -32,10 +32,10 @@ export async function signUp(nome: string, email: string, password: string) {
     return { error: traduzirErroAuth(error.message) }
   }
 
-  // If email confirmation is disabled in Supabase, seed data immediately
+  // If email confirmation is disabled in Supabase, go to onboarding
   if (data.user && data.session) {
     await seedDefaultData(data.user.id)
-    redirect("/dashboard")
+    redirect("/onboarding")
   }
 
   return { success: true }
