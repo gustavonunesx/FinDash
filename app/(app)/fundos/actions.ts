@@ -10,6 +10,7 @@ type FundoInput = {
   nome: string
   saldo_atual: number
   meta: number
+  meta_data?: string | null
   aporte_mensal: number
   cor: string
   custodia?: Custodia | null
@@ -86,6 +87,7 @@ export async function adicionarFundo(data: FundoInput): Promise<ActionResult> {
     nome: data.nome,
     saldo_atual: data.saldo_atual,
     meta: data.meta,
+    meta_data: data.meta_data ?? null,
     aporte_mensal: data.aporte_mensal,
     cor: data.cor,
     ordem: maxOrdem ?? 0,
@@ -108,6 +110,7 @@ export async function editarFundo(id: string, data: FundoInput): Promise<ActionR
       nome: data.nome,
       saldo_atual: data.saldo_atual,
       meta: data.meta,
+      meta_data: data.meta_data ?? null,
       aporte_mensal: data.aporte_mensal,
       cor: data.cor,
       custodia: data.custodia ?? null,

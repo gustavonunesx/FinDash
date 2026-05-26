@@ -43,6 +43,24 @@ function tipoLabel(tipo: string): string {
   }
 }
 
+function countdownDeadline(metaData: string | null, concluido: boolean): { texto: string; color: string } | null {
+  if (!metaData || concluido) return null
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+  const prazo = new Date(metaData + "T00:00:00")
+  prazo.setHours(0, 0, 0, 0)
+  const diffDias = Math.ceil((prazo.getTime() - hoje.getTime()) / 86400000)
+
+  if (diffDias < 0) return { texto: "Prazo expirado", color: "var(--fd-red)" }
+  if (diffDias === 0) return { texto: "Vence hoje", color: "var(--fd-red)" }
+  if (diffDias <= 30) return { texto: `${diffDias}d restantes`, color: "var(--fd-amber)" }
+  const meses = Math.round(diffDias / 30)
+  if (meses < 12) return { texto: `${meses}m restantes`, color: meses <= 3 ? "var(--fd-amber)" : "var(--muted-foreground)" }
+  const anos = Math.floor(meses / 12)
+  const m = meses % 12
+  return { texto: m > 0 ? `${anos}a ${m}m restantes` : `${anos}a restante${anos > 1 ? "s" : ""}`, color: "var(--muted-foreground)" }
+}
+
 interface Props {
   fundo: Fundo
   cdiDiario: number
@@ -58,6 +76,7 @@ export function FundoCard({ fundo, cdiDiario, onLimitReached, onFaseTrocada }: P
   const pct = fundo.meta > 0 ? Math.min((fundo.saldo_atual / fundo.meta) * 100, 100) : 0
   const concluido = fundo.saldo_atual >= fundo.meta
   const meses = mesesRestantes(fundo)
+  const countdown = countdownDeadline(fundo.meta_data ?? null, concluido)
 
   const rendimento = fundo.custodia
     ? calcularRendimento(fundo.custodia, cdiDiario)
@@ -140,18 +159,31 @@ export function FundoCard({ fundo, cdiDiario, onLimitReached, onFaseTrocada }: P
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t border-border/50">
-          <span>
-            Aporte:{" "}
-            <span className="font-mono font-medium text-foreground">{fmt(fundo.aporte_mensal)}/mês</span>
-          </span>
-          <span className={concluido ? "text-fd-green font-medium" : ""}>
-            {concluido
-              ? "Meta atingida"
-              : meses != null
-              ? `~${meses} meses restantes`
-              : "Sem prazo definido"}
-          </span>
+        <div className="pt-3 border-t border-border/50 space-y-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>
+              Aporte:{" "}
+              <span className="font-mono font-medium text-foreground">{fmt(fundo.aporte_mensal)}/mês</span>
+            </span>
+            <span className={concluido ? "text-fd-green font-medium" : ""}>
+              {concluido
+                ? "Meta atingida"
+                : meses != null
+                ? `~${meses} meses (aporte)`
+                : "Sem aporte definido"}
+            </span>
+          </div>
+          {countdown && (
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">
+                Prazo:{" "}
+                <span className="text-foreground">
+                  {new Date(fundo.meta_data! + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
+                </span>
+              </span>
+              <span className="font-medium" style={{ color: countdown.color }}>{countdown.texto}</span>
+            </div>
+          )}
         </div>
 
         {/* Rendimento section (only when custódia is set) */}

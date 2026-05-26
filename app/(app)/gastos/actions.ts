@@ -10,6 +10,7 @@ type GastoInput = {
   nome: string
   valor: number
   categoria: Categoria
+  subcategoria?: string | null
   recorrente?: boolean
   dia_recorrencia?: number | null
 }
@@ -47,6 +48,7 @@ export async function adicionarGasto(data: GastoInput): Promise<ActionResult> {
     nome: data.nome,
     valor: data.valor,
     categoria: data.categoria,
+    subcategoria: data.subcategoria?.trim() || null,
     recorrente: data.recorrente ?? false,
     dia_recorrencia: data.recorrente ? (data.dia_recorrencia ?? null) : null,
   })
@@ -67,6 +69,7 @@ export async function editarGasto(id: string, data: GastoInput): Promise<ActionR
       nome: data.nome,
       valor: data.valor,
       categoria: data.categoria,
+      subcategoria: data.subcategoria?.trim() || null,
       recorrente: data.recorrente ?? false,
       dia_recorrencia: data.recorrente ? (data.dia_recorrencia ?? null) : null,
     })

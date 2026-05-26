@@ -28,6 +28,7 @@ export interface Gasto {
   nome: string
   valor: number
   categoria: Categoria
+  subcategoria: string | null
   recorrente: boolean
   dia_recorrencia: number | null
   created_at: string
@@ -39,6 +40,7 @@ export interface Fundo {
   nome: string
   saldo_atual: number
   meta: number
+  meta_data: string | null
   aporte_mensal: number
   cor: string
   ordem: number

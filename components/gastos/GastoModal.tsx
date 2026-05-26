@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { adicionarGasto, editarGasto } from "@/app/(app)/gastos/actions"
-import { IconCurrencyReal, IconTag, IconRepeat } from "@tabler/icons-react"
+import { IconCurrencyReal, IconTag, IconRepeat, IconBookmark } from "@tabler/icons-react"
 import type { Gasto, Categoria } from "@/types"
 
 interface Props {
@@ -41,6 +41,7 @@ export function GastoModal({ open, onClose, gasto, onLimitReached }: Props) {
   const [nome, setNome] = useState(gasto?.nome ?? "")
   const [valor, setValor] = useState(gasto ? String(gasto.valor) : "")
   const [categoria, setCategoria] = useState<Categoria>(gasto?.categoria ?? "necessidade")
+  const [subcategoria, setSubcategoria] = useState(gasto?.subcategoria ?? "")
   const [recorrente, setRecorrente] = useState(gasto?.recorrente ?? false)
   const [diaRecorrencia, setDiaRecorrencia] = useState(
     gasto?.dia_recorrencia ? String(gasto.dia_recorrencia) : ""
@@ -51,6 +52,7 @@ export function GastoModal({ open, onClose, gasto, onLimitReached }: Props) {
     setNome("")
     setValor("")
     setCategoria("necessidade")
+    setSubcategoria("")
     setRecorrente(false)
     setDiaRecorrencia("")
   }
@@ -67,9 +69,10 @@ export function GastoModal({ open, onClose, gasto, onLimitReached }: Props) {
     const diaNum = diaRecorrencia ? parseInt(diaRecorrencia) : null
 
     startTransition(async () => {
+      const sub = subcategoria.trim() || null
       const action = isEdit
-        ? editarGasto(gasto.id, { nome: nome.trim(), valor: valorNum, categoria, recorrente, dia_recorrencia: diaNum })
-        : adicionarGasto({ nome: nome.trim(), valor: valorNum, categoria, recorrente, dia_recorrencia: diaNum })
+        ? editarGasto(gasto.id, { nome: nome.trim(), valor: valorNum, categoria, subcategoria: sub, recorrente, dia_recorrencia: diaNum })
+        : adicionarGasto({ nome: nome.trim(), valor: valorNum, categoria, subcategoria: sub, recorrente, dia_recorrencia: diaNum })
 
       const result = await action
 
@@ -149,6 +152,23 @@ export function GastoModal({ open, onClose, gasto, onLimitReached }: Props) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="subcategoria" className="text-sm font-medium">
+              Subcategoria <span className="text-muted-foreground font-normal">(opcional)</span>
+            </Label>
+            <div className="relative">
+              <IconBookmark className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                id="subcategoria"
+                placeholder="Ex: Mercado, Streaming, Academia..."
+                value={subcategoria}
+                onChange={(e) => setSubcategoria(e.target.value)}
+                className="pl-10"
+                maxLength={50}
+              />
+            </div>
           </div>
 
           {/* Recorrente toggle */}

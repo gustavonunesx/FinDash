@@ -107,16 +107,21 @@ export function GastosTable({ gastos, plano }: Props) {
                     className="border-b border-border/50 last:border-0 transition-colors hover:bg-muted/20"
                   >
                     <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-foreground">{g.nome}</span>
-                        {g.recorrente && (
-                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border font-medium"
-                            style={{ color: "var(--fd-blue)", borderColor: "var(--fd-blue)30", backgroundColor: "var(--fd-blue)10" }}
-                            title={g.dia_recorrencia ? `Recorrente · dia ${g.dia_recorrencia}` : "Recorrente"}
-                          >
-                            <IconRepeat size={9} />
-                            {g.dia_recorrencia ? `dia ${g.dia_recorrencia}` : "recorrente"}
-                          </span>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-foreground">{g.nome}</span>
+                          {g.recorrente && (
+                            <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border font-medium"
+                              style={{ color: "var(--fd-blue)", borderColor: "var(--fd-blue)30", backgroundColor: "var(--fd-blue)10" }}
+                              title={g.dia_recorrencia ? `Recorrente · dia ${g.dia_recorrencia}` : "Recorrente"}
+                            >
+                              <IconRepeat size={9} />
+                              {g.dia_recorrencia ? `dia ${g.dia_recorrencia}` : "recorrente"}
+                            </span>
+                          )}
+                        </div>
+                        {g.subcategoria && (
+                          <span className="text-[11px] text-muted-foreground">{g.subcategoria}</span>
                         )}
                       </div>
                     </td>

@@ -206,8 +206,8 @@ Adicionar no mini-card de fundos do dashboard:
 
 - [ ] **Relatório mensal por email** — PDF automático todo dia 1 com resumo do mês anterior (feature Premium). Stack: Supabase Edge Function (cron) + react-pdf + Resend.
 - [x] **Comparativo mês a mês** — gráfico de barras lado a lado dos últimos 6 meses por categoria. ✓ concluído 2026-05-25
-- [ ] **Categorias customizadas** — usuário cria categorias além de necessidade/objetivo/qualidade.
-- [ ] **Metas de fundo com data** — "Quero R$ 5.000 até dezembro/2026" → progresso com countdown.
+- [x] **Categorias customizadas** — subcategoria (tag livre) por gasto. ✓ concluído 2026-05-25
+- [x] **Metas de fundo com data** — prazo com countdown no FundoCard. ✓ concluído 2026-05-25
 
 ### Growth / monetização
 

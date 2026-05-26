@@ -48,6 +48,7 @@ export function FundoModal({ open, onClose, fundo, onLimitReached, onFaseTrocada
   const [nome, setNome] = useState(fundo?.nome ?? "")
   const [saldo, setSaldo] = useState(fundo ? String(fundo.saldo_atual) : "")
   const [meta, setMeta] = useState(fundo ? String(fundo.meta) : "")
+  const [metaData, setMetaData] = useState(fundo?.meta_data ?? "")
   const [aporte, setAporte] = useState(fundo ? String(fundo.aporte_mensal) : "")
   const [cor, setCor] = useState(fundo?.cor ?? "#C94040")
   const [custodiaEnabled, setCustodiaEnabled] = useState(!!fundo?.custodia)
@@ -69,6 +70,7 @@ export function FundoModal({ open, onClose, fundo, onLimitReached, onFaseTrocada
     setNome("")
     setSaldo("")
     setMeta("")
+    setMetaData("")
     setAporte("")
     setCor("#C94040")
     setCustodiaEnabled(false)
@@ -120,6 +122,7 @@ export function FundoModal({ open, onClose, fundo, onLimitReached, onFaseTrocada
         nome: nome.trim(),
         saldo_atual: saldoNum,
         meta: metaNum,
+        meta_data: metaData || null,
         aporte_mensal: aporteNum,
         cor,
         custodia,
@@ -198,6 +201,16 @@ export function FundoModal({ open, onClose, fundo, onLimitReached, onFaseTrocada
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="fmeta_data">Prazo da meta (opcional)</Label>
+            <Input
+              id="fmeta_data"
+              type="date"
+              value={metaData}
+              onChange={(e) => setMetaData(e.target.value)}
+            />
           </div>
 
           <div className="space-y-1.5">
