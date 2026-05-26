@@ -124,5 +124,8 @@ button, input, label, card, badge, alert, separator, dialog, select, switch, pro
 - Para animações de entrada simples (sem ScrollTrigger), preferir `animate-fade-up` CSS — evita flash de opacity:0
 - `gsap.set(el, { opacity: 0 })` antes do tween se precisar de estado inicial garantido no SSR
 
-## Pending DB Migrations (rodar no Supabase SQL Editor)
-- `supabase/migrations/add_onboarding_completed.sql` — coluna `onboarding_completed` na tabela profiles
+## Migrations Aplicadas no Supabase (todas já executadas)
+- `add_onboarding_completed.sql` — `onboarding_completed` em profiles
+- `add_custodia_fundos.sql` — coluna `custodia jsonb` em fundos
+- `add_meta_economia.sql` — `meta_economia_mensal` em configuracoes
+- `add_gastos_recorrentes.sql` — `recorrente` + `dia_recorrencia` em gastos

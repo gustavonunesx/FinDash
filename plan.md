@@ -222,4 +222,4 @@ Adicionar no mini-card de fundos do dashboard:
 - CDI API (BCB): sem autenticação, cache 24h, chamada server-side elimina CORS
 - Supabase `jsonb` para custódia: flexível, indexável, sem migration adicional por campo novo
 - `stripe listen --forward-to localhost:3000/api/stripe/webhook` necessário em dev
-- Migration `add_onboarding_completed.sql` ainda pendente de execução no Supabase em produção
+- Todas as migrations já aplicadas no Supabase (add_onboarding_completed, add_custodia_fundos, add_meta_economia, add_gastos_recorrentes)
