@@ -6,8 +6,8 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { IconSparkles, IconExternalLink, IconFileTypePdf, IconUser, IconCreditCard, IconArrowRight } from "@tabler/icons-react"
-import { salvarNome, salvarCustoVida } from "@/app/(app)/configuracoes/actions"
+import { IconSparkles, IconExternalLink, IconFileTypePdf, IconUser, IconCreditCard, IconArrowRight, IconTarget } from "@tabler/icons-react"
+import { salvarNome, salvarCustoVida, salvarMetaEconomia } from "@/app/(app)/configuracoes/actions"
 
 const STATUS_LABEL: Record<string, string> = {
   active: "Ativa",
@@ -28,11 +28,13 @@ interface Props {
   assinaturaStatus: "active" | "canceled" | "trialing" | null
   temStripeCustomer: boolean
   custoVida: number
+  metaEconomia: number
 }
 
-export function ConfiguracoesClient({ email, nome: nomeInicial, plano, assinaturaStatus, temStripeCustomer, custoVida: custoVidaInicial }: Props) {
+export function ConfiguracoesClient({ email, nome: nomeInicial, plano, assinaturaStatus, temStripeCustomer, custoVida: custoVidaInicial, metaEconomia: metaEconomiaInicial }: Props) {
   const [nome, setNome] = useState(nomeInicial)
   const [custoVida, setCustoVida] = useState(String(custoVidaInicial))
+  const [metaEconomia, setMetaEconomia] = useState(metaEconomiaInicial > 0 ? String(metaEconomiaInicial) : "")
   const [isPending, startTransition] = useTransition()
   const [portalPending, setPortalPending] = useState(false)
   const [pdfPending, setPdfPending] = useState(false)
@@ -54,6 +56,17 @@ export function ConfiguracoesClient({ email, nome: nomeInicial, plano, assinatur
       const res = await salvarCustoVida(val)
       if (res.error) toast.error("Erro ao salvar custo de vida")
       else toast.success("Custo de vida atualizado")
+    })
+  }
+
+  function handleSalvarMetaEconomia() {
+    const val = parseFloat(metaEconomia.replace(",", "."))
+    if (isNaN(val) || val < 0) return
+    if (val === metaEconomiaInicial) return
+    startTransition(async () => {
+      const res = await salvarMetaEconomia(val)
+      if (res.error) toast.error("Erro ao salvar meta de economia")
+      else toast.success("Meta de economia atualizada")
     })
   }
 
@@ -140,6 +153,32 @@ export function ConfiguracoesClient({ email, nome: nomeInicial, plano, assinatur
               size="sm"
               variant="outline"
               onClick={handleSalvarCustoVida}
+              disabled={isPending}
+            >
+              Salvar
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="conf-meta" className="text-muted-foreground text-xs uppercase tracking-wide">Meta de economia mensal (R$)</Label>
+          <p className="text-xs text-muted-foreground">Quanto você quer guardar por mês. Aparece como barra de progresso no dashboard.</p>
+          <div className="flex gap-3">
+            <Input
+              id="conf-meta"
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="0.01"
+              placeholder="Ex: 500,00"
+              value={metaEconomia}
+              onChange={(e) => setMetaEconomia(e.target.value)}
+              className="max-w-xs font-mono"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleSalvarMetaEconomia}
               disabled={isPending}
             >
               Salvar

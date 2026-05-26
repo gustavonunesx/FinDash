@@ -9,7 +9,7 @@ export default async function ConfiguracoesPage() {
 
   const [{ data: profile }, { data: config }] = await Promise.all([
     supabase.from("profiles").select("nome, plano, assinatura_status, stripe_customer_id").eq("id", user.id).single(),
-    supabase.from("configuracoes").select("custo_vida").eq("user_id", user.id).single(),
+    supabase.from("configuracoes").select("custo_vida, meta_economia_mensal").eq("user_id", user.id).single(),
   ])
 
   return (
@@ -26,6 +26,7 @@ export default async function ConfiguracoesPage() {
         assinaturaStatus={profile?.assinatura_status ?? null}
         temStripeCustomer={!!profile?.stripe_customer_id}
         custoVida={config?.custo_vida ?? 1200}
+        metaEconomia={config?.meta_economia_mensal ?? 0}
       />
     </div>
   )

@@ -5,6 +5,7 @@ import { getCdiData } from "@/lib/taxas"
 import { calcularRendimento } from "@/lib/rendimento"
 import { UpgradeToast } from "@/components/ui/UpgradeToast"
 import { MetricCard } from "@/components/dashboard/MetricCard"
+import { MetaEconomia } from "@/components/dashboard/MetaEconomia"
 import { Rule502030 } from "@/components/dashboard/Rule502030"
 import { RecentTransactions } from "@/components/dashboard/RecentTransactions"
 import {
@@ -48,7 +49,7 @@ export default async function DashboardPage({
   const [{ data: profile }, { data: config }, { data: gastos }, { data: fundos }, { data: todosFundos }, { cdiDiario }] =
     await Promise.all([
       supabase.from("profiles").select("nome, plano").eq("id", user.id).single(),
-      supabase.from("configuracoes").select("salario, renda_extra").eq("user_id", user.id).single(),
+      supabase.from("configuracoes").select("salario, renda_extra, meta_economia_mensal").eq("user_id", user.id).single(),
       supabase
         .from("gastos")
         .select("id, nome, valor, categoria, created_at")
@@ -69,6 +70,7 @@ export default async function DashboardPage({
     ])
 
   const salario = (config?.salario ?? 0) + (config?.renda_extra ?? 0)
+  const metaEconomia = config?.meta_economia_mensal ?? 0
   const allGastos = gastos ?? []
   const totalGastos = allGastos.reduce((s, g) => s + g.valor, 0)
   const saldoLivre = salario - totalGastos
@@ -236,6 +238,11 @@ export default async function DashboardPage({
           <MetricCard key={m.label} {...m} index={i} />
         ))}
       </div>
+
+      {/* Meta de economia */}
+      {metaEconomia > 0 && (
+        <MetaEconomia meta={metaEconomia} saldoLivre={saldoLivre} index={0} />
+      )}
 
       {/* Mini fundos */}
       {(fundos ?? []).length > 0 && (

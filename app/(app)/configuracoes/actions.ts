@@ -35,3 +35,20 @@ export async function salvarCustoVida(valor: number): Promise<{ error?: string }
   revalidatePath("/configuracoes")
   return {}
 }
+
+export async function salvarMetaEconomia(valor: number): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "Não autenticado" }
+
+  const { error } = await supabase
+    .from("configuracoes")
+    .update({ meta_economia_mensal: valor, updated_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath("/configuracoes")
+  revalidatePath("/dashboard")
+  return {}
+}
