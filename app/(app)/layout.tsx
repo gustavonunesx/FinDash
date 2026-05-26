@@ -11,17 +11,19 @@ import {
   IconPigMoney,
   IconSettings,
   IconLogout,
+  IconChartLine,
 } from "@tabler/icons-react"
 import { NavLink } from "@/components/layout/NavLink"
 import { MobileNavLink } from "@/components/layout/MobileNavLink"
 
-const navLinks = [
+const baseNavLinks = [
   { href: "/dashboard", label: "Dashboard", icon: IconLayoutDashboard },
   { href: "/gastos", label: "Gastos", icon: IconReceipt2 },
   { href: "/calculadora", label: "Calculadora", icon: IconCalculator },
   { href: "/fundos", label: "Fundos", icon: IconPigMoney },
-  { href: "/configuracoes", label: "Configurações", icon: IconSettings },
 ]
+const configLink = { href: "/configuracoes", label: "Configurações", icon: IconSettings }
+const historicoLink = { href: "/historico", label: "Histórico", icon: IconChartLine }
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -40,6 +42,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .join("")
     .slice(0, 2)
     .toUpperCase()
+
+  const isPremium = profile?.plano === "premium"
+  const navLinks = isPremium
+    ? [...baseNavLinks, historicoLink, configLink]
+    : [...baseNavLinks, configLink]
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -67,7 +74,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </nav>
 
         <div className="flex items-center gap-4">
-          {profile?.plano === "premium" && (
+          {isPremium && (
             <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/15 text-primary border border-primary/20 transition-colors hover:bg-primary/20">
               Premium
             </span>
@@ -94,7 +101,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <span className="text-foreground">Dash</span>
         </Link>
         <div className="flex items-center gap-3">
-          {profile?.plano === "premium" && (
+          {isPremium && (
             <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/20">
               PRO
             </span>
@@ -117,7 +124,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border/50 glass safe-area-pb">
-        <div className="grid grid-cols-5 h-16">
+        <div className={`grid h-16 ${isPremium ? "grid-cols-6" : "grid-cols-5"}`}>
           {navLinks.map(({ href, label, icon: Icon }) => (
             <MobileNavLink key={href} href={href} label={label}>
               <Icon size={20} strokeWidth={1.5} />

@@ -39,6 +39,5 @@ export async function registrarHistoricoMensal() {
     snapshot_fundos: fundos ?? [],
   })
 
-  revalidatePath("/historico")
   return { ok: true, novo: true }
 }

@@ -44,11 +44,24 @@ export default async function HistoricoPage() {
   // Registra snapshot do mês atual (idempotente)
   await registrarHistoricoMensal()
 
-  const { data: historico } = await supabase
-    .from("historico_mensal")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("mes", { ascending: true })
+  const sixMonthsAgo = new Date()
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+  sixMonthsAgo.setDate(1)
+  sixMonthsAgo.setHours(0, 0, 0, 0)
+
+  const [{ data: historico }, { data: gastosRecentes }] = await Promise.all([
+    supabase
+      .from("historico_mensal")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("mes", { ascending: true }),
+    supabase
+      .from("gastos")
+      .select("valor, categoria, created_at")
+      .eq("user_id", user.id)
+      .gte("created_at", sixMonthsAgo.toISOString())
+      .order("created_at", { ascending: true }),
+  ])
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
@@ -56,7 +69,10 @@ export default async function HistoricoPage() {
         <h1 className="text-2xl font-bold text-foreground tracking-tight">Histórico Mensal</h1>
         <p className="text-sm text-muted-foreground">Evolução financeira ao longo do tempo</p>
       </div>
-      <HistoricoClient historico={(historico ?? []) as HistoricoMensal[]} />
+      <HistoricoClient
+        historico={(historico ?? []) as HistoricoMensal[]}
+        gastosRecentes={gastosRecentes ?? []}
+      />
     </div>
   )
 }

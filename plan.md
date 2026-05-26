@@ -205,7 +205,7 @@ Adicionar no mini-card de fundos do dashboard:
 ### Média prioridade
 
 - [ ] **Relatório mensal por email** — PDF automático todo dia 1 com resumo do mês anterior (feature Premium). Stack: Supabase Edge Function (cron) + react-pdf + Resend.
-- [ ] **Comparativo mês a mês** — gráfico de barras lado a lado dos últimos 6 meses por categoria. Dados já existem em `historico_mensal`.
+- [x] **Comparativo mês a mês** — gráfico de barras lado a lado dos últimos 6 meses por categoria. ✓ concluído 2026-05-25
 - [ ] **Categorias customizadas** — usuário cria categorias além de necessidade/objetivo/qualidade.
 - [ ] **Metas de fundo com data** — "Quero R$ 5.000 até dezembro/2026" → progresso com countdown.
 
