@@ -200,7 +200,7 @@ Adicionar no mini-card de fundos do dashboard:
 - [ ] **Notificações de orçamento** — email quando usuário ultrapassa 80% do limite de uma categoria. Stack: Supabase Edge Functions + Resend (gratuito até 3k emails/mês). Trigger: webhook no insert de `gastos`.
 - [x] **Meta mensal de economia** — usuário define quanto quer guardar por mês; barra de progresso no dashboard mostra quanto falta. Simples: coluna `meta_economia_mensal` em `configuracoes`. ✓ concluído 2026-05-25
 - [x] **Gastos recorrentes** — marcar gasto como recorrente (flag + dia do mês); cron no Supabase sugere adicionar automaticamente. Reduz atrito de uso diário. ✓ concluído 2026-05-25
-- [ ] **Importação de extrato CSV** — upload de CSV do banco; parser no servidor mapeia automaticamente para gastos por categoria. Maior diferencial de produto para usuários novos.
+- [x] **Importação de extrato CSV** — upload de CSV do banco; parser no servidor mapeia automaticamente para gastos por categoria. Maior diferencial de produto para usuários novos. ✓ concluído 2026-05-25
 
 ### Média prioridade
 

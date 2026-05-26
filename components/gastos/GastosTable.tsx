@@ -4,9 +4,10 @@ import { useState, useTransition } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { GastoModal } from "./GastoModal"
+import { ImportarCSVModal } from "./ImportarCSVModal"
 import { UpgradeModal } from "@/components/ui/UpgradeModal"
 import { removerGasto } from "@/app/(app)/gastos/actions"
-import { IconPencil, IconTrash, IconPlus, IconReceipt2, IconRepeat } from "@tabler/icons-react"
+import { IconPencil, IconTrash, IconPlus, IconReceipt2, IconRepeat, IconFileTypeCsv } from "@tabler/icons-react"
 import type { Gasto } from "@/types"
 
 const categoriaMeta: Record<string, { label: string; color: string }> = {
@@ -23,6 +24,7 @@ interface Props {
 export function GastosTable({ gastos, plano }: Props) {
   const [editando, setEditando] = useState<Gasto | null>(null)
   const [criando, setCriando] = useState(false)
+  const [importando, setImportando] = useState(false)
   const [showUpgrade, setShowUpgrade] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -47,14 +49,25 @@ export function GastosTable({ gastos, plano }: Props) {
             {plano === "free" && <span className="text-muted-foreground/60"> · limite: 10</span>}
           </p>
         </div>
-        <Button
-          size="sm"
-          className="gap-1.5"
-          onClick={() => setCriando(true)}
-        >
-          <IconPlus size={15} />
-          Novo gasto
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={() => setImportando(true)}
+          >
+            <IconFileTypeCsv size={15} />
+            Importar CSV
+          </Button>
+          <Button
+            size="sm"
+            className="gap-1.5"
+            onClick={() => setCriando(true)}
+          >
+            <IconPlus size={15} />
+            Novo gasto
+          </Button>
+        </div>
       </div>
 
       {gastos.length === 0 ? (
@@ -159,6 +172,12 @@ export function GastosTable({ gastos, plano }: Props) {
           onLimitReached={() => setShowUpgrade(true)}
         />
       )}
+
+      <ImportarCSVModal
+        open={importando}
+        onClose={() => setImportando(false)}
+        onLimitReached={() => { setImportando(false); setShowUpgrade(true) }}
+      />
 
       <UpgradeModal
         open={showUpgrade}

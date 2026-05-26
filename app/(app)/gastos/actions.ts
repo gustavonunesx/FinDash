@@ -96,6 +96,46 @@ export async function removerGasto(id: string): Promise<ActionResult> {
   return {}
 }
 
+export async function importarGastos(
+  itens: { nome: string; valor: number; categoria: Categoria }[]
+): Promise<ActionResult & { importados?: number }> {
+  const { supabase, userId } = await getAuthenticatedClient()
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("plano")
+    .eq("id", userId)
+    .single()
+
+  let lista = itens
+  if (profile?.plano === "free") {
+    const { count } = await supabase
+      .from("gastos")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+
+    const disponiveis = FREE_LIMIT - (count ?? 0)
+    if (disponiveis <= 0) return { error: "LIMIT_REACHED" }
+    lista = itens.slice(0, disponiveis)
+  }
+
+  const rows = lista.map((item) => ({
+    user_id: userId,
+    nome: item.nome,
+    valor: item.valor,
+    categoria: item.categoria,
+    recorrente: false,
+    dia_recorrencia: null,
+  }))
+
+  const { error } = await supabase.from("gastos").insert(rows)
+  if (error) return { error: error.message }
+
+  revalidatePath("/gastos")
+  revalidatePath("/dashboard")
+  return { importados: rows.length }
+}
+
 export async function confirmarRecorrente(templateId: string): Promise<ActionResult> {
   const { supabase, userId } = await getAuthenticatedClient()
 
