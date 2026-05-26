@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import {
   Select,
   SelectContent,
@@ -19,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { adicionarGasto, editarGasto } from "@/app/(app)/gastos/actions"
-import { IconCurrencyReal, IconTag } from "@tabler/icons-react"
+import { IconCurrencyReal, IconTag, IconRepeat } from "@tabler/icons-react"
 import type { Gasto, Categoria } from "@/types"
 
 interface Props {
@@ -40,12 +41,18 @@ export function GastoModal({ open, onClose, gasto, onLimitReached }: Props) {
   const [nome, setNome] = useState(gasto?.nome ?? "")
   const [valor, setValor] = useState(gasto ? String(gasto.valor) : "")
   const [categoria, setCategoria] = useState<Categoria>(gasto?.categoria ?? "necessidade")
+  const [recorrente, setRecorrente] = useState(gasto?.recorrente ?? false)
+  const [diaRecorrencia, setDiaRecorrencia] = useState(
+    gasto?.dia_recorrencia ? String(gasto.dia_recorrencia) : ""
+  )
   const [isPending, startTransition] = useTransition()
 
   function resetForm() {
     setNome("")
     setValor("")
     setCategoria("necessidade")
+    setRecorrente(false)
+    setDiaRecorrencia("")
   }
 
   function handleClose() {
@@ -57,11 +64,12 @@ export function GastoModal({ open, onClose, gasto, onLimitReached }: Props) {
     e.preventDefault()
     const valorNum = parseFloat(valor.replace(",", "."))
     if (!nome.trim() || isNaN(valorNum) || valorNum <= 0) return
+    const diaNum = diaRecorrencia ? parseInt(diaRecorrencia) : null
 
     startTransition(async () => {
       const action = isEdit
-        ? editarGasto(gasto.id, { nome: nome.trim(), valor: valorNum, categoria })
-        : adicionarGasto({ nome: nome.trim(), valor: valorNum, categoria })
+        ? editarGasto(gasto.id, { nome: nome.trim(), valor: valorNum, categoria, recorrente, dia_recorrencia: diaNum })
+        : adicionarGasto({ nome: nome.trim(), valor: valorNum, categoria, recorrente, dia_recorrencia: diaNum })
 
       const result = await action
 
@@ -143,7 +151,49 @@ export function GastoModal({ open, onClose, gasto, onLimitReached }: Props) {
             </Select>
           </div>
 
-          <div className="flex gap-3 pt-3">
+          {/* Recorrente toggle */}
+          <div className="rounded-lg border border-border bg-muted/20 px-4 py-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <IconRepeat size={15} className="text-muted-foreground" />
+                <Label htmlFor="recorrente" className="text-sm font-medium cursor-pointer">
+                  Gasto recorrente
+                </Label>
+              </div>
+              <Switch
+                id="recorrente"
+                checked={recorrente}
+                onCheckedChange={(checked: boolean) => {
+                  setRecorrente(checked)
+                  if (!checked) setDiaRecorrencia("")
+                }}
+              />
+            </div>
+
+            {recorrente && (
+              <div className="space-y-1.5">
+                <Label htmlFor="dia" className="text-xs text-muted-foreground">
+                  Dia do mês (opcional)
+                </Label>
+                <Input
+                  id="dia"
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  max="31"
+                  placeholder="Ex: 5 (vence todo dia 5)"
+                  value={diaRecorrencia}
+                  onChange={(e) => setDiaRecorrencia(e.target.value)}
+                  className="font-mono h-8 text-sm"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Aparecerá como sugestão mensal na página de gastos.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3 pt-1">
             <Button type="button" variant="outline" className="flex-1" onClick={handleClose}>
               Cancelar
             </Button>

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { GastoModal } from "./GastoModal"
 import { UpgradeModal } from "@/components/ui/UpgradeModal"
 import { removerGasto } from "@/app/(app)/gastos/actions"
-import { IconPencil, IconTrash, IconPlus, IconReceipt2 } from "@tabler/icons-react"
+import { IconPencil, IconTrash, IconPlus, IconReceipt2, IconRepeat } from "@tabler/icons-react"
 import type { Gasto } from "@/types"
 
 const categoriaMeta: Record<string, { label: string; color: string }> = {
@@ -93,7 +93,20 @@ export function GastosTable({ gastos, plano }: Props) {
                     key={g.id}
                     className="border-b border-border/50 last:border-0 transition-colors hover:bg-muted/20"
                   >
-                    <td className="px-4 py-3.5 font-medium text-foreground">{g.nome}</td>
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-foreground">{g.nome}</span>
+                        {g.recorrente && (
+                          <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border font-medium"
+                            style={{ color: "var(--fd-blue)", borderColor: "var(--fd-blue)30", backgroundColor: "var(--fd-blue)10" }}
+                            title={g.dia_recorrencia ? `Recorrente · dia ${g.dia_recorrencia}` : "Recorrente"}
+                          >
+                            <IconRepeat size={9} />
+                            {g.dia_recorrencia ? `dia ${g.dia_recorrencia}` : "recorrente"}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-3.5 hidden sm:table-cell">
                       <span
                         className="inline-flex items-center text-xs px-2.5 py-1 rounded-full border font-medium transition-colors"

@@ -62,7 +62,7 @@ button, input, label, card, badge, alert, separator, dialog, select, switch, pro
 - ~~P2 — Revisão cores: --fd-amber e --fd-red menos saturados, novo --fd-purple~~ ✓
 - ~~P3 — Fundos: custódia por instituição + rendimento CDI (API BCB gratuita)~~ ✓
 - ~~P5 — Calculadora de Renda Extra: carousel de cards full-width + confirmação de aporte~~ ✓
-- P4 — Features de retenção: ~~meta mensal de economia~~ ✓, notificações, gastos recorrentes, importação CSV
+- P4 — Features de retenção: ~~meta mensal de economia~~ ✓, notificações, ~~gastos recorrentes~~ ✓, importação CSV
 
 ## Environment Variables (.env)
 - `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL

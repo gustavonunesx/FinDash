@@ -28,6 +28,8 @@ export interface Gasto {
   nome: string
   valor: number
   categoria: Categoria
+  recorrente: boolean
+  dia_recorrencia: number | null
   created_at: string
 }
 
