@@ -33,39 +33,34 @@ const mobileBars = [
 ];
 
 // ── tela do notebook ─────────────────────────────────────────────────────────
+// fontSize base no container → tudo em em → escala automaticamente com o laptop
 function LaptopScreen({ inView }: { inView: boolean }) {
   return (
-    <div
-      style={{
-        background: "#0f0f13",
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        fontFamily: "inherit",
-        overflow: "hidden",
-      }}
-    >
+    <div style={{
+      background: "#0f0f13", width: "100%", height: "100%",
+      display: "flex", flexDirection: "column", fontFamily: "inherit", overflow: "hidden",
+      fontSize: "clamp(7px, 1.4vw, 11px)",  // base de escala
+    }}>
       {/* top bar */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "8px 14px", borderBottom: "1px solid rgba(255,255,255,0.07)",
+        padding: "0.7em 1.2em", borderBottom: "1px solid rgba(255,255,255,0.07)",
         background: "#1a1a24", flexShrink: 0,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5em" }}>
           <span style={{
-            fontFamily: "monospace", fontSize: 11, fontWeight: 700,
+            fontFamily: "monospace", fontSize: "1em", fontWeight: 700,
             background: "linear-gradient(135deg,#1d9e75,#378add)",
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
           }}>FinDash</span>
           <span style={{
-            fontSize: 8, fontWeight: 600, textTransform: "uppercase",
+            fontSize: "0.75em", fontWeight: 600, textTransform: "uppercase",
             letterSpacing: "0.08em", background: "rgba(29,158,117,0.15)",
-            color: "#1d9e75", borderRadius: 4, padding: "2px 5px",
+            color: "#1d9e75", borderRadius: "0.35em", padding: "0.2em 0.45em",
           }}>Premium</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 5, color: "#8888a0", fontSize: 9 }}>
-          <IconTrendingUp size={9} color="#1d9e75" />
+        <div style={{ display: "flex", alignItems: "center", gap: "0.4em", color: "#8888a0", fontSize: "0.82em" }}>
+          <IconTrendingUp size="1em" color="#1d9e75" />
           Junho 2026
         </div>
       </div>
@@ -76,38 +71,34 @@ function LaptopScreen({ inView }: { inView: boolean }) {
         borderBottom: "1px solid rgba(255,255,255,0.07)", flexShrink: 0,
       }}>
         {[
-          { label: "Saldo livre",  value: formatCurrency(1847), color: "#1d9e75", delay: 0,   icon: <IconWallet size={9} /> },
-          { label: "Gasto no mês", value: formatCurrency(4250), color: "#e8923a", delay: 120, icon: <IconTrendingDown size={9} /> },
-          { label: "Score",        value: "82 / 100",           color: "#378add", delay: 240, icon: <IconTrendingUp size={9} /> },
+          { label: "Saldo livre",  value: formatCurrency(1847), color: "#1d9e75", delay: 0,   icon: <IconWallet size="1em" /> },
+          { label: "Gasto no mês", value: formatCurrency(4250), color: "#e8923a", delay: 120, icon: <IconTrendingDown size="1em" /> },
+          { label: "Score",        value: "82 / 100",           color: "#378add", delay: 240, icon: <IconTrendingUp size="1em" /> },
         ].map((m, i) => (
-          <div
-            key={m.label}
-            style={{
-              padding: "8px 10px",
-              borderRight: i < 2 ? "1px solid rgba(255,255,255,0.07)" : "none",
-              opacity: inView ? 1 : 0,
-              transform: inView ? "translateY(0)" : "translateY(8px)",
-              transition: inView ? `opacity 0.45s ease ${m.delay}ms, transform 0.45s ease ${m.delay}ms` : "none",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 3, color: "#8888a0", marginBottom: 3 }}>
+          <div key={m.label} style={{
+            padding: "0.7em 0.9em",
+            borderRight: i < 2 ? "1px solid rgba(255,255,255,0.07)" : "none",
+            opacity: inView ? 1 : 0,
+            transform: inView ? "translateY(0)" : "translateY(8px)",
+            transition: inView ? `opacity 0.45s ease ${m.delay}ms, transform 0.45s ease ${m.delay}ms` : "none",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.3em", color: "#8888a0", marginBottom: "0.3em" }}>
               <span style={{ color: m.color }}>{m.icon}</span>
-              <span style={{ fontSize: 7, textTransform: "uppercase", letterSpacing: "0.08em" }}>{m.label}</span>
+              <span style={{ fontSize: "0.64em", textTransform: "uppercase", letterSpacing: "0.08em" }}>{m.label}</span>
             </div>
-            <span style={{ fontFamily: "monospace", fontSize: 13, fontWeight: 700, color: m.color }}>{m.value}</span>
+            <span style={{ fontFamily: "monospace", fontSize: "1.18em", fontWeight: 700, color: m.color }}>{m.value}</span>
           </div>
         ))}
       </div>
 
       {/* charts */}
       <div style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
-        {/* area chart */}
         <div style={{
-          flex: "0 0 58%", padding: "8px 10px",
+          flex: "0 0 58%", padding: "0.7em 0.9em",
           borderRight: "1px solid rgba(255,255,255,0.07)",
           display: "flex", flexDirection: "column",
         }}>
-          <span style={{ fontSize: 7, textTransform: "uppercase", letterSpacing: "0.1em", color: "#8888a0", marginBottom: 6 }}>
+          <span style={{ fontSize: "0.64em", textTransform: "uppercase", letterSpacing: "0.1em", color: "#8888a0", marginBottom: "0.5em" }}>
             Evolução do saldo
           </span>
           <div style={{ flex: 1, minHeight: 0 }}>
@@ -121,30 +112,15 @@ function LaptopScreen({ inView }: { inView: boolean }) {
                 </defs>
                 <XAxis dataKey="mes" tick={{ fontSize: 7, fill: "#8888a0" }} axisLine={false} tickLine={false} />
                 <YAxis hide />
-                <Tooltip
-                  contentStyle={{ background: "#1a1a24", border: "1px solid #2a2a38", borderRadius: 6, fontSize: 9 }}
-                  formatter={(v: number) => [formatCurrency(v), "Saldo"]}
-                />
-                <Area
-                  type="monotone" dataKey="saldo"
-                  stroke="#1d9e75" strokeWidth={2}
-                  fill="url(#laptopGradSaldo)"
-                  isAnimationActive={inView}
-                  animationDuration={900} animationEasing="ease-out"
-                  dot={{ r: 2, fill: "#1d9e75", strokeWidth: 0 }}
-                  activeDot={{ r: 4, fill: "#1d9e75" }}
-                />
+                <Tooltip contentStyle={{ background: "#1a1a24", border: "1px solid #2a2a38", borderRadius: 6, fontSize: 9 }} formatter={(v: number) => [formatCurrency(v), "Saldo"]} />
+                <Area type="monotone" dataKey="saldo" stroke="#1d9e75" strokeWidth={2} fill="url(#laptopGradSaldo)" isAnimationActive={inView} animationDuration={900} animationEasing="ease-out" dot={{ r: 2, fill: "#1d9e75", strokeWidth: 0 }} activeDot={{ r: 4, fill: "#1d9e75" }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* bar chart */}
-        <div style={{
-          flex: 1, padding: "8px 10px",
-          display: "flex", flexDirection: "column",
-        }}>
-          <span style={{ fontSize: 7, textTransform: "uppercase", letterSpacing: "0.1em", color: "#8888a0", marginBottom: 6 }}>
+        <div style={{ flex: 1, padding: "0.7em 0.9em", display: "flex", flexDirection: "column" }}>
+          <span style={{ fontSize: "0.64em", textTransform: "uppercase", letterSpacing: "0.1em", color: "#8888a0", marginBottom: "0.5em" }}>
             Categorias
           </span>
           <div style={{ flex: 1, minHeight: 0 }}>
@@ -152,10 +128,7 @@ function LaptopScreen({ inView }: { inView: boolean }) {
               <BarChart data={barData} margin={{ top: 2, right: 4, bottom: 0, left: -24 }} barSize={12}>
                 <XAxis dataKey="cat" tick={{ fontSize: 7, fill: "#8888a0" }} axisLine={false} tickLine={false} />
                 <YAxis hide />
-                <Tooltip
-                  contentStyle={{ background: "#1a1a24", border: "1px solid #2a2a38", borderRadius: 6, fontSize: 9 }}
-                  formatter={(v: number) => [formatCurrency(v)]}
-                />
+                <Tooltip contentStyle={{ background: "#1a1a24", border: "1px solid #2a2a38", borderRadius: 6, fontSize: 9 }} formatter={(v: number) => [formatCurrency(v)]} />
                 <Bar dataKey="val" radius={[4, 4, 0, 0]} isAnimationActive={inView} animationDuration={800} animationEasing="ease-out">
                   {barData.map((e, i) => <Cell key={i} fill={e.fill} fillOpacity={0.85} />)}
                 </Bar>
@@ -165,139 +138,124 @@ function LaptopScreen({ inView }: { inView: boolean }) {
         </div>
       </div>
 
-      {/* bottom status bar */}
+      {/* bottom nav */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "5px 12px", borderTop: "1px solid rgba(255,255,255,0.05)",
+        padding: "0.45em 1em", borderTop: "1px solid rgba(255,255,255,0.05)",
         background: "rgba(26,26,36,0.6)", flexShrink: 0,
       }}>
-        <div style={{ display: "flex", gap: 12 }}>
+        <div style={{ display: "flex", gap: "1em" }}>
           {["Dashboard", "Gastos", "Fundos", "Histórico"].map((l, i) => (
             <span key={l} style={{
-              fontSize: 7, color: i === 0 ? "#1d9e75" : "#8888a0",
-              borderBottom: i === 0 ? "1px solid #1d9e75" : "none",
-              paddingBottom: 1,
+              fontSize: "0.64em", color: i === 0 ? "#1d9e75" : "#8888a0",
+              borderBottom: i === 0 ? "1px solid #1d9e75" : "none", paddingBottom: 1,
             }}>{l}</span>
           ))}
         </div>
-        <span style={{ fontSize: 7, color: "#8888a0", fontFamily: "monospace" }}>50/30/20</span>
+        <span style={{ fontSize: "0.64em", color: "#8888a0", fontFamily: "monospace" }}>50/30/20</span>
       </div>
     </div>
   );
 }
 
 // ── tela do celular ───────────────────────────────────────────────────────────
+// fontSize base no container → tudo em em → escala automaticamente com o celular
 function PhoneScreen({ inView }: { inView: boolean }) {
   return (
     <div style={{
-      background: "#0f0f13",
-      width: "100%", height: "100%",
-      display: "flex", flexDirection: "column",
-      fontFamily: "inherit", overflow: "hidden",
+      background: "#0f0f13", width: "100%", height: "100%",
+      display: "flex", flexDirection: "column", fontFamily: "inherit", overflow: "hidden",
+      fontSize: "clamp(7px, 2.2vw, 10px)",  // base de escala do celular
     }}>
       {/* status bar */}
       <div style={{
         display: "flex", justifyContent: "space-between", alignItems: "center",
-        padding: "6px 12px 4px",
-        fontSize: 7, color: "#8888a0", flexShrink: 0,
+        padding: "0.6em 1.2em 0.4em", flexShrink: 0,
       }}>
-        <span style={{ fontFamily: "monospace", fontWeight: 600, color: "#f0f0f5" }}>9:41</span>
-        <div style={{ display: "flex", gap: 4 }}>
+        <span style={{ fontFamily: "monospace", fontWeight: 600, fontSize: "0.9em", color: "#f0f0f5" }}>9:41</span>
+        <div style={{ display: "flex", gap: "0.4em", alignItems: "flex-end" }}>
           {[3,3,4,4].map((h, i) => (
-            <div key={i} style={{ width: 3, height: h, background: "#f0f0f5", borderRadius: 1, opacity: i < 3 ? 1 : 0.3 }} />
+            <div key={i} style={{ width: "0.3em", height: h, background: "#f0f0f5", borderRadius: 1, opacity: i < 3 ? 1 : 0.3 }} />
           ))}
-          <div style={{ width: 14, height: 6, border: "1px solid #8888a0", borderRadius: 2, display: "flex", alignItems: "center", padding: "0 1px" }}>
-            <div style={{ width: "60%", height: 3, background: "#1d9e75", borderRadius: 1 }} />
+          <div style={{ width: "1.4em", height: "0.6em", border: "1px solid #8888a0", borderRadius: 2, display: "flex", alignItems: "center", padding: "0 1px" }}>
+            <div style={{ width: "60%", height: "0.3em", background: "#1d9e75", borderRadius: 1 }} />
           </div>
         </div>
       </div>
 
       {/* header */}
       <div style={{
-        padding: "4px 12px 8px",
-        borderBottom: "1px solid rgba(255,255,255,0.07)",
-        flexShrink: 0,
+        padding: "0.3em 1.2em 0.7em",
+        borderBottom: "1px solid rgba(255,255,255,0.07)", flexShrink: 0,
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{
-            fontFamily: "monospace", fontSize: 13, fontWeight: 800,
+            fontFamily: "monospace", fontSize: "1.3em", fontWeight: 800,
             background: "linear-gradient(135deg,#1d9e75,#378add)",
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
           }}>FinDash</span>
           <div style={{
-            width: 22, height: 22, borderRadius: "50%",
+            width: "2.2em", height: "2.2em", borderRadius: "50%",
             background: "linear-gradient(135deg,#1d9e75,#378add)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 8, fontWeight: 700, color: "#fff",
+            fontSize: "0.8em", fontWeight: 700, color: "#fff",
           }}>G</div>
         </div>
       </div>
 
-      {/* score radial + label */}
+      {/* score radial */}
       <div style={{
         display: "flex", flexDirection: "column", alignItems: "center",
-        padding: "10px 12px 6px", flexShrink: 0,
+        padding: "0.8em 1em 0.5em", flexShrink: 0,
       }}>
-        <div style={{ position: "relative", width: 72, height: 72 }}>
-          <RadialBarChart
-            width={72} height={72}
-            innerRadius={22} outerRadius={33}
-            startAngle={210} endAngle={-30}
-            data={radialData} barSize={8}
-          >
-            <RadialBar
-              dataKey="value" cornerRadius={5}
-              background={{ fill: "#2a2a38" }}
-              isAnimationActive={inView}
-              animationDuration={1000} animationEasing="ease-out"
-            />
+        <div style={{ position: "relative", width: "7em", height: "7em" }}>
+          <RadialBarChart width={72} height={72} innerRadius={22} outerRadius={33} startAngle={210} endAngle={-30} data={radialData} barSize={8} style={{ width: "100%", height: "100%" }}>
+            <RadialBar dataKey="value" cornerRadius={5} background={{ fill: "#2a2a38" }} isAnimationActive={inView} animationDuration={1000} animationEasing="ease-out" />
           </RadialBarChart>
           <span style={{
             position: "absolute", inset: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontFamily: "monospace", fontSize: 14, fontWeight: 900,
+            fontFamily: "monospace", fontSize: "1.4em", fontWeight: 900,
             background: "linear-gradient(135deg,#1d9e75,#378add)",
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
           }}>82</span>
         </div>
-        <span style={{ fontSize: 8, color: "#8888a0", marginTop: 4 }}>Score 50/30/20</span>
+        <span style={{ fontSize: "0.78em", color: "#8888a0", marginTop: "0.4em" }}>Score 50/30/20</span>
       </div>
 
       {/* 2 metric cards */}
       <div style={{
         display: "grid", gridTemplateColumns: "1fr 1fr",
-        gap: 6, padding: "0 10px 8px", flexShrink: 0,
+        gap: "0.5em", padding: "0 0.9em 0.7em", flexShrink: 0,
       }}>
         {[
           { label: "Saldo livre", value: formatCurrency(1847), color: "#1d9e75", delay: 0 },
           { label: "Gasto",       value: formatCurrency(4250), color: "#e8923a", delay: 80 },
         ].map((m) => (
           <div key={m.label} style={{
-            background: "#1a1a24",
-            borderRadius: 8, padding: "7px 9px",
+            background: "#1a1a24", borderRadius: "0.7em", padding: "0.65em 0.8em",
             border: "1px solid rgba(255,255,255,0.06)",
             opacity: inView ? 1 : 0,
-            transform: inView ? "translateY(0)" : "translateY(10px)",
+            transform: inView ? "translateY(0)" : "translateY(8px)",
             transition: inView ? `opacity 0.45s ease ${m.delay}ms, transform 0.45s ease ${m.delay}ms` : "none",
           }}>
-            <div style={{ fontSize: 7, color: "#8888a0", marginBottom: 3 }}>{m.label}</div>
-            <div style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 700, color: m.color }}>{m.value}</div>
+            <div style={{ fontSize: "0.7em", color: "#8888a0", marginBottom: "0.3em" }}>{m.label}</div>
+            <div style={{ fontFamily: "monospace", fontSize: "1em", fontWeight: 700, color: m.color }}>{m.value}</div>
           </div>
         ))}
       </div>
 
       {/* 50/30/20 bars */}
-      <div style={{ padding: "0 12px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 7 }}>
+      <div style={{ padding: "0 1em", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "0.6em" }}>
         {mobileBars.map((bar, i) => (
           <div key={bar.label}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-              <span style={{ fontSize: 7, color: "#8888a0" }}>{bar.label}</span>
-              <span style={{ fontSize: 7, fontFamily: "monospace", color: "#8888a0" }}>{bar.pct}%</span>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3em" }}>
+              <span style={{ fontSize: "0.72em", color: "#8888a0" }}>{bar.label}</span>
+              <span style={{ fontSize: "0.72em", fontFamily: "monospace", color: "#8888a0" }}>{bar.pct}%</span>
             </div>
-            <div style={{ height: 4, borderRadius: 99, background: "#2a2a38", overflow: "hidden" }}>
+            <div style={{ height: "0.4em", borderRadius: 99, background: "#2a2a38", overflow: "hidden" }}>
               <div style={{
-                height: "100%", borderRadius: 99,
-                background: bar.color,
+                height: "100%", borderRadius: 99, background: bar.color,
                 width: `${bar.pct * (100 / 50)}%`,
                 transform: inView ? "scaleX(1)" : "scaleX(0)",
                 transformOrigin: "left",
@@ -311,16 +269,13 @@ function PhoneScreen({ inView }: { inView: boolean }) {
       {/* bottom nav */}
       <div style={{
         display: "flex", justifyContent: "space-around", alignItems: "center",
-        padding: "8px 0 10px",
-        borderTop: "1px solid rgba(255,255,255,0.07)",
-        flexShrink: 0,
+        padding: "0.7em 0 0.9em",
+        borderTop: "1px solid rgba(255,255,255,0.07)", flexShrink: 0,
       }}>
         {["◈", "◉", "◇", "◎"].map((icon, i) => (
-          <div key={i} style={{
-            display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
-          }}>
-            <span style={{ fontSize: 12, color: i === 0 ? "#1d9e75" : "#8888a0", lineHeight: 1 }}>{icon}</span>
-            {i === 0 && <div style={{ width: 4, height: 2, borderRadius: 99, background: "#1d9e75" }} />}
+          <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.2em" }}>
+            <span style={{ fontSize: "1.1em", color: i === 0 ? "#1d9e75" : "#8888a0", lineHeight: 1 }}>{icon}</span>
+            {i === 0 && <div style={{ width: "0.4em", height: "0.2em", borderRadius: 99, background: "#1d9e75" }} />}
           </div>
         ))}
       </div>
@@ -333,22 +288,26 @@ export function DeviceShowcase() {
   const ref    = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
 
+  // tamanhos responsivos via clamp — funcionam de 320px a 1200px sem breakpoints JS
+  const laptopW  = "clamp(280px, 70vw, 660px)";
+  const phoneW   = "clamp(100px, 24vw, 148px)";
+  // sobreposição do celular: negativo proporcional ao tamanho do celular
+  const phoneML  = "clamp(-36px, -5.5vw, -48px)";
+  // celular sobe um pouco acima da base do laptop
+  const phoneMB  = "clamp(14px, 2.5vw, 24px)";
+
   return (
     <div ref={ref} className="relative w-full select-none">
 
       {/* ambient glow */}
-      <div
-        style={{
-          position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0,
-          background: "radial-gradient(ellipse 70% 60% at 40% 50%, rgba(29,158,117,0.07), transparent 70%)",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0,
-          background: "radial-gradient(ellipse 40% 50% at 80% 50%, rgba(55,138,221,0.05), transparent 70%)",
-        }}
-      />
+      <div style={{
+        position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0,
+        background: "radial-gradient(ellipse 70% 60% at 40% 50%, rgba(29,158,117,0.07), transparent 70%)",
+      }} />
+      <div style={{
+        position: "absolute", inset: 0, pointerEvents: "none", zIndex: 0,
+        background: "radial-gradient(ellipse 40% 50% at 80% 50%, rgba(55,138,221,0.05), transparent 70%)",
+      }} />
 
       {/* ── LAYOUT: laptop + phone side by side ── */}
       <div style={{
@@ -356,7 +315,6 @@ export function DeviceShowcase() {
         display: "flex",
         alignItems: "flex-end",
         justifyContent: "center",
-        gap: 0,
         padding: "0 16px",
       }}>
 
@@ -365,36 +323,30 @@ export function DeviceShowcase() {
           initial={{ opacity: 0, y: 48, rotateX: 8 }}
           animate={inView ? { opacity: 1, y: 0, rotateX: 0 } : { opacity: 0, y: 48, rotateX: 8 }}
           transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
-          style={{ perspective: 900, flexShrink: 0, width: "min(660px, 72vw)" }}
+          style={{ perspective: 900, flexShrink: 0, width: laptopW }}
         >
           {/* lid (screen) */}
           <div style={{
             position: "relative",
             background: "linear-gradient(160deg, #2a2a38 0%, #1a1a24 40%, #111118 100%)",
             borderRadius: "12px 12px 0 0",
-            padding: "10px 10px 0",
+            padding: "clamp(6px,1vw,10px) clamp(6px,1vw,10px) 0",
             boxShadow: "0 -2px 0 rgba(255,255,255,0.06) inset, 0 40px 80px -20px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06)",
           }}>
             {/* camera */}
             <div style={{
               width: 6, height: 6, borderRadius: "50%",
-              background: "#1a1a24",
-              border: "1px solid rgba(255,255,255,0.08)",
+              background: "#1a1a24", border: "1px solid rgba(255,255,255,0.08)",
               margin: "0 auto 6px",
             }} />
-
             {/* screen bezel */}
             <div style={{
-              borderRadius: "6px 6px 0 0",
-              overflow: "hidden",
-              aspectRatio: "16/10",
-              position: "relative",
+              borderRadius: "6px 6px 0 0", overflow: "hidden",
+              aspectRatio: "16/10", position: "relative",
               background: "#0f0f13",
               boxShadow: "0 0 0 1px rgba(255,255,255,0.04) inset",
             }}>
               <LaptopScreen inView={inView} />
-
-              {/* glare */}
               <div style={{
                 position: "absolute", inset: 0, pointerEvents: "none",
                 background: "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 50%)",
@@ -405,28 +357,25 @@ export function DeviceShowcase() {
 
           {/* base */}
           <div style={{
-            height: 14,
+            height: "clamp(8px, 1.2vw, 14px)",
             background: "linear-gradient(180deg, #2a2a38 0%, #1e1e28 100%)",
             borderRadius: "0 0 4px 4px",
             boxShadow: "0 1px 0 rgba(255,255,255,0.05) inset",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            {/* trackpad hint */}
             <div style={{
-              width: 48, height: 6,
-              background: "rgba(255,255,255,0.05)",
-              borderRadius: 3,
+              width: "clamp(28px, 5vw, 48px)", height: 5,
+              background: "rgba(255,255,255,0.05)", borderRadius: 3,
               border: "1px solid rgba(255,255,255,0.04)",
             }} />
           </div>
 
-          {/* shadow on table */}
+          {/* table shadow */}
           <div style={{
             height: 6, marginTop: -1,
             background: "linear-gradient(180deg, #141420 0%, transparent 100%)",
             borderRadius: "0 0 50% 50%",
-            filter: "blur(4px)",
-            opacity: 0.8,
+            filter: "blur(4px)", opacity: 0.8,
           }} />
         </motion.div>
 
@@ -437,72 +386,51 @@ export function DeviceShowcase() {
           transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1], delay: 0.28 }}
           style={{
             flexShrink: 0,
-            width: "min(148px, 18vw)",
-            marginLeft: "min(-48px, -5vw)",
-            marginBottom: "min(20px, 3vw)",
+            width: phoneW,
+            marginLeft: phoneML,
+            marginBottom: phoneMB,
             zIndex: 2,
           }}
         >
           {/* phone body */}
           <div style={{
             background: "linear-gradient(160deg, #2a2a38, #1a1a24)",
-            borderRadius: 22,
-            padding: "5px 5px",
-            boxShadow:
-              "0 0 0 1px rgba(255,255,255,0.08), 0 32px 64px -16px rgba(0,0,0,0.9), 4px 4px 24px rgba(0,0,0,0.5), -2px 0 12px rgba(29,158,117,0.08)",
+            borderRadius: "clamp(14px, 3vw, 22px)",
+            padding: "clamp(3px,0.5vw,5px)",
+            boxShadow: "0 0 0 1px rgba(255,255,255,0.08), 0 32px 64px -16px rgba(0,0,0,0.9), 4px 4px 24px rgba(0,0,0,0.5), -2px 0 12px rgba(29,158,117,0.08)",
             position: "relative",
           }}>
             {/* side buttons */}
-            <div style={{
-              position: "absolute", left: -3, top: 40,
-              width: 3, height: 20, background: "#2a2a38",
-              borderRadius: "3px 0 0 3px",
-              boxShadow: "0 0 0 1px rgba(255,255,255,0.05)",
-            }} />
-            <div style={{
-              position: "absolute", left: -3, top: 68,
-              width: 3, height: 14, background: "#2a2a38",
-              borderRadius: "3px 0 0 3px",
-            }} />
-            <div style={{
-              position: "absolute", right: -3, top: 52,
-              width: 3, height: 22, background: "#2a2a38",
-              borderRadius: "0 3px 3px 0",
-            }} />
+            <div style={{ position: "absolute", left: -3, top: 40, width: 3, height: 20, background: "#2a2a38", borderRadius: "3px 0 0 3px", boxShadow: "0 0 0 1px rgba(255,255,255,0.05)" }} />
+            <div style={{ position: "absolute", left: -3, top: 68, width: 3, height: 14, background: "#2a2a38", borderRadius: "3px 0 0 3px" }} />
+            <div style={{ position: "absolute", right: -3, top: 52, width: 3, height: 22, background: "#2a2a38", borderRadius: "0 3px 3px 0" }} />
 
             {/* notch */}
             <div style={{
-              width: 48, height: 5,
-              background: "#0f0f13",
-              borderRadius: "0 0 10px 10px",
-              margin: "0 auto 2px",
-              position: "relative", zIndex: 2,
+              width: "clamp(28px, 5vw, 48px)", height: 5,
+              background: "#0f0f13", borderRadius: "0 0 10px 10px",
+              margin: "0 auto 2px", position: "relative", zIndex: 2,
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#1a1a24", border: "1px solid rgba(255,255,255,0.06)" }} />
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#1a1a24", border: "1px solid rgba(255,255,255,0.06)" }} />
             </div>
 
             {/* screen */}
             <div style={{
-              borderRadius: 16,
-              overflow: "hidden",
-              aspectRatio: "9/19.5",
-              background: "#0f0f13",
-              position: "relative",
+              borderRadius: "clamp(10px, 2vw, 16px)", overflow: "hidden",
+              aspectRatio: "9/19.5", background: "#0f0f13", position: "relative",
             }}>
               <PhoneScreen inView={inView} />
-
-              {/* screen glare */}
               <div style={{
                 position: "absolute", inset: 0, pointerEvents: "none",
                 background: "linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 45%)",
-                borderRadius: 16,
+                borderRadius: "clamp(10px, 2vw, 16px)",
               }} />
             </div>
 
             {/* home indicator */}
             <div style={{ padding: "4px 0 2px", display: "flex", justifyContent: "center" }}>
-              <div style={{ width: 36, height: 3, background: "rgba(255,255,255,0.12)", borderRadius: 99 }} />
+              <div style={{ width: "clamp(24px,4vw,36px)", height: 3, background: "rgba(255,255,255,0.12)", borderRadius: 99 }} />
             </div>
           </div>
         </motion.div>
