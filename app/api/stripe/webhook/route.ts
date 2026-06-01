@@ -1,69 +1,64 @@
-import { headers } from "next/headers"
-import type Stripe from "stripe"
-import { stripe } from "@/lib/stripe"
-import { createAdminClient } from "@/lib/supabase/server"
+import { NextResponse } from "next/server";
+import { headers } from "next/headers";
+import Stripe from "stripe";
+import { stripe } from "@/lib/stripe";
+import { grantReferralReward } from "@/lib/referral-rewards";
+import { createServiceClient } from "@/lib/supabase/admin";
 
-export async function POST(request: Request) {
-  const body = await request.text()
-  const headersList = await headers()
-  const sig = headersList.get("stripe-signature")
+export async function POST(req: Request) {
+  const body = await req.text();
+  const sig = (await headers()).get("stripe-signature");
 
-  if (!sig) {
-    return new Response("Missing stripe-signature", { status: 400 })
+  if (!stripe || !process.env.STRIPE_WEBHOOK_SECRET) {
+    return NextResponse.json({ error: "Stripe não configurado" }, { status: 503 });
   }
 
-  let event: Stripe.Event
+  let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!)
-  } catch {
-    return new Response("Webhook signature verification failed", { status: 400 })
+    event = stripe.webhooks.constructEvent(body, sig!, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Invalid signature";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
-  const admin = await createAdminClient()
+  const supabase = createServiceClient();
 
   switch (event.type) {
     case "checkout.session.completed": {
-      const session = event.data.object as Stripe.Checkout.Session
-      const customerId = session.customer as string
-      const subscriptionId = session.subscription as string
+      const session = event.data.object as Stripe.Checkout.Session;
+      const userId = session.metadata?.user_id;
+      if (userId) {
+        await supabase
+          .from("profiles")
+          .update({
+            plano: "premium",
+            assinatura_status: "trial",
+            stripe_subscription_id: session.subscription as string,
+          })
+          .eq("id", userId);
 
-      await admin
-        .from("profiles")
-        .update({
-          plano: "premium",
-          stripe_subscription_id: subscriptionId,
-          assinatura_status: "active",
-        })
-        .eq("stripe_customer_id", customerId)
-      break
+        await grantReferralReward(userId);
+      }
+      break;
     }
-
     case "customer.subscription.updated": {
-      const sub = event.data.object as Stripe.Subscription
-      const customerId = sub.customer as string
-
-      await admin
+      const sub = event.data.object as Stripe.Subscription;
+      const status = sub.status === "active" ? "ativa" : sub.status === "trialing" ? "trial" : "cancelada";
+      await supabase
         .from("profiles")
-        .update({ assinatura_status: sub.status as "active" | "canceled" | "trialing" })
-        .eq("stripe_customer_id", customerId)
-      break
+        .update({ assinatura_status: status, plano: sub.status === "canceled" ? "free" : "premium" })
+        .eq("stripe_subscription_id", sub.id);
+      break;
     }
-
     case "customer.subscription.deleted": {
-      const sub = event.data.object as Stripe.Subscription
-      const customerId = sub.customer as string
-
-      await admin
+      const sub = event.data.object as Stripe.Subscription;
+      await supabase
         .from("profiles")
-        .update({
-          plano: "free",
-          assinatura_status: "canceled",
-          stripe_subscription_id: null,
-        })
-        .eq("stripe_customer_id", customerId)
-      break
+        .update({ plano: "free", assinatura_status: "cancelada", stripe_subscription_id: null })
+        .eq("stripe_subscription_id", sub.id);
+      break;
     }
   }
 
-  return new Response(null, { status: 200 })
+  return NextResponse.json({ received: true });
 }

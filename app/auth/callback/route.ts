@@ -1,46 +1,28 @@
-import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
-import { seedDefaultData } from "@/lib/supabase/seed-defaults"
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { ensureUserProfile } from "@/lib/auth-bootstrap";
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get("code")
-  const next = searchParams.get("next") ?? "/dashboard"
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get("code");
+  const next = searchParams.get("next") ?? "/dashboard";
 
   if (code) {
-    const supabase = await createClient()
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    const supabase = await createClient();
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error && data.user) {
-      // Check if this is a new user (profile just created by trigger)
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("created_at")
-        .eq("id", data.user.id)
-        .single()
+    if (!error) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-      if (profile) {
-        const createdAt = new Date(profile.created_at)
-        const isNewUser = Date.now() - createdAt.getTime() < 30_000
-
-        if (isNewUser) {
-          const { data: existingGastos } = await supabase
-            .from("gastos")
-            .select("id")
-            .eq("user_id", data.user.id)
-            .limit(1)
-
-          if (!existingGastos?.length) {
-            await seedDefaultData(data.user.id)
-          }
-
-          return NextResponse.redirect(`${origin}/onboarding`)
-        }
+      if (user) {
+        const { onboardingCompleted } = await ensureUserProfile(user);
+        const destination = onboardingCompleted ? next : "/onboarding";
+        return NextResponse.redirect(`${origin}${destination}`);
       }
-
-      return NextResponse.redirect(`${origin}${next}`)
     }
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_callback_error`)
+  return NextResponse.redirect(`${origin}/login?error=auth`);
 }

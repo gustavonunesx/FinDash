@@ -1,54 +1,57 @@
-"use server"
+"use server";
 
-import { revalidatePath } from "next/cache"
-import { createClient } from "@/lib/supabase/server"
+import { revalidatePath } from "next/cache";
+import { isDemoMode } from "@/lib/demo-data";
+import { setDemoConfig, setDemoProfile } from "@/lib/demo-store";
+import { createClient } from "@/lib/supabase/server";
 
-export async function salvarNome(nome: string): Promise<{ error?: string }> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Não autenticado" }
+export async function salvarConfiguracoes(data: {
+  nome?: string;
+  custo_vida?: number;
+  meta_economia_mensal?: number | null;
+  salario?: number;
+  renda_extra?: number;
+}) {
+  if (isDemoMode()) {
+    if (data.nome) setDemoProfile({ nome: data.nome });
+    setDemoConfig({
+      ...(data.custo_vida !== undefined && { custo_vida: data.custo_vida }),
+      ...(data.meta_economia_mensal !== undefined && {
+        meta_economia_mensal: data.meta_economia_mensal,
+      }),
+      ...(data.salario !== undefined && { salario: data.salario }),
+      ...(data.renda_extra !== undefined && { renda_extra: data.renda_extra }),
+    });
+    revalidatePath("/configuracoes");
+    revalidatePath("/dashboard");
+    return { success: true };
+  }
 
-  const { error } = await supabase
-    .from("profiles")
-    .update({ nome: nome.trim() })
-    .eq("id", user.id)
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Não autenticado" };
 
-  if (error) return { error: error.message }
+  if (data.nome) {
+    await supabase.from("profiles").update({ nome: data.nome }).eq("id", user.id);
+  }
 
-  revalidatePath("/configuracoes")
-  revalidatePath("/dashboard")
-  return {}
-}
+  const configUpdate: Record<string, unknown> = {};
+  if (data.custo_vida !== undefined) configUpdate.custo_vida = data.custo_vida;
+  if (data.meta_economia_mensal !== undefined)
+    configUpdate.meta_economia_mensal = data.meta_economia_mensal;
+  if (data.salario !== undefined) configUpdate.salario = data.salario;
+  if (data.renda_extra !== undefined) configUpdate.renda_extra = data.renda_extra;
 
-export async function salvarCustoVida(valor: number): Promise<{ error?: string }> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Não autenticado" }
+  if (Object.keys(configUpdate).length > 0) {
+    const { error } = await supabase
+      .from("configuracoes")
+      .upsert({ user_id: user.id, ...configUpdate });
+    if (error) return { error: error.message };
+  }
 
-  const { error } = await supabase
-    .from("configuracoes")
-    .update({ custo_vida: valor, updated_at: new Date().toISOString() })
-    .eq("user_id", user.id)
-
-  if (error) return { error: error.message }
-
-  revalidatePath("/configuracoes")
-  return {}
-}
-
-export async function salvarMetaEconomia(valor: number): Promise<{ error?: string }> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Não autenticado" }
-
-  const { error } = await supabase
-    .from("configuracoes")
-    .update({ meta_economia_mensal: valor, updated_at: new Date().toISOString() })
-    .eq("user_id", user.id)
-
-  if (error) return { error: error.message }
-
-  revalidatePath("/configuracoes")
-  revalidatePath("/dashboard")
-  return {}
+  revalidatePath("/configuracoes");
+  revalidatePath("/dashboard");
+  return { success: true };
 }

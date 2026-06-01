@@ -1,0 +1,6 @@
+nome,valor,categoria,subcategoria,recorrente,dia
+Aluguel,1200,necessidade,Moradia,sim,5
+Mercado,650,necessidade,Alimentação,sim,10
+Netflix,55.90,qualidade,Streaming,sim,20
+Reserva,500,objetivo,Reserva,sim,15
+Restaurante,120,qualidade,Lazer,não,

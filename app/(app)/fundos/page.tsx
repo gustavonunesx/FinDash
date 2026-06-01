@@ -1,41 +1,29 @@
-import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
-import { getCdiData } from "@/lib/taxas"
-import { FundosGrid } from "@/components/fundos/FundosGrid"
+import { AppShell } from "@/components/layout/app-shell";
+import { FundosClient } from "@/components/fundos/fundos-client";
+import { FundoCard } from "@/components/fundos/fundo-card";
+import { getAppData } from "@/lib/data";
+import { fetchCdiRate, calcularRendimento } from "@/lib/rendimento";
 
 export default async function FundosPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect("/login")
+  const { profile, fundos } = await getAppData();
+  const cdi = await fetchCdiRate();
 
-  const [{ data: fundos }, { data: profile }, { cdiDiario }] = await Promise.all([
-    supabase
-      .from("fundos")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("ordem", { ascending: true }),
-    supabase
-      .from("profiles")
-      .select("plano")
-      .eq("id", user.id)
-      .single(),
-    getCdiData(),
-  ])
+  const fundosComRendimento = fundos.map((f) => ({
+    fundo: f,
+    rendimento: calcularRendimento(f.saldo_atual, f.custodia, cdi),
+  }));
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">Fundos</h1>
-        <p className="text-sm text-muted-foreground">
-          Acompanhe suas metas financeiras
-        </p>
+    <AppShell>
+      <FundosClient fundos={fundos} plano={profile.plano} />
+      <div className="mt-12">
+        <h2 className="mb-6 text-xl font-bold">Detalhes e rendimento (CDI { (cdi * 100).toFixed(2)}% a.a.)</h2>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {fundosComRendimento.map(({ fundo, rendimento }) => (
+            <FundoCard key={fundo.id} fundo={fundo} rendimento={rendimento} />
+          ))}
+        </div>
       </div>
-
-      <FundosGrid
-        fundos={fundos ?? []}
-        plano={profile?.plano ?? "free"}
-        cdiDiario={cdiDiario}
-      />
-    </div>
-  )
+    </AppShell>
+  );
 }

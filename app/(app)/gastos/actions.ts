@@ -1,185 +1,137 @@
-"use server"
+"use server";
 
-import { revalidatePath } from "next/cache"
-import { createClient } from "@/lib/supabase/server"
-import type { Categoria } from "@/types"
+import { revalidatePath } from "next/cache";
+import { isDemoMode } from "@/lib/demo-data";
+import {
+  addDemoGasto,
+  deleteDemoGasto,
+  getDemoGastos,
+  updateDemoGasto,
+} from "@/lib/demo-store";
+import { createClient } from "@/lib/supabase/server";
+import { LIMITES_FREE, type CategoriaGasto } from "@/lib/types";
+import { getProfile } from "@/lib/data";
 
-const FREE_LIMIT = 10
+export type GastoFormData = {
+  nome: string;
+  valor: number;
+  categoria: CategoriaGasto;
+  subcategoria?: string;
+  recorrente: boolean;
+  dia_recorrencia?: number;
+};
 
-type GastoInput = {
-  nome: string
-  valor: number
-  categoria: Categoria
-  subcategoria?: string | null
-  recorrente?: boolean
-  dia_recorrencia?: number | null
+async function checkGastoLimit(): Promise<{ ok: boolean; error?: string }> {
+  const profile = await getProfile();
+  if (profile?.plano === "premium") return { ok: true };
+
+  const gastos = isDemoMode()
+    ? getDemoGastos()
+    : await (async () => {
+        const supabase = await createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return [];
+        const { data } = await supabase.from("gastos").select("id").eq("user_id", user.id);
+        return data ?? [];
+      })();
+
+  if (gastos.length >= LIMITES_FREE.gastos) {
+    return { ok: false, error: `Limite de ${LIMITES_FREE.gastos} gastos no plano Free.` };
+  }
+  return { ok: true };
 }
-type ActionResult = { error?: string }
 
-async function getAuthenticatedClient() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error("Não autenticado")
-  return { supabase, userId: user.id }
-}
+export async function criarGasto(data: GastoFormData) {
+  const limit = await checkGastoLimit();
+  if (!limit.ok) return { error: limit.error };
 
-export async function adicionarGasto(data: GastoInput): Promise<ActionResult> {
-  const { supabase, userId } = await getAuthenticatedClient()
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("plano")
-    .eq("id", userId)
-    .single()
-
-  if (profile?.plano === "free") {
-    const { count } = await supabase
-      .from("gastos")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", userId)
-
-    if ((count ?? 0) >= FREE_LIMIT) {
-      return { error: "LIMIT_REACHED" }
-    }
+  if (isDemoMode()) {
+    addDemoGasto({
+      id: crypto.randomUUID(),
+      user_id: "demo-user",
+      nome: data.nome,
+      valor: data.valor,
+      categoria: data.categoria,
+      subcategoria: data.subcategoria ?? null,
+      recorrente: data.recorrente,
+      dia_recorrencia: data.dia_recorrencia ?? null,
+      created_at: new Date().toISOString(),
+    });
+    revalidatePath("/gastos");
+    revalidatePath("/dashboard");
+    return { success: true };
   }
 
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Não autenticado" };
+
   const { error } = await supabase.from("gastos").insert({
-    user_id: userId,
+    user_id: user.id,
     nome: data.nome,
     valor: data.valor,
     categoria: data.categoria,
-    subcategoria: data.subcategoria?.trim() || null,
-    recorrente: data.recorrente ?? false,
-    dia_recorrencia: data.recorrente ? (data.dia_recorrencia ?? null) : null,
-  })
+    subcategoria: data.subcategoria ?? null,
+    recorrente: data.recorrente,
+    dia_recorrencia: data.dia_recorrencia ?? null,
+  });
 
-  if (error) return { error: error.message }
-
-  revalidatePath("/gastos")
-  revalidatePath("/dashboard")
-  return {}
+  if (error) return { error: error.message };
+  revalidatePath("/gastos");
+  revalidatePath("/dashboard");
+  return { success: true };
 }
 
-export async function editarGasto(id: string, data: GastoInput): Promise<ActionResult> {
-  const { supabase, userId } = await getAuthenticatedClient()
+export async function editarGasto(id: string, data: GastoFormData) {
+  if (isDemoMode()) {
+    updateDemoGasto(id, {
+      nome: data.nome,
+      valor: data.valor,
+      categoria: data.categoria,
+      subcategoria: data.subcategoria ?? null,
+      recorrente: data.recorrente,
+      dia_recorrencia: data.dia_recorrencia ?? null,
+    });
+    revalidatePath("/gastos");
+    revalidatePath("/dashboard");
+    return { success: true };
+  }
 
+  const supabase = await createClient();
   const { error } = await supabase
     .from("gastos")
     .update({
       nome: data.nome,
       valor: data.valor,
       categoria: data.categoria,
-      subcategoria: data.subcategoria?.trim() || null,
-      recorrente: data.recorrente ?? false,
-      dia_recorrencia: data.recorrente ? (data.dia_recorrencia ?? null) : null,
+      subcategoria: data.subcategoria ?? null,
+      recorrente: data.recorrente,
+      dia_recorrencia: data.dia_recorrencia ?? null,
     })
-    .eq("id", id)
-    .eq("user_id", userId)
+    .eq("id", id);
 
-  if (error) return { error: error.message }
-
-  revalidatePath("/gastos")
-  revalidatePath("/dashboard")
-  return {}
+  if (error) return { error: error.message };
+  revalidatePath("/gastos");
+  revalidatePath("/dashboard");
+  return { success: true };
 }
 
-export async function removerGasto(id: string): Promise<ActionResult> {
-  const { supabase, userId } = await getAuthenticatedClient()
-
-  const { error } = await supabase
-    .from("gastos")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", userId)
-
-  if (error) return { error: error.message }
-
-  revalidatePath("/gastos")
-  revalidatePath("/dashboard")
-  return {}
-}
-
-export async function importarGastos(
-  itens: { nome: string; valor: number; categoria: Categoria }[]
-): Promise<ActionResult & { importados?: number }> {
-  const { supabase, userId } = await getAuthenticatedClient()
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("plano")
-    .eq("id", userId)
-    .single()
-
-  let lista = itens
-  if (profile?.plano === "free") {
-    const { count } = await supabase
-      .from("gastos")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", userId)
-
-    const disponiveis = FREE_LIMIT - (count ?? 0)
-    if (disponiveis <= 0) return { error: "LIMIT_REACHED" }
-    lista = itens.slice(0, disponiveis)
+export async function deletarGasto(id: string) {
+  if (isDemoMode()) {
+    deleteDemoGasto(id);
+    revalidatePath("/gastos");
+    revalidatePath("/dashboard");
+    return { success: true };
   }
 
-  const rows = lista.map((item) => ({
-    user_id: userId,
-    nome: item.nome,
-    valor: item.valor,
-    categoria: item.categoria,
-    recorrente: false,
-    dia_recorrencia: null,
-  }))
-
-  const { error } = await supabase.from("gastos").insert(rows)
-  if (error) return { error: error.message }
-
-  revalidatePath("/gastos")
-  revalidatePath("/dashboard")
-  return { importados: rows.length }
-}
-
-export async function confirmarRecorrente(templateId: string): Promise<ActionResult> {
-  const { supabase, userId } = await getAuthenticatedClient()
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("plano")
-    .eq("id", userId)
-    .single()
-
-  if (profile?.plano === "free") {
-    const { count } = await supabase
-      .from("gastos")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", userId)
-
-    if ((count ?? 0) >= FREE_LIMIT) {
-      return { error: "LIMIT_REACHED" }
-    }
-  }
-
-  const { data: template } = await supabase
-    .from("gastos")
-    .select("nome, valor, categoria")
-    .eq("id", templateId)
-    .eq("user_id", userId)
-    .single()
-
-  if (!template) return { error: "Template não encontrado" }
-
-  const { error } = await supabase.from("gastos").insert({
-    user_id: userId,
-    nome: template.nome,
-    valor: template.valor,
-    categoria: template.categoria,
-    recorrente: false,
-    dia_recorrencia: null,
-  })
-
-  if (error) return { error: error.message }
-
-  revalidatePath("/gastos")
-  revalidatePath("/dashboard")
-  return {}
+  const supabase = await createClient();
+  const { error } = await supabase.from("gastos").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/gastos");
+  revalidatePath("/dashboard");
+  return { success: true };
 }

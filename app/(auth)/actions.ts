@@ -1,96 +1,95 @@
-"use server"
+"use server";
 
-import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
-import { seedDefaultData } from "@/lib/supabase/seed-defaults"
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/demo-data";
+import { generateReferralCode } from "@/lib/referral";
 
-export async function signIn(email: string, password: string) {
-  const supabase = await createClient()
+export async function loginAction(formData: FormData) {
+  if (isDemoMode()) redirect("/dashboard");
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
 
-  if (error) {
-    return { error: traduzirErroAuth(error.message) }
-  }
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return { error: error.message };
 
-  redirect("/dashboard")
+  redirect("/dashboard");
 }
 
-export async function signUp(nome: string, email: string, password: string) {
-  const supabase = await createClient()
+export async function signupAction(formData: FormData) {
+  if (isDemoMode()) redirect("/dashboard");
 
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { nome },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
-    },
-  })
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+  const nome = formData.get("nome") as string;
+  const referralCode = (formData.get("referral") as string)?.trim().toUpperCase();
 
-  if (error) {
-    return { error: traduzirErroAuth(error.message) }
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) return { error: error.message };
+
+  if (data.user) {
+    let referredBy: string | null = null;
+    if (referralCode) {
+      const { data: referrer } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("referral_code", referralCode)
+        .maybeSingle();
+      if (referrer && referrer.id !== data.user.id) {
+        referredBy = referrer.id;
+      }
+    }
+
+    await supabase.from("profiles").insert({
+      id: data.user.id,
+      nome,
+      onboarding_completed: false,
+      referral_code: generateReferralCode(data.user.id),
+      referred_by: referredBy,
+    });
+    await supabase.from("configuracoes").insert({
+      user_id: data.user.id,
+      salario: 0,
+      renda_extra: 0,
+      custo_vida: 0,
+      fase: "construindo",
+    });
   }
 
-  // If email confirmation is disabled in Supabase, go to onboarding
-  if (data.user && data.session) {
-    await seedDefaultData(data.user.id)
-    redirect("/onboarding")
-  }
-
-  return { success: true }
+  redirect("/onboarding");
 }
 
-export async function signInWithGoogle() {
-  const supabase = await createClient()
+export async function googleAuthAction() {
+  if (isDemoMode()) redirect("/dashboard");
+
+  const supabase = await createClient();
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+      redirectTo: `${appUrl}/auth/callback`,
+      queryParams: { access_type: "offline", prompt: "consent" },
     },
-  })
+  });
 
-  if (error || !data.url) {
-    return { error: "Erro ao iniciar login com Google." }
-  }
-
-  redirect(data.url)
+  if (error) return { error: error.message };
+  if (data.url) redirect(data.url);
+  return { error: "Não foi possível iniciar login com Google" };
 }
 
-export async function resetPassword(email: string) {
-  const supabase = await createClient()
+export async function resetPasswordAction(formData: FormData) {
+  if (isDemoMode()) return { success: true };
 
+  const email = formData.get("email") as string;
+  const supabase = await createClient();
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/atualizar-senha`,
-  })
-
-  if (error) {
-    return { error: traduzirErroAuth(error.message) }
-  }
-
-  return { success: true }
-}
-
-export async function signOut() {
-  const supabase = await createClient()
-  await supabase.auth.signOut()
-  redirect("/login")
-}
-
-function traduzirErroAuth(message: string): string {
-  const erros: Record<string, string> = {
-    "Invalid login credentials": "Email ou senha incorretos.",
-    "Email not confirmed": "Confirme seu email antes de entrar.",
-    "User already registered": "Este email já está cadastrado.",
-    "Password should be at least 6 characters": "A senha deve ter pelo menos 6 caracteres.",
-    "Email rate limit exceeded": "Muitas tentativas. Aguarde alguns minutos.",
-    "For security purposes, you can only request this after": "Aguarde alguns segundos antes de tentar novamente.",
-  }
-
-  for (const [key, value] of Object.entries(erros)) {
-    if (message.includes(key)) return value
-  }
-
-  return "Erro inesperado. Tente novamente."
+    redirectTo: `${appUrl}/auth/callback?next=/configuracoes`,
+  });
+  if (error) return { error: error.message };
+  return { success: true };
 }

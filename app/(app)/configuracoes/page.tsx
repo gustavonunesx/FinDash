@@ -1,33 +1,18 @@
-import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
-import { ConfiguracoesClient } from "@/components/configuracoes/ConfiguracoesClient"
+import { AppShell } from "@/components/layout/app-shell";
+import { ConfigForm } from "@/components/configuracoes/config-form";
+import { getAppData } from "@/lib/data";
+import { isDemoMode } from "@/lib/demo-data";
 
 export default async function ConfiguracoesPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect("/login")
-
-  const [{ data: profile }, { data: config }] = await Promise.all([
-    supabase.from("profiles").select("nome, plano, assinatura_status, stripe_customer_id").eq("id", user.id).single(),
-    supabase.from("configuracoes").select("custo_vida, meta_economia_mensal").eq("user_id", user.id).single(),
-  ])
+  const { profile, config } = await getAppData();
+  const canExportPdf = profile.plano === "premium" || isDemoMode();
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">Configurações</h1>
-        <p className="text-sm text-muted-foreground">Gerencie sua conta e assinatura</p>
+    <AppShell>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Configurações</h1>
       </div>
-
-      <ConfiguracoesClient
-        email={user.email ?? ""}
-        nome={profile?.nome ?? ""}
-        plano={profile?.plano ?? "free"}
-        assinaturaStatus={profile?.assinatura_status ?? null}
-        temStripeCustomer={!!profile?.stripe_customer_id}
-        custoVida={config?.custo_vida ?? 1200}
-        metaEconomia={config?.meta_economia_mensal ?? 0}
-      />
-    </div>
-  )
+      <ConfigForm profile={profile} config={config!} canExportPdf={canExportPdf} />
+    </AppShell>
+  );
 }

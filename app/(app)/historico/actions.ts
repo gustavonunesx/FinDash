@@ -1,43 +1,50 @@
-"use server"
+"use server";
 
-import { revalidatePath } from "next/cache"
-import { createClient } from "@/lib/supabase/server"
+import { revalidatePath } from "next/cache";
+import { isDemoMode } from "@/lib/demo-data";
+import { getAppData } from "@/lib/data";
+import { createClient } from "@/lib/supabase/server";
+import { totalPorCategoria } from "@/lib/score";
 
-export async function registrarHistoricoMensal() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "Não autenticado" }
+export async function registrarSnapshotMensal() {
+  const { config, gastos, fundos } = await getAppData();
+  if (!config) return { error: "Configuração não encontrada" };
 
-  const mesAtual = new Date()
-  mesAtual.setDate(1)
-  const mesStr = mesAtual.toISOString().slice(0, 10)
+  const now = new Date();
+  const mes = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const totais = totalPorCategoria(gastos);
+  const totalGastos = totais.necessidade + totais.objetivo + totais.qualidade;
+  const snapshot_fundos = Object.fromEntries(fundos.map((f) => [f.id, f.saldo_atual]));
 
-  // Idempotente — se já existe para esse mês, não sobrescreve
+  if (isDemoMode()) {
+    return { success: true, skipped: true };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Não autenticado" };
+
   const { data: existing } = await supabase
     .from("historico_mensal")
     .select("id")
     .eq("user_id", user.id)
-    .eq("mes", mesStr)
-    .maybeSingle()
+    .eq("mes", mes)
+    .maybeSingle();
 
-  if (existing) return { ok: true, novo: false }
+  if (existing) return { success: true, skipped: true };
 
-  const [{ data: config }, { data: gastos }, { data: fundos }] = await Promise.all([
-    supabase.from("configuracoes").select("salario, renda_extra").eq("user_id", user.id).single(),
-    supabase.from("gastos").select("valor").eq("user_id", user.id),
-    supabase.from("fundos").select("id, nome, saldo_atual, meta, aporte_mensal").eq("user_id", user.id),
-  ])
-
-  const salario = (config?.salario ?? 0) + (config?.renda_extra ?? 0)
-  const totalGastos = (gastos ?? []).reduce((s, g) => s + g.valor, 0)
-
-  await supabase.from("historico_mensal").insert({
+  const { error } = await supabase.from("historico_mensal").insert({
     user_id: user.id,
-    mes: mesStr,
-    salario,
+    mes,
+    salario: config.salario + config.renda_extra,
     total_gastos: totalGastos,
-    snapshot_fundos: fundos ?? [],
-  })
+    snapshot_fundos,
+  });
 
-  return { ok: true, novo: true }
+  if (error) return { error: error.message };
+
+  revalidatePath("/historico");
+  return { success: true, skipped: false };
 }

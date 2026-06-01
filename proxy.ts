@@ -1,62 +1,96 @@
-import { NextResponse, type NextRequest } from "next/server"
-import { createServerClient } from "@supabase/ssr"
+import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+import { isDemoMode } from "@/lib/demo-data";
 
-const PROTECTED_ROUTES = ["/dashboard", "/gastos", "/fundos", "/calculadora", "/configuracoes", "/historico"]
-const AUTH_ROUTES = ["/login", "/cadastro", "/recuperar-senha"]
+const publicRoutes = ["/", "/precos", "/login", "/cadastro", "/recuperar-senha", "/auth/callback", "/familia/aceitar"];
+const authRoutes = ["/login", "/cadastro", "/recuperar-senha"];
 
 export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+  const { pathname } = request.nextUrl;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  // Skip auth check if Supabase is not configured
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return supabaseResponse
+  if (
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/_next") ||
+    pathname.includes(".")
+  ) {
+    return NextResponse.next();
   }
 
+  if (isDemoMode()) {
+    if (authRoutes.some((r) => pathname.startsWith(r))) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+    if (pathname.startsWith("/onboarding")) {
+      return NextResponse.next();
+    }
+    return NextResponse.next();
+  }
+
+  let supabaseResponse = NextResponse.next({ request });
+
   const supabase = createServerClient(
-    supabaseUrl,
-    supabaseAnonKey,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
-          return request.cookies.getAll()
+          return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
+        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
-          )
+          );
         },
       },
     }
-  )
+  );
 
-  const { data: { user } } = await supabase.auth.getUser()
-  const pathname = request.nextUrl.pathname
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const isProtected = PROTECTED_ROUTES.some((r) => pathname.startsWith(r))
-  const isAuthRoute = AUTH_ROUTES.some((r) => pathname.startsWith(r))
+  const isPublic = publicRoutes.some(
+    (r) => pathname === r || (r !== "/" && pathname.startsWith(r))
+  );
+  const isAuthRoute = authRoutes.some((r) => pathname.startsWith(r));
 
-  if (isProtected && !user) {
-    const url = request.nextUrl.clone()
-    url.pathname = "/login"
-    return NextResponse.redirect(url)
+  if (!user && !isPublic) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (isAuthRoute && user) {
-    const url = request.nextUrl.clone()
-    url.pathname = "/dashboard"
-    return NextResponse.redirect(url)
+  if (user && isAuthRoute) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  return supabaseResponse
+  if (user && pathname.startsWith("/onboarding")) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.onboarding_completed) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+  }
+
+  if (user && !pathname.startsWith("/onboarding")) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", user.id)
+      .single();
+
+    if (profile && !profile.onboarding_completed && !isPublic) {
+      return NextResponse.redirect(new URL("/onboarding", request.url));
+    }
+  }
+
+  return supabaseResponse;
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-  ],
-}
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+};

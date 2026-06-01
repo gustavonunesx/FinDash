@@ -1,109 +1,136 @@
-"use server"
+"use server";
 
-import { revalidatePath } from "next/cache"
-import { createClient } from "@/lib/supabase/server"
-import type { Custodia } from "@/types"
+import { revalidatePath } from "next/cache";
+import { isDemoMode } from "@/lib/demo-data";
+import {
+  addDemoFundo,
+  deleteDemoFundo,
+  getDemoFundos,
+  updateDemoFundo,
+} from "@/lib/demo-store";
+import { createClient } from "@/lib/supabase/server";
+import { LIMITES_FREE, type Custodia } from "@/lib/types";
+import { getProfile } from "@/lib/data";
+import { checkAndNotifyMetaAtingida } from "@/lib/fundo-meta";
 
-const FREE_LIMIT = 3
+export type FundoFormData = {
+  nome: string;
+  saldo_atual: number;
+  meta: number;
+  meta_data?: string;
+  aporte_mensal: number;
+  cor: string;
+  custodia?: Custodia;
+};
 
-type FundoInput = {
-  nome: string
-  saldo_atual: number
-  meta: number
-  meta_data?: string | null
-  aporte_mensal: number
-  cor: string
-  custodia?: Custodia | null
+async function checkFundoLimit(): Promise<{ ok: boolean; error?: string }> {
+  const profile = await getProfile();
+  if (profile?.plano === "premium") return { ok: true };
+
+  const fundos = isDemoMode()
+    ? getDemoFundos()
+    : await (async () => {
+        const supabase = await createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return [];
+        const { data } = await supabase.from("fundos").select("id").eq("user_id", user.id);
+        return data ?? [];
+      })();
+
+  if (fundos.length >= LIMITES_FREE.fundos) {
+    return { ok: false, error: `Limite de ${LIMITES_FREE.fundos} fundos no plano Free.` };
+  }
+  return { ok: true };
 }
 
-type ActionResult = { error?: string; faseTrocada?: boolean }
+export async function criarFundo(data: FundoFormData) {
+  const limit = await checkFundoLimit();
+  if (!limit.ok) return { error: limit.error };
 
-async function getAuthenticatedClient() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error("Não autenticado")
-  return { supabase, userId: user.id }
-}
-
-async function verificarFase(supabase: Awaited<ReturnType<typeof createClient>>, userId: string): Promise<boolean> {
-  const { data: config } = await supabase
-    .from("configuracoes")
-    .select("fase, custo_vida")
-    .eq("user_id", userId)
-    .single()
-
-  if (!config || config.fase === "investindo") return false
-
-  const { data: fundos } = await supabase
-    .from("fundos")
-    .select("saldo_atual")
-    .eq("user_id", userId)
-    .ilike("nome", "%reserva%")
-
-  if (!fundos?.length) return false
-
-  const reservaCompleta = fundos.some((f) => f.saldo_atual >= config.custo_vida * 3)
-  if (!reservaCompleta) return false
-
-  await supabase
-    .from("configuracoes")
-    .update({ fase: "investindo", updated_at: new Date().toISOString() })
-    .eq("user_id", userId)
-
-  revalidatePath("/calculadora")
-  return true
-}
-
-function revalidate() {
-  revalidatePath("/fundos")
-  revalidatePath("/dashboard")
-}
-
-export async function adicionarFundo(data: FundoInput): Promise<ActionResult> {
-  const { supabase, userId } = await getAuthenticatedClient()
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("plano")
-    .eq("id", userId)
-    .single()
-
-  if (profile?.plano === "free") {
-    const { count } = await supabase
-      .from("fundos")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", userId)
-
-    if ((count ?? 0) >= FREE_LIMIT) return { error: "LIMIT_REACHED" }
+  if (isDemoMode()) {
+    const fundos = getDemoFundos();
+    const id = crypto.randomUUID();
+    addDemoFundo({
+      id,
+      user_id: "demo-user",
+      nome: data.nome,
+      saldo_atual: data.saldo_atual,
+      meta: data.meta,
+      meta_data: data.meta_data ?? null,
+      aporte_mensal: data.aporte_mensal,
+      cor: data.cor,
+      ordem: fundos.length,
+      custodia: data.custodia ?? null,
+    });
+    revalidatePath("/fundos");
+    revalidatePath("/dashboard");
+    if (data.meta > 0 && data.saldo_atual >= data.meta) {
+      await checkAndNotifyMetaAtingida(id, data.saldo_atual, data.meta, data.nome);
+    }
+    return { success: true };
   }
 
-  const { count: maxOrdem } = await supabase
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Não autenticado" };
+
+  const { count } = await supabase
     .from("fundos")
     .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
+    .eq("user_id", user.id);
 
-  const { error } = await supabase.from("fundos").insert({
-    user_id: userId,
-    nome: data.nome,
-    saldo_atual: data.saldo_atual,
-    meta: data.meta,
-    meta_data: data.meta_data ?? null,
-    aporte_mensal: data.aporte_mensal,
-    cor: data.cor,
-    ordem: maxOrdem ?? 0,
-    custodia: data.custodia ?? null,
-  })
+  const { data: inserted, error } = await supabase
+    .from("fundos")
+    .insert({
+      user_id: user.id,
+      nome: data.nome,
+      saldo_atual: data.saldo_atual,
+      meta: data.meta,
+      meta_data: data.meta_data ?? null,
+      aporte_mensal: data.aporte_mensal,
+      cor: data.cor,
+      ordem: count ?? 0,
+      custodia: data.custodia ?? null,
+    })
+    .select("id")
+    .single();
 
-  if (error) return { error: error.message }
+  if (error) return { error: error.message };
 
-  revalidate()
-  const faseTrocada = await verificarFase(supabase, userId)
-  return { faseTrocada }
+  if (inserted && data.meta > 0 && data.saldo_atual >= data.meta) {
+    await checkAndNotifyMetaAtingida(inserted.id, data.saldo_atual, data.meta, data.nome);
+  }
+
+  revalidatePath("/fundos");
+  revalidatePath("/dashboard");
+  return { success: true };
 }
 
-export async function editarFundo(id: string, data: FundoInput): Promise<ActionResult> {
-  const { supabase, userId } = await getAuthenticatedClient()
+export async function editarFundo(id: string, data: FundoFormData) {
+  if (isDemoMode()) {
+    updateDemoFundo(id, {
+      nome: data.nome,
+      saldo_atual: data.saldo_atual,
+      meta: data.meta,
+      meta_data: data.meta_data ?? null,
+      aporte_mensal: data.aporte_mensal,
+      cor: data.cor,
+      custodia: data.custodia ?? null,
+    });
+    revalidatePath("/fundos");
+    revalidatePath("/dashboard");
+    let metaResult = null;
+    if (data.meta > 0 && data.saldo_atual >= data.meta) {
+      metaResult = await checkAndNotifyMetaAtingida(id, data.saldo_atual, data.meta, data.nome);
+    }
+    return { success: true, metaAtingida: metaResult?.atingida, metaNotificada: metaResult?.notificada };
+  }
 
+  const supabase = await createClient();
   const { error } = await supabase
     .from("fundos")
     .update({
@@ -115,27 +142,90 @@ export async function editarFundo(id: string, data: FundoInput): Promise<ActionR
       cor: data.cor,
       custodia: data.custodia ?? null,
     })
-    .eq("id", id)
-    .eq("user_id", userId)
+    .eq("id", id);
 
-  if (error) return { error: error.message }
+  if (error) return { error: error.message };
 
-  revalidate()
-  const faseTrocada = await verificarFase(supabase, userId)
-  return { faseTrocada }
+  let metaResult = null;
+  if (data.meta > 0 && data.saldo_atual >= data.meta) {
+    metaResult = await checkAndNotifyMetaAtingida(id, data.saldo_atual, data.meta, data.nome);
+  }
+
+  revalidatePath("/fundos");
+  revalidatePath("/dashboard");
+  return { success: true, metaAtingida: metaResult?.atingida, metaNotificada: metaResult?.notificada };
 }
 
-export async function removerFundo(id: string): Promise<ActionResult> {
-  const { supabase, userId } = await getAuthenticatedClient()
+export async function deletarFundo(id: string) {
+  if (isDemoMode()) {
+    deleteDemoFundo(id);
+    revalidatePath("/fundos");
+    revalidatePath("/dashboard");
+    return { success: true };
+  }
 
+  const supabase = await createClient();
+  const { error } = await supabase.from("fundos").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/fundos");
+  revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function confirmarAporte(fundoId: string, valor: number) {
+  if (isDemoMode()) {
+    const fundos = getDemoFundos();
+    const fundo = fundos.find((f) => f.id === fundoId);
+    if (!fundo) return { error: "Fundo não encontrado" };
+    const novoSaldo = fundo.saldo_atual + valor;
+    updateDemoFundo(fundoId, { saldo_atual: novoSaldo });
+    revalidatePath("/fundos");
+    revalidatePath("/calculadora");
+    revalidatePath("/dashboard");
+    const metaResult = await checkAndNotifyMetaAtingida(
+      fundoId,
+      novoSaldo,
+      fundo.meta,
+      fundo.nome
+    );
+    return {
+      success: true,
+      metaAtingida: metaResult.atingida,
+      metaNotificada: metaResult.notificada,
+      fundoNome: fundo.nome,
+    };
+  }
+
+  const supabase = await createClient();
+  const { data: fundo } = await supabase
+    .from("fundos")
+    .select("saldo_atual, meta, nome")
+    .eq("id", fundoId)
+    .single();
+  if (!fundo) return { error: "Fundo não encontrado" };
+
+  const novoSaldo = fundo.saldo_atual + valor;
   const { error } = await supabase
     .from("fundos")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", userId)
+    .update({ saldo_atual: novoSaldo })
+    .eq("id", fundoId);
 
-  if (error) return { error: error.message }
+  if (error) return { error: error.message };
 
-  revalidate()
-  return {}
+  const metaResult = await checkAndNotifyMetaAtingida(
+    fundoId,
+    novoSaldo,
+    fundo.meta,
+    fundo.nome
+  );
+
+  revalidatePath("/fundos");
+  revalidatePath("/calculadora");
+  revalidatePath("/dashboard");
+  return {
+    success: true,
+    metaAtingida: metaResult.atingida,
+    metaNotificada: metaResult.notificada,
+    fundoNome: fundo.nome,
+  };
 }

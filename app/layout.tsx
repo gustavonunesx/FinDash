@@ -1,36 +1,27 @@
-import type { Metadata } from "next"
-import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google"
-import { Toaster } from "@/components/ui/sonner"
-import "./globals.css"
+import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { Toaster } from "sonner";
+import { createMetadata } from "@/lib/metadata";
+import "./globals.css";
 
-const jakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-sans",
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-})
+  variable: "--font-jakarta",
+});
 
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-mono",
+const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-})
+  variable: "--font-jetbrains",
+});
 
-export const metadata: Metadata = {
-  title: "FinDash — Dashboard Financeiro",
-  description: "Organize suas finanças pessoais com a regra 50/30/20",
-}
+export const metadata = createMetadata();
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${jakartaSans.variable} ${jetbrainsMono.variable}`}>
-      <body className="min-h-screen bg-background text-foreground antialiased">
+    <html lang="pt-BR" className={`${jakarta.variable} ${jetbrains.variable}`}>
+      <body>
         {children}
-        <Toaster richColors position="top-right" />
+        <Toaster theme="dark" position="top-right" richColors />
       </body>
     </html>
-  )
+  );
 }
