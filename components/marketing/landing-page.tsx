@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FaqSection } from "@/components/marketing/faq-section";
 import FloatingLines from "@/components/ui/floating-lines";
+import { CardNav } from "@/components/marketing/CardNav";
+import { DeviceShowcase } from "@/components/marketing/DeviceShowcase";
 import { formatCurrency } from "@/lib/utils";
 import {
   IconCheck,
@@ -74,7 +76,6 @@ function MockDashboard() {
   const inView = useInView(ref, { once: true, margin: "-60px" });
 
   return (
-    // opacity-only fade — no y translation avoids promoting extra layers
     <div
       ref={ref}
       className="relative w-full rounded-2xl md:rounded-none glass border border-border/30 md:border-x-0 md:border-t md:border-b shadow-premium overflow-hidden text-left transition-opacity duration-700"
@@ -94,7 +95,7 @@ function MockDashboard() {
         </div>
       </div>
 
-      {/* ── metric row — CSS animation, no JS per frame ── */}
+      {/* ── metric row — animado só quando visível ── */}
       <div className="grid grid-cols-3 divide-x divide-border/30 border-b border-border/30">
         {[
           { label: "Saldo livre",  value: formatCurrency(1847), color: "text-fd-green", delay: "0ms"   },
@@ -103,8 +104,12 @@ function MockDashboard() {
         ].map((m) => (
           <div
             key={m.label}
-            className="px-3 sm:px-6 py-4 animate-fade-up"
-            style={{ animationDelay: m.delay, animationFillMode: "both", opacity: inView ? undefined : 0 }}
+            className="px-3 sm:px-6 py-4"
+            style={{
+              opacity: inView ? 1 : 0,
+              transform: inView ? "translateY(0)" : "translateY(12px)",
+              transition: inView ? `opacity 0.5s ease ${m.delay}, transform 0.5s ease ${m.delay}` : "none",
+            }}
           >
             <p className="mb-1 text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground truncate">{m.label}</p>
             <p className={`font-mono text-base sm:text-xl lg:text-2xl font-bold ${m.color}`}>{m.value}</p>
@@ -179,7 +184,6 @@ function MockDashboard() {
               Score 50/30/20
             </p>
             <div className="flex items-center gap-4">
-              {/* fixed size — no ResizeObserver overhead from ResponsiveContainer */}
               <div className="relative shrink-0" style={{ width: 80, height: 80 }}>
                 <RadialBarChart
                   width={80}
@@ -210,7 +214,7 @@ function MockDashboard() {
             </div>
           </div>
 
-          {/* 50/30/20 bars — scaleX instead of width to avoid layout reflow */}
+          {/* 50/30/20 bars — disparam só quando o dashboard entra na viewport */}
           <div className="space-y-3">
             {mockBars.map((bar, i) => (
               <div key={bar.label}>
@@ -242,28 +246,67 @@ function MockDashboard() {
 
 // ── Landing ────────────────────────────────────────────────────────────────
 export function LandingPage() {
+  // ref para a hero — animações do hero só disparam quando a seção está visível
+  const heroRef  = useRef<HTMLDivElement>(null);
+  const heroView = useInView(heroRef, { once: true, margin: "-80px" });
+
+  // ref para o footer — animate-pulse-soft só roda quando visível
+  const footerRef  = useRef<HTMLDivElement>(null);
+  const footerView = useInView(footerRef, { once: false, margin: "0px" });
+
+  // ref para o card Premium — glow-pulse só roda quando visível
+  const pricingRef  = useRef<HTMLDivElement>(null);
+  const pricingView = useInView(pricingRef, { once: false, margin: "-40px" });
+
   return (
     <div className="min-h-screen bg-background">
 
       {/* ── NAV ── */}
-      <header className="fixed top-0 z-50 w-full border-b border-border/40 glass">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-          <span className="text-lg font-bold text-gradient">FinDash</span>
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Entrar
-            </Link>
-            <Link href="/cadastro">
-              <Button size="sm">Começar grátis</Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <CardNav
+        items={[
+          {
+            label: "Produto",
+            bgColor: "#1a1a24",
+            textColor: "#f0f0f5",
+            links: [
+              { label: "Dashboard",   href: "/dashboard",   ariaLabel: "Ver Dashboard" },
+              { label: "Gastos",      href: "/gastos",      ariaLabel: "Gerenciar gastos" },
+              { label: "Fundos",      href: "/fundos",      ariaLabel: "Gerenciar fundos" },
+              { label: "Calculadora", href: "/calculadora", ariaLabel: "Calculadora 50/30/20" },
+            ],
+          },
+          {
+            label: "Planos",
+            bgColor: "#16201c",
+            textColor: "#f0f0f5",
+            links: [
+              { label: "Gratuito", href: "/precos",  ariaLabel: "Plano gratuito" },
+              { label: "Premium",  href: "/precos",  ariaLabel: "Plano premium" },
+              { label: "Família",  href: "/familia", ariaLabel: "Plano família" },
+            ],
+          },
+          {
+            label: "Conta",
+            bgColor: "#1a1a24",
+            textColor: "#f0f0f5",
+            links: [
+              { label: "Entrar",        href: "/login",          ariaLabel: "Fazer login" },
+              { label: "Criar conta",   href: "/cadastro",       ariaLabel: "Criar conta grátis" },
+              { label: "Configurações", href: "/configuracoes",  ariaLabel: "Configurações" },
+            ],
+          },
+        ]}
+        buttonLabel="Começar grátis"
+        buttonHref="/cadastro"
+        buttonBgColor="#1d9e75"
+        buttonTextColor="#f0f0f5"
+        menuColor="#f0f0f5"
+      />
 
       {/* ── HERO ── */}
-      <section className="relative min-h-screen overflow-x-hidden pt-14">
+      <section ref={heroRef} className="relative min-h-screen overflow-x-hidden pt-0">
 
-        {/* FloatingLines — full bleed background */}
+        {/* FloatingLines — pausa quando a hero não está visível */}
         <div className="absolute inset-0 z-0">
           <FloatingLines
             linesGradient={PALETTE}
@@ -272,7 +315,7 @@ export function LandingPage() {
             lineDistance={[8, 6, 4]}
             bendRadius={4.5}
             bendStrength={-0.6}
-            animationSpeed={0.7}
+            animationSpeed={heroView ? 0.7 : 0}
             interactive={true}
             parallax={true}
             parallaxStrength={0.15}
@@ -280,35 +323,33 @@ export function LandingPage() {
           />
         </div>
 
-        {/* subtle dark overlay so text stays readable */}
         <div className="pointer-events-none absolute inset-0 z-[1] bg-background/55" />
-        {/* bottom fade into page */}
         <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[1] h-48 bg-gradient-to-t from-background to-transparent" />
 
         {/* hero content */}
         <div className="relative z-10 mx-auto flex flex-col items-center justify-center px-6 pb-8 pt-24 text-center">
 
-          {/* eyebrow */}
+          {/* eyebrow — entra quando hero fica visível */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+            animate={heroView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mb-8"
           >
             <span className="relative inline-flex items-center gap-3 rounded-full border border-primary/30 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 px-6 py-3 backdrop-blur-xl shadow-2xl">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/10 via-transparent to-primary/10 animate-pulse" />
-              <span className="h-2 w-2 animate-ping rounded-full bg-primary" />
+              <div className={`absolute inset-0 rounded-full bg-gradient-to-r from-primary/10 via-transparent to-primary/10 ${heroView ? "animate-pulse" : ""}`} />
+              <span className={`h-2 w-2 rounded-full bg-primary ${heroView ? "animate-ping" : ""}`} />
               <span className="relative z-10 text-sm font-bold uppercase tracking-wider text-primary">
                 Método 50/30/20 embutido
               </span>
-              <span className="h-2 w-2 animate-ping rounded-full bg-primary" />
+              <span className={`h-2 w-2 rounded-full bg-primary ${heroView ? "animate-ping" : ""}`} />
             </span>
           </motion.div>
 
           {/* title */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={heroView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
             transition={{ duration: 1, delay: 0.3 }}
             className="space-y-3"
           >
@@ -317,9 +358,10 @@ export function LandingPage() {
             </p>
             <h1 className="relative inline-block text-5xl font-black tracking-tighter leading-tight sm:text-6xl md:text-7xl lg:text-8xl">
               <span className="text-gradient">decisões claras</span>
+              {/* underline só anima quando hero está visível */}
               <motion.div
                 initial={{ width: 0 }}
-                animate={{ width: "100%" }}
+                animate={heroView ? { width: "100%" } : { width: 0 }}
                 transition={{ duration: 1.5, delay: 1.2, ease: "easeOut" }}
                 className="absolute -bottom-3 left-0 h-1.5 rounded-full bg-gradient-to-r from-fd-green via-fd-green/80 to-transparent shadow-lg shadow-fd-green/40"
               />
@@ -329,7 +371,7 @@ export function LandingPage() {
           {/* subtitle */}
           <motion.p
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={heroView ? { opacity: 1 } : { opacity: 0 }}
             transition={{ duration: 0.8, delay: 0.8 }}
             className="mx-auto mt-10 max-w-2xl text-lg text-muted-foreground md:text-xl leading-relaxed"
           >
@@ -343,7 +385,7 @@ export function LandingPage() {
           {/* CTAs */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={heroView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             transition={{ duration: 0.8, delay: 1 }}
             className="mt-10 flex flex-col items-center justify-center gap-5 sm:flex-row"
           >
@@ -378,9 +420,8 @@ export function LandingPage() {
 
         </div>
 
-        {/* full-width dashboard — fora do container centralizado para o breakout funcionar corretamente */}
         <div className="relative z-10 w-full px-4 pt-10 pb-16 sm:px-6 sm:pt-14 md:px-0 md:pt-16">
-          <MockDashboard />
+          <DeviceShowcase />
         </div>
       </section>
 
@@ -417,7 +458,7 @@ export function LandingPage() {
       </section>
 
       {/* ── PRICING ── */}
-      <section className="max-w-5xl mx-auto px-6 py-20">
+      <section ref={pricingRef} className="max-w-5xl mx-auto px-6 py-20">
         <div className="text-center mb-14">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -486,7 +527,7 @@ export function LandingPage() {
             </div>
             <motion.div
               whileHover={{ y: -4 }}
-              className="relative rounded-2xl border-2 border-primary/70 bg-card pt-9 px-7 pb-7 space-y-6 animate-glow-pulse-green"
+              className={`relative rounded-2xl border-2 border-primary/70 bg-card pt-9 px-7 pb-7 space-y-6 ${pricingView ? "animate-glow-pulse-green" : ""}`}
             >
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-primary/6 via-transparent to-transparent pointer-events-none" />
               <div className="relative">
@@ -556,7 +597,7 @@ export function LandingPage() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="relative overflow-hidden bg-background">
+      <footer ref={footerRef} className="relative overflow-hidden bg-background">
         <div className="pointer-events-none select-none absolute inset-0 flex items-end overflow-hidden" aria-hidden>
           <span className="absolute bottom-[-0.15em] left-[-0.05em] font-mono font-black text-[20vw] leading-none text-foreground/[0.025] tracking-tighter whitespace-nowrap">
             50/30/20
@@ -575,8 +616,9 @@ export function LandingPage() {
                   Organize seu dinheiro com inteligência. Regra 50/30/20 aplicada à vida real.
                 </p>
               </div>
+              {/* pulse só roda quando o footer está visível */}
               <div className="inline-flex items-center gap-2 border border-border/50 rounded-lg px-3 py-2 bg-card/40">
-                <span className="size-1.5 rounded-full bg-primary animate-pulse-soft" />
+                <span className={`size-1.5 rounded-full bg-primary ${footerView ? "animate-pulse-soft" : ""}`} />
                 <span className="font-mono text-xs text-muted-foreground">
                   <span className="text-foreground font-semibold">1.200+</span> usuários organizando finanças
                 </span>
