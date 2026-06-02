@@ -49,7 +49,12 @@ export async function proxy(request: NextRequest) {
 
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser();
+
+  if (authError && authError.code !== "refresh_token_not_found") {
+    console.error(authError);
+  }
 
   const isPublic = publicRoutes.some(
     (r) => pathname === r || (r !== "/" && pathname.startsWith(r))

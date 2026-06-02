@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { FaqSection } from "@/components/marketing/faq-section";
 import FloatingLines from "@/components/ui/floating-lines";
 import { CardNav } from "@/components/marketing/CardNav";
-import { DeviceShowcase } from "@/components/marketing/DeviceShowcase";
+import { DeviceShowcaseSection } from "@/components/marketing/DeviceShowcaseSection";
 import { formatCurrency } from "@/lib/utils";
 import {
   IconCheck,
@@ -355,7 +355,7 @@ export function LandingPage() {
       />
 
       {/* ── HERO ── */}
-      <section ref={heroRef} className="relative min-h-screen overflow-x-hidden pt-0">
+      <section ref={heroRef} className="relative min-h-screen overflow-x-hidden flex flex-col">
 
         {/* FloatingLines — pausa quando a hero não está visível */}
         <div className="absolute inset-0 z-0">
@@ -377,8 +377,8 @@ export function LandingPage() {
         <div className="pointer-events-none absolute inset-0 z-[1] bg-background/55" />
         <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[1] h-48 bg-gradient-to-t from-background to-transparent" />
 
-        {/* hero content */}
-        <div className="relative z-10 mx-auto flex flex-col items-center justify-center px-6 pb-8 pt-24 text-center">
+        {/* hero content — flex-1 faz ocupar toda a altura disponível e centraliza verticalmente */}
+        <div className="relative z-10 mx-auto flex flex-1 w-full flex-col items-center justify-center px-6 py-24 text-center">
 
           {/* eyebrow — entra quando hero fica visível */}
           <motion.div
@@ -471,9 +471,6 @@ export function LandingPage() {
 
         </div>
 
-        <div className="relative z-10 w-full px-4 pt-10 pb-16 sm:px-6 sm:pt-14 md:px-0 md:pt-16">
-          <DeviceShowcase />
-        </div>
       </section>
 
       {/* ── COMO FUNCIONA ── */}
@@ -507,6 +504,9 @@ export function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ── DEVICE SHOWCASE ── */}
+      <DeviceShowcaseSection />
 
       {/* ── PRICING ── */}
       <section ref={pricingRef} className="relative py-24 overflow-hidden">
