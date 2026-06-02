@@ -1,109 +1,105 @@
-# Sessão FinDash — Resumo de contexto
+# FinDash — Contexto do projeto
 
-## Estrutura dos projetos
+## Estrutura atual
 
-| Projeto | Caminho | Papel |
-|---|---|---|
-| `teste apagar` | `WORK/teste apagar/` | Projeto de referência visual — **é o que está rodando no browser** |
-| `FinDash2.0` | `WORK/FinDash2.0/` | Projeto principal (main) — onde as mudanças definitivas devem ir |
-
-> **Atenção:** durante a sessão percebemos que o dev server estava rodando a partir de `teste apagar`, não do `FinDash2.0`. Confirmar qual servidor está ativo antes de editar.
-
----
-
-## O que foi feito nesta sessão
-
-### 1. Diagnóstico: POST /api/stripe/portal retorna 503
-**Arquivo:** `teste apagar/app/api/stripe/portal/route.ts`
-
-**Causa:** Sem arquivo `.env` — apenas `.env.example` existe. A rota retorna 503 quando:
-- `STRIPE_SECRET_KEY` não está definida → `stripe` é `null`
-- `NEXT_PUBLIC_SUPABASE_URL` ou `NEXT_PUBLIC_SUPABASE_ANON_KEY` não definidas → `isDemoMode()` retorna `true`
-
-**Solução pendente:** Criar `.env.local` com os valores reais.
-
----
-
-### 2. Mapeamento de arquivos de referência (design)
-Identificados os arquivos do `teste apagar` que definem o design base:
-
-**Estilo global:**
-- `app/globals.css` — cores, fontes, `.glass`, `.text-gradient`, `animate-glow-pulse-green`, etc.
-- `app/layout.tsx` — fonts: Plus Jakarta Sans + JetBrains Mono
-
-**Layout compartilhado:**
-- `components/layout/app-shell.tsx` — nav desktop/mobile usado em todas as telas internas
-
-**Telas de referência:**
-- Dashboard: `app/(app)/dashboard/page.tsx` + `components/dashboard/dashboard-fullscreen.tsx`
-- Histórico: `app/(app)/historico/page.tsx` + `components/historico/historico-charts.tsx`
-- Família: `app/(app)/familia/page.tsx` + `components/familia/familia-panel.tsx`
-
----
-
-### 3. FinDash2.0 — (marketing)/layout.tsx atualizado
-**Arquivo:** `FinDash2.0/app/(marketing)/layout.tsx`
-
-Antes: nav genérico básico (sem glass, sem gradientes, sem footer).
-
-Depois:
-- ✅ Nav com `glass`, gradientes de fundo fixos, `border-border/40`
-- ✅ Logo `FinDash` com estilo mono/text correto
-- ✅ Links: Preços | Entrar | Criar conta grátis (ou "Ir para o app" se logado)
-- ✅ Footer completo: texto decorativo `50/30/20`, colunas Produto + Conta, copyright
-
----
-
-### 4. `teste apagar` — landing-page.tsx atualizado
-**Arquivo:** `teste apagar/components/marketing/landing-page.tsx`
-
-Adicionado à landing que já existia (hero + como funciona + FAQ + CTA simples):
-
-**Seção de preços** (inserida antes do FaqSection):
-- Card Gratuito: R$0, `glass-subtle`, 4 features com `IconCheck`
-- Card Premium: R$19/mês, `border-primary/70`, `animate-glow-pulse-green`, badge "Recomendado" com shimmer
-
-**CTA final** substituído por:
-- Gradientes de fundo, linhas de separação com gradiente
-- Badge "Grátis para começar", título com `text-gradient`, botão com `IconArrowRight`
-
-**Footer** substituído por:
-- Texto `50/30/20` decorativo em mono no fundo (`text-foreground/[0.025]`)
-- Linha de gradiente no topo (`via-primary/40`)
-- Bloco logo + tagline + badge "1.200+ usuários"
-- Coluna Produto: Dashboard, Preços, Calculadoras, Histórico
-- Coluna Conta: Entrar, Criar conta, Configurações, Plano Premium
-- Rodapé: copyright + "built for financial clarity"
-
----
-
-## Estado atual dos arquivos
-
-### `teste apagar` (rodando no browser)
-| Arquivo | Status |
+| Item | Valor |
 |---|---|
-| `components/marketing/landing-page.tsx` | ✅ Atualizado (preços + footer) |
-| `app/globals.css` | ✅ Completo (todas as utilities) |
-| `app/(app)/dashboard/page.tsx` | Não tocado |
-| `app/(app)/historico/page.tsx` | Não tocado |
-| `app/(app)/familia/page.tsx` | Não tocado |
+| Repositório | `https://github.com/gustavonunesx/FinDash` |
+| Branch principal | `findash-2.0` |
+| Dev server | `localhost:3000` (Next.js 15 + Turbopack) |
+| Stack | Next.js 15, React 19, Tailwind v4, Supabase, Stripe, Framer Motion |
+| Fontes | Plus Jakarta Sans + JetBrains Mono |
 
-### `FinDash2.0` (projeto principal)
-| Arquivo | Status |
+---
+
+## Arquitetura de rotas
+
+```
+app/
+  (marketing)/   → landing (/), preços (/precos)
+  (app)/         → dashboard, gastos, fundos, historico, familia, calculadora, configuracoes
+  (auth)/        → login, cadastro, recuperar-senha
+  api/           → stripe, supabase webhooks
+```
+
+---
+
+## Design system (globals.css)
+
+| Token | Valor |
 |---|---|
-| `app/page.tsx` | ✅ Já tem o design completo (referência) |
-| `app/(marketing)/layout.tsx` | ✅ Atualizado (nav glass + footer) |
-| `app/(marketing)/precos/page.tsx` | ✅ Usa PrecosClient (toggle mensal/anual + cards) |
-| `components/marketing/PrecosClient.tsx` | ✅ Completo e idêntico à referência |
-| `components/marketing/LandingHero.tsx` | ✅ Idêntico à referência |
-| `components/marketing/LandingFeatures.tsx` | ✅ Idêntico à referência |
-| `components/marketing/LandingFaq.tsx` | ✅ Idêntico à referência |
+| `--color-background` | `#0f0f13` |
+| `--color-primary` (fd-green) | `#1d9e75` |
+| `--color-fd-blue` | `#378add` |
+| `--color-fd-amber` | `#e8923a` |
+| `--color-fd-purple` | `#7c5cbf` |
+| `--color-card` | `#1a1a24` |
+| `--color-muted-foreground` | `#8888a0` |
+
+Utilities relevantes: `.glass`, `.glass-subtle`, `.text-gradient`, `.animate-glow-pulse-green`, `.shadow-premium`
+
+---
+
+## Componentes de marketing
+
+| Arquivo | Descrição |
+|---|---|
+| `components/marketing/landing-page.tsx` | Landing page completa (hero, como funciona, DeviceShowcaseSection, pricing, FAQ, CTA, footer) |
+| `components/marketing/DeviceShowcaseSection.tsx` | Section dedicada com MacBook + iPhone CSS puro lado a lado |
+| `components/marketing/DeviceShowcase.tsx` | Showcase antigo (laptop + phone sobrepostos no hero) — mantido mas não usado |
+| `components/marketing/CardNav.tsx` | Nav animado com cards expansíveis |
+| `components/marketing/faq-section.tsx` | FAQ expansível |
+
+---
+
+## O que foi feito — histórico recente
+
+### Sessão atual (2026-06-01)
+
+**1. Erro de refresh token silenciado (`proxy.ts`)**
+- `AuthApiError: refresh_token_not_found` era log de ruído — não um bug
+- Middleware já tratava corretamente (redireciona para /login)
+- Adicionado filtro: só loga erros de auth que não sejam `refresh_token_not_found`
+
+**2. DeviceShowcaseSection criado**
+- `components/marketing/DeviceShowcaseSection.tsx` — section separada com MacBook + iPhone CSS puro
+- MacBook: lid com câmera, teclado com grid de teclas decorativas, trackpad, hinge, shadow
+- iPhone: Dynamic Island, botões laterais, home bar, glare
+- Ambos com telas reais (gráficos recharts animados, métricas do FinDash)
+- Layout responsivo: lado a lado desktop, stack em mobile, textos laterais hidden < lg
+- Inserido na landing entre "Como funciona" e "Pricing"
+
+**3. Hero centralizada verticalmente**
+- Problema: conteúdo aparecia no topo da viewport, não no centro
+- Fix: `section` ganhou `flex flex-col`, div interno ganhou `flex-1` → `justify-center` passa a funcionar
+
+**4. DeviceShowcase removido do hero**
+- Hero agora é só texto + CTAs (limpa, sem preview de tela)
+- Preview de dispositivos movido para section dedicada
+
+### Commits recentes
+```
+ab98886 feat(landing): DeviceShowcaseSection + hero centralizado + auth log silenciado
+41da9f0 refactor(DeviceShowcase): px → em/clamp para escala responsiva automática
+f85e72f feat(precos): redesign completo da página de planos + pricing section da landing
+861afa7 feat(landing): CardNav animado + DeviceShowcase laptop/mobile
+86d62d6 feat: subcategorias em gastos + prazo com countdown em fundos
+```
+
+---
+
+## Middleware / Auth (`proxy.ts`)
+
+- Usa `@supabase/ssr` com `createServerClient`
+- Rotas públicas: `/`, `/precos`, `/login`, `/cadastro`, `/recuperar-senha`, `/auth/callback`, `/familia/aceitar`
+- Usuário não autenticado → redireciona para `/login`
+- Usuário sem onboarding completo → redireciona para `/onboarding`
+- `refresh_token_not_found` é silenciado (comportamento esperado, não bug)
 
 ---
 
 ## Próximos passos sugeridos
 
-- [ ] Replicar design das telas internas (`dashboard`, `historico`, `familia`) do `teste apagar` para o `FinDash2.0`
-- [ ] Criar `.env.local` no projeto desejado para resolver o 503 do Stripe portal
-- [ ] Confirmar qual projeto o dev server está rodando (`cd` + `npm run dev` no caminho correto)
-- [ ] Verificar se `FinDash2.0` tem os componentes internos (`AppShell`, `metric-card`, etc.) alinhados com o design de referência
+- [ ] Testar DeviceShowcaseSection em mobile real (breakpoints lg)
+- [ ] Avaliar se o `DeviceShowcase.tsx` antigo pode ser deletado (não está sendo usado)
+- [ ] Criar PRODUCT.md e DESIGN.md para o `/impeccable` ter contexto automático
