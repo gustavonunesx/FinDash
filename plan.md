@@ -1,6 +1,6 @@
 # FinDash 2.0 — Plano e Checklist do Projeto
 
-> Atualizado em: 2026-06-03
+> Atualizado em: 2026-06-03 (dashboard remodelagem em andamento — branch `feature/dashboard-remodelagem`)
 
 ---
 
@@ -45,18 +45,26 @@
 
 ## Fase 4 — Dashboard
 
-- ✅ Layout fullscreen scroll-snap (5 seções, 100vh cada)
-- ✅ Hero animado com score 50/30/20 (GSAP + RAF counter)
-- ✅ Seção Regra 50/30/20 com barras elásticas (ScrollTrigger)
-- ✅ Metric cards (necessidade, objetivo, qualidade)
-- ✅ Meta de economia com progresso
-- ✅ Mini card de fundos
-- ✅ Banner de meta atingida
-- ✅ Alert de gastos recorrentes sugeridos
-- ✅ Streak bar (consistência)
-- ✅ Lista de transações recentes
-- ✅ Estado vazio do dashboard
-- ✅ Animações ativadas apenas na viewport
+### v1 (original — substituída)
+- ~~Layout fullscreen scroll-snap (5 seções, 100vh cada)~~ — removido
+- ~~Alert de gastos recorrentes sugeridos~~ — removido
+- ~~Streak bar (consistência)~~ — removido
+
+### v2 (remodelagem premium — branch `feature/dashboard-remodelagem`)
+- ✅ Scroll único sem conflito (removido `dashboard-snap` / `dashboard-section`)
+- ✅ Hero compacto com score em pill colorido por status (verde/âmbar/vermelho)
+- ✅ Filtro temporal (Esta semana / Este mês / Últimos 3 meses / Este ano)
+- ✅ 4 KPIs em grid 2×2 / 4 colunas: Saldo Livre, Gastos, Patrimônio em Fundos, Score
+- ✅ Ícones circulares tintados por token de cor em cada KPI
+- ✅ Card de Regra 50/30/20 com barras finas + glow + marcador de meta
+- ✅ Painel lateral: meta de economia + visão geral renda vs. categorias
+- ✅ Seção Fundos & Metas: cards horizontais com barra lateral colorida
+- ✅ Seção Transações recentes: dot de categoria + badge tintado
+- ✅ Glow ambiental de fundo (blobs fixos verde/azul/roxo, opacidade ≤ 0.03)
+- ✅ MetaAtingidaBanner mantido
+- ✅ UpgradeBanner mantido (Free only)
+- ✅ Animações por ScrollTrigger (KPIs, colunas inferiores, barras 50/30/20, linhas de transação)
+- 🔄 Ajustes finos em andamento (continuação na mesma branch)
 
 ---
 

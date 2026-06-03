@@ -12,7 +12,6 @@ export default async function DashboardPage() {
   const scoreData = calcularScore502030(config, gastos);
   const totais = totalPorCategoria(gastos);
   const totalGastos = totais.necessidade + totais.objetivo + totais.qualidade;
-  const economiaAtual = scoreData.saldoLivre > 0 ? scoreData.saldoLivre : 0;
   const isEmpty = scoreData.rendaTotal <= 0 && gastos.length === 0 && fundos.length === 0;
 
   return (
@@ -25,12 +24,12 @@ export default async function DashboardPage() {
       ) : (
       <DashboardFullscreen
         profile={profile}
+        config={config}
         scoreData={scoreData}
         totalGastos={totalGastos}
         fundos={fundos}
         gastos={gastos}
         metaEconomia={config?.meta_economia_mensal ?? null}
-        economiaAtual={economiaAtual}
       />
       )}
     </AppShell>
