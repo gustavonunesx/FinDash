@@ -107,20 +107,6 @@
       0 24px 48px -12px rgb(0 0 0 / 50%);
   }
 
-  .dashboard-snap {
-    scroll-snap-type: y mandatory;
-    overflow-y: auto;
-    height: 100vh;
-  }
-
-  .dashboard-section {
-    scroll-snap-align: start;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-
   .animate-fade-up {
     animation: fade-up 0.5s ease forwards;
   }

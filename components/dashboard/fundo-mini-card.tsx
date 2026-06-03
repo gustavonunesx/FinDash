@@ -1,7 +1,5 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import type { Fundo } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -10,24 +8,20 @@ interface FundoMiniCardProps {
   fundo: Fundo;
 }
 
-function getCountdown(metaData: string | null): { label: string; variant: "green" | "amber" | "destructive" } {
-  if (!metaData) return { label: "Sem prazo", variant: "green" };
-  const target = new Date(metaData);
-  const now = new Date();
-  const diffMs = target.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays <= 0) return { label: "Expirado", variant: "destructive" };
-  if (diffDays <= 30) return { label: `${diffDays}d restantes`, variant: "destructive" };
-  if (diffDays <= 90) return { label: `${Math.ceil(diffDays / 30)} meses`, variant: "amber" };
-  return { label: `${Math.ceil(diffDays / 30)} meses`, variant: "green" };
+function getCountdown(metaData: string | null) {
+  if (!metaData) return { label: "Sem prazo", color: "text-muted-foreground" };
+  const diffDays = Math.ceil((new Date(metaData).getTime() - Date.now()) / 86400000);
+  if (diffDays <= 0) return { label: "Expirado", color: "text-fd-red" };
+  if (diffDays <= 30) return { label: `${diffDays}d`, color: "text-fd-red" };
+  if (diffDays <= 90) return { label: `${Math.ceil(diffDays / 30)}m`, color: "text-fd-amber" };
+  return { label: `${Math.ceil(diffDays / 30)}m`, color: "text-fd-green" };
 }
 
-function progressColor(pct: number): string {
-  if (pct >= 100) return "bg-fd-green";
-  if (pct >= 60) return "bg-fd-blue";
-  if (pct >= 30) return "bg-fd-amber";
-  return "bg-fd-red";
+function barColor(pct: number) {
+  if (pct >= 100) return "var(--color-fd-green)";
+  if (pct >= 60) return "var(--color-fd-blue)";
+  if (pct >= 30) return "var(--color-fd-amber)";
+  return "var(--color-fd-red)";
 }
 
 export function FundoMiniCard({ fundo }: FundoMiniCardProps) {
@@ -35,37 +29,47 @@ export function FundoMiniCard({ fundo }: FundoMiniCardProps) {
   const countdown = getCountdown(fundo.meta_data);
 
   return (
-    <Card className="card-glow hover-lift glass-subtle h-full border-border/60">
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <p className="font-medium">{fundo.nome}</p>
-            {fundo.custodia && (
-              <Badge variant="outline" className="mt-1 text-xs">
-                {fundo.custodia.instituicao}
-              </Badge>
-            )}
+    <div
+      className="flex items-center gap-4 rounded-xl border border-white/[0.06] bg-[#1a1a24] px-4 py-3.5 transition-all duration-200 hover:-translate-y-0.5 cursor-default"
+      style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 4px 16px rgba(0,0,0,0.3)" }}
+    >
+      {/* Color dot */}
+      <div
+        className="h-8 w-1.5 shrink-0 rounded-full"
+        style={{ background: barColor(pct) }}
+      />
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-2">
+          <p className="truncate text-sm font-medium">{fundo.nome}</p>
+          <span className={cn("shrink-0 font-mono text-xs", countdown.color)}>
+            {countdown.label}
+          </span>
+        </div>
+
+        {fundo.custodia && (
+          <p className="mt-0.5 text-xs text-muted-foreground">{fundo.custodia.instituicao}</p>
+        )}
+
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <div className="flex-1">
+            <div className="h-1 overflow-hidden rounded-full bg-white/5">
+              <div
+                className="h-full rounded-full transition-all duration-1000"
+                style={{ width: `${Math.min(pct, 100)}%`, background: barColor(pct) }}
+              />
+            </div>
           </div>
-          <Badge variant={countdown.variant}>{countdown.label}</Badge>
+          <span className="shrink-0 font-mono text-xs text-muted-foreground">
+            {Math.round(pct)}%
+          </span>
         </div>
+      </div>
 
-        <p className="mt-4 font-mono text-2xl font-bold">
-          {formatCurrency(fundo.saldo_atual)}
-        </p>
-        <p className="font-mono text-sm text-muted-foreground">
-          meta {formatCurrency(fundo.meta)}
-        </p>
-
-        <div className="mt-4 h-2 overflow-hidden rounded-full bg-secondary">
-          <div
-            className={cn("h-full rounded-full transition-all duration-1000", progressColor(pct))}
-            style={{ width: `${Math.min(pct, 100)}%` }}
-          />
-        </div>
-        <p className="mt-2 font-mono text-xs text-muted-foreground">
-          {Math.round(pct)}% · {formatCurrency(fundo.aporte_mensal)}/mês
-        </p>
-      </CardContent>
-    </Card>
+      <div className="shrink-0 text-right">
+        <p className="font-mono text-sm font-bold">{formatCurrency(fundo.saldo_atual)}</p>
+        <p className="font-mono text-xs text-muted-foreground">/ {formatCurrency(fundo.meta)}</p>
+      </div>
+    </div>
   );
 }

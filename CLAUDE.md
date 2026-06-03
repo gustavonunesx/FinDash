@@ -30,9 +30,16 @@ Stack: Next.js 15 (App Router) + TypeScript + Supabase + Stripe + Tailwind CSS v
 
 ### UI/UX
 - Design system: tokens `--fd-green`, `--fd-amber`, `--fd-blue`, `--fd-purple`
-- Fonte: Plus Jakarta Sans (body), JetBrains Mono (código)
+- Fonte: Plus Jakarta Sans (body), JetBrains Mono (números/moeda/percentual)
 - Tema escuro: background `#0f0f13`, card `#1a1a24`
 - Glassmorphism: classe `.glass` e `.glass-subtle`
+- Cards internos (app): `rounded-2xl border border-white/[0.06] bg-[#1a1a24]` + `box-shadow: 0 0 0 1px rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.4)`
+- Ícones dos KPIs: círculo `rounded-xl` com bg tintado (`bg-fd-green/15`, etc.)
+- Badges inline: `rounded-full px-2 py-0.5 text-[11px]` com bg tintado na cor do token
+- Glow ambiental de fundo: `fixed inset-0` com blobs `blur-[120px]` em verde/azul/roxo, opacidade ≤ 0.03
+- Progress bars: altura `h-1` ou `h-1.5`, fundo `bg-white/5`, cor do token como background inline
+- Hover em cards: `hover:-translate-y-1 transition-all duration-300`
+- **Nunca usar laranja — usar apenas os 4 tokens FinDash**
 
 ### Planos e Gates
 - Free: 10 gastos, 3 fundos, sem histórico, sem PDF export
@@ -45,7 +52,7 @@ Stack: Next.js 15 (App Router) + TypeScript + Supabase + Stripe + Tailwind CSS v
 app/
   (marketing)/precos/     — Página de planos
   (app)/                  — Rotas protegidas (auth + onboarding)
-    dashboard/            — Dashboard fullscreen (scroll-snap 5 seções)
+    dashboard/            — Dashboard premium (scroll único, 3 blocos: hero+KPIs / 50/30/20+sidebar / fundos+transações)
     gastos/               — CRUD de gastos + importação CSV
     fundos/               — Fundos de investimento + CDI
     calculadora/          — Regra 50/30/20

@@ -52,7 +52,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 md:px-8">{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8">{children}</main>
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 glass md:hidden">
         <div className="flex justify-around py-2">

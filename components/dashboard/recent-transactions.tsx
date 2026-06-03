@@ -4,36 +4,43 @@ import { useRef } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { CATEGORIA_EMOJI, type Gasto } from "@/lib/types";
+import { CATEGORIA_LABELS, type Gasto } from "@/lib/types";
 import { formatCurrency, formatRelativeDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
-interface RecentTransactionsProps {
-  gastos: Gasto[];
-}
+const catColor: Record<string, string> = {
+  necessidade: "bg-fd-amber/10 text-fd-amber",
+  objetivo: "bg-fd-green/10 text-fd-green",
+  qualidade: "bg-fd-blue/10 text-fd-blue",
+};
 
-export function RecentTransactions({ gastos }: RecentTransactionsProps) {
+const catDot: Record<string, string> = {
+  necessidade: "bg-fd-amber",
+  objetivo: "bg-fd-green",
+  qualidade: "bg-fd-blue",
+};
+
+export function RecentTransactions({ gastos }: { gastos: Gasto[] }) {
   const listRef = useRef<HTMLDivElement>(null);
 
   useGSAP(
     () => {
       const rows = listRef.current?.querySelectorAll("[data-tx-row]");
       if (!rows?.length) return;
-
       gsap.fromTo(
         rows,
-        { opacity: 0, x: -24 },
+        { opacity: 0, x: -16 },
         {
           opacity: 1,
           x: 0,
-          duration: 0.5,
-          stagger: 0.08,
+          duration: 0.45,
+          stagger: 0.07,
           ease: "power2.out",
           scrollTrigger: {
             trigger: listRef.current,
-            start: "top 80%",
+            start: "top 85%",
             toggleActions: "play none none reverse",
           },
         }
@@ -43,36 +50,45 @@ export function RecentTransactions({ gastos }: RecentTransactionsProps) {
   );
 
   return (
-    <div>
-      <h2 className="mb-6 text-2xl font-bold md:text-3xl">Transações recentes</h2>
-      <div ref={listRef} className="divide-y divide-border rounded-xl border border-border/60 bg-card/50">
-        {gastos.length === 0 ? (
-          <p className="p-8 text-center text-muted-foreground">
-            Nenhum gasto registrado ainda. Comece adicionando seu primeiro gasto.
-          </p>
-        ) : (
-          gastos.map((gasto) => (
-            <div
-              key={gasto.id}
-              data-tx-row
-              className="flex items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-secondary/30"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-xl">{CATEGORIA_EMOJI[gasto.categoria]}</span>
-                <div>
-                  <p className="font-medium">{gasto.nome}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {gasto.subcategoria ?? gasto.categoria} · {formatRelativeDate(gasto.created_at)}
-                  </p>
+    <div
+      ref={listRef}
+      className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] overflow-hidden"
+      style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.4)" }}
+    >
+      {gastos.length === 0 ? (
+        <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+          Nenhum gasto registrado ainda.
+        </p>
+      ) : (
+        gastos.map((gasto, i) => (
+          <div
+            key={gasto.id}
+            data-tx-row
+            className={cn(
+              "flex items-center justify-between gap-3 px-5 py-3.5 transition-colors hover:bg-white/[0.03]",
+              i < gastos.length - 1 && "border-b border-white/[0.04]"
+            )}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className={cn("h-1.5 w-1.5 shrink-0 rounded-full", catDot[gasto.categoria])} />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{gasto.nome}</p>
+                <div className="mt-0.5 flex items-center gap-1.5">
+                  <span className={cn("rounded-md px-1.5 py-0.5 text-[10px] font-medium", catColor[gasto.categoria])}>
+                    {CATEGORIA_LABELS[gasto.categoria]}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatRelativeDate(gasto.created_at)}
+                  </span>
                 </div>
               </div>
-              <span className={cn("font-mono font-semibold", "text-fd-red")}>
-                -{formatCurrency(gasto.valor)}
-              </span>
             </div>
-          ))
-        )}
-      </div>
+            <span className="shrink-0 font-mono text-sm font-semibold text-fd-red">
+              -{formatCurrency(gasto.valor)}
+            </span>
+          </div>
+        ))
+      )}
     </div>
   );
 }
