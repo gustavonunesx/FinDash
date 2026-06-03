@@ -9,8 +9,9 @@ export default async function ConfiguracoesPage() {
 
   return (
     <AppShell>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Configurações</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Gerencie sua conta, plano e dados financeiros</p>
       </div>
       <ConfigForm profile={profile} config={config!} canExportPdf={canExportPdf} />
     </AppShell>
