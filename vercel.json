@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/relatorio-mensal",
+      "schedule": "0 8 1 * *"
+    },
+    {
+      "path": "/api/notificacoes/orcamento",
+      "schedule": "0 12 * * 1"
+    }
+  ]
+}
