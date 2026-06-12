@@ -187,7 +187,7 @@ function MockDashboard() {
               <XAxis dataKey="mes" tick={{ fontSize: 10, fill: "#8888a0" }} axisLine={false} tickLine={false} />
               <YAxis hide />
               <Tooltip
-                contentStyle={{ background: "#1a1a24", border: "1px solid #2a2a38", borderRadius: 8, fontSize: 11 }}
+                contentStyle={{ background: "#ffffff", border: "1px solid #DDE8E4", borderRadius: 8, fontSize: 11, color: "#0F1F19" }}
                 formatter={(v: number) => [formatCurrency(v), "Saldo"]}
               />
               <Area
@@ -216,7 +216,7 @@ function MockDashboard() {
               <XAxis dataKey="cat" tick={{ fontSize: 10, fill: "#8888a0" }} axisLine={false} tickLine={false} />
               <YAxis hide />
               <Tooltip
-                contentStyle={{ background: "#1a1a24", border: "1px solid #2a2a38", borderRadius: 8, fontSize: 11 }}
+                contentStyle={{ background: "#ffffff", border: "1px solid #DDE8E4", borderRadius: 8, fontSize: 11, color: "#0F1F19" }}
                 formatter={(v: number) => [formatCurrency(v)]}
               />
               <Bar dataKey="val" radius={[5, 5, 0, 0]} isAnimationActive={inView} animationDuration={800} animationEasing="ease-out">
@@ -317,7 +317,7 @@ export function LandingPage() {
         items={[
           {
             label: "Produto",
-            bgColor: "#1a1a24",
+            bgColor: "#ffffff",
             textColor: "#f0f0f5",
             links: [
               { label: "Dashboard",   href: "/dashboard",   ariaLabel: "Ver Dashboard" },
@@ -338,7 +338,7 @@ export function LandingPage() {
           },
           {
             label: "Conta",
-            bgColor: "#1a1a24",
+            bgColor: "#ffffff",
             textColor: "#f0f0f5",
             links: [
               { label: "Entrar",        href: "/login",          ariaLabel: "Fazer login" },
@@ -374,8 +374,8 @@ export function LandingPage() {
           />
         </div>
 
-        <div className="pointer-events-none absolute inset-0 z-[1] bg-background/55" />
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[1] h-48 bg-gradient-to-t from-background to-transparent" />
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-background/70" />
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[1] h-32 bg-gradient-to-t from-background to-transparent" />
 
         {/* hero content — flex-1 faz ocupar toda a altura disponível e centraliza verticalmente */}
         <div className="relative z-10 mx-auto flex flex-1 w-full flex-col items-center justify-center px-6 py-24 text-center">

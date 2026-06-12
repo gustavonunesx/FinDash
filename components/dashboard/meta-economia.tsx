@@ -13,10 +13,7 @@ export function MetaEconomia({ meta, atual }: MetaEconomiaProps) {
   const isOnTrack = pct >= 50;
 
   return (
-    <div
-      className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] p-5"
-      style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.4)" }}
-    >
+    <div className="rounded-xl border border-border bg-card p-5 shadow-card">
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-xs text-muted-foreground">Meta de economia</p>
@@ -35,7 +32,7 @@ export function MetaEconomia({ meta, atual }: MetaEconomiaProps) {
         </span>
       </div>
 
-      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/5">
+      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-secondary">
         <div
           className="h-full rounded-full transition-all duration-1000"
           style={{

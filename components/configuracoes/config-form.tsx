@@ -53,11 +53,10 @@ function UpgradeCards({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-      className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] overflow-hidden"
-      style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.4)" }}
+      className="rounded-xl border border-border bg-card overflow-hidden shadow-card"
     >
       {/* Cabeçalho */}
-      <div className="border-b border-white/[0.05] px-6 pt-6 pb-5">
+      <div className="border-b border-border px-6 pt-6 pb-5">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold">Upgrade para Premium</p>
@@ -88,7 +87,7 @@ function UpgradeCards({
           type="button"
           onClick={() => onCheckout(false)}
           disabled={loading}
-          className="group flex flex-col items-center px-6 py-5 transition-colors hover:bg-white/[0.03] disabled:opacity-50"
+          className="group flex flex-col items-center px-6 py-5 transition-colors hover:bg-secondary disabled:opacity-50"
         >
           <span className="text-xs text-muted-foreground">Mensal</span>
           <div className="mt-1 flex items-baseline gap-1">
@@ -106,7 +105,7 @@ function UpgradeCards({
           type="button"
           onClick={() => onCheckout(true)}
           disabled={loading}
-          className="group flex flex-col items-center px-6 py-5 transition-colors hover:bg-white/[0.03] disabled:opacity-50"
+          className="group flex flex-col items-center px-6 py-5 transition-colors hover:bg-secondary disabled:opacity-50"
         >
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground">Anual</span>
@@ -238,8 +237,7 @@ export function ConfigForm({ profile, config, canExportPdf = false }: ConfigForm
     <div className="mx-auto max-w-2xl">
 
       {/* Tabs */}
-      <div className="mb-6 flex gap-1 rounded-xl border border-white/[0.06] bg-[#1a1a24] p-1"
-        style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 4px 16px rgba(0,0,0,0.3)" }}
+      <div className="mb-6 flex gap-1 rounded-xl border border-border bg-card p-1 shadow-card"
       >
         {TABS.map((t) => {
           const Icon = TAB_ICONS[t];
@@ -252,7 +250,7 @@ export function ConfigForm({ profile, config, canExportPdf = false }: ConfigForm
                 "flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200",
                 tab === t
                   ? "bg-fd-green/15 text-fd-green"
-                  : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
               )}
             >
               <Icon className="h-4 w-4" />
@@ -269,8 +267,7 @@ export function ConfigForm({ profile, config, canExportPdf = false }: ConfigForm
           {/* Perfil */}
           <form onSubmit={handleSubmit}>
           <div
-            className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] p-6"
-            style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.4)" }}
+            className="rounded-xl border border-border bg-card p-6 shadow-card"
           >
             <h2 className="mb-4 text-sm font-semibold">Perfil</h2>
             <div className="space-y-4">
@@ -282,7 +279,7 @@ export function ConfigForm({ profile, config, canExportPdf = false }: ConfigForm
                   id="nome"
                   name="nome"
                   defaultValue={profile.nome ?? ""}
-                  className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 text-sm outline-none transition-colors focus:border-fd-green/40 focus:bg-white/[0.06]"
+                  className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/20"
                 />
               </div>
               <button
@@ -298,15 +295,14 @@ export function ConfigForm({ profile, config, canExportPdf = false }: ConfigForm
 
           {/* Sessão */}
           <div
-            className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] p-6"
-            style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.4)" }}
+            className="rounded-xl border border-border bg-card p-6 shadow-card"
           >
             <h2 className="mb-4 text-sm font-semibold">Sessão</h2>
             <div className="space-y-3">
               <button
                 type="button"
                 onClick={() => toast.info("Troca de conta: saia e entre com outra conta")}
-                className="flex w-full items-center justify-between rounded-xl border border-white/[0.06] px-4 py-3.5 text-sm text-muted-foreground transition-all hover:bg-white/[0.04] hover:text-foreground"
+                className="flex w-full items-center justify-between rounded-xl border border-border px-4 py-3.5 text-sm text-muted-foreground transition-all hover:bg-secondary hover:text-foreground"
               >
                 <div className="flex items-center gap-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-fd-blue/15 text-fd-blue">
@@ -341,10 +337,7 @@ export function ConfigForm({ profile, config, canExportPdf = false }: ConfigForm
 
           {/* Referral */}
           {profile.referral_code && (
-            <div
-              className="rounded-2xl border border-fd-purple/20 bg-fd-purple/[0.04] p-6"
-              style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.4)" }}
-            >
+            <div className="rounded-xl border border-fd-purple/20 bg-purple-50/60 p-6 shadow-card">
               <div className="mb-3 flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-fd-purple/15 text-fd-purple">
                   <IconGift className="h-4 w-4" />
@@ -363,7 +356,7 @@ export function ConfigForm({ profile, config, canExportPdf = false }: ConfigForm
                 <span className="font-mono text-fd-green">R${REFERRAL_REWARD_BRL}</span> de crédito.
               </p>
               <div className="flex items-center gap-2">
-                <code className="flex-1 truncate rounded-lg border border-white/[0.06] bg-white/[0.04] px-3 py-2 font-mono text-xs text-muted-foreground">
+                <code className="flex-1 truncate rounded-lg border border-border bg-secondary px-3 py-2 font-mono text-xs text-muted-foreground">
                   {buildReferralLink(profile.referral_code)}
                 </code>
                 <button
@@ -386,8 +379,7 @@ export function ConfigForm({ profile, config, canExportPdf = false }: ConfigForm
 
           {/* Status atual */}
           <div
-            className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] p-6"
-            style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.4)" }}
+            className="rounded-xl border border-border bg-card p-6 shadow-card"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -408,14 +400,14 @@ export function ConfigForm({ profile, config, canExportPdf = false }: ConfigForm
               </div>
               <div className={cn(
                 "flex h-12 w-12 items-center justify-center rounded-xl",
-                isPremium ? "bg-fd-purple/15 text-fd-purple" : "bg-white/[0.06] text-muted-foreground"
+                isPremium ? "bg-purple-50 text-fd-purple" : "bg-secondary text-muted-foreground"
               )}>
                 <IconShield className="h-6 w-6" />
               </div>
             </div>
 
             {isPremium && (
-              <div className="mt-4 border-t border-white/[0.05] pt-4 space-y-2">
+              <div className="mt-4 border-t border-border pt-4 space-y-2">
                 <p className="text-xs text-muted-foreground">Benefícios ativos</p>
                 {[
                   "Gastos ilimitados",
@@ -435,8 +427,7 @@ export function ConfigForm({ profile, config, canExportPdf = false }: ConfigForm
           {/* Ações de plano */}
           {isPremium ? (
             <div
-              className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] p-6"
-              style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.4)" }}
+              className="rounded-xl border border-border bg-card p-6 shadow-card"
             >
               <h2 className="mb-4 text-sm font-semibold">Gerenciar assinatura</h2>
               <div className="space-y-3">
@@ -444,7 +435,7 @@ export function ConfigForm({ profile, config, canExportPdf = false }: ConfigForm
                   type="button"
                   onClick={openPortal}
                   disabled={loadingPortal}
-                  className="flex w-full items-center justify-between rounded-xl border border-white/[0.06] px-4 py-3.5 transition-all hover:bg-white/[0.04] disabled:opacity-50"
+                  className="flex w-full items-center justify-between rounded-xl border border-border px-4 py-3.5 transition-all hover:bg-secondary disabled:opacity-50"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-fd-blue/15 text-fd-blue">
@@ -462,7 +453,7 @@ export function ConfigForm({ profile, config, canExportPdf = false }: ConfigForm
                   type="button"
                   onClick={openPortal}
                   disabled={loadingPortal}
-                  className="flex w-full items-center justify-between rounded-xl border border-white/[0.06] px-4 py-3.5 transition-all hover:bg-white/[0.04] disabled:opacity-50"
+                  className="flex w-full items-center justify-between rounded-xl border border-border px-4 py-3.5 transition-all hover:bg-secondary disabled:opacity-50"
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-fd-amber/15 text-fd-amber">
@@ -480,7 +471,7 @@ export function ConfigForm({ profile, config, canExportPdf = false }: ConfigForm
                   <button
                     type="button"
                     onClick={exportPdf}
-                    className="flex w-full items-center justify-between rounded-xl border border-white/[0.06] px-4 py-3.5 transition-all hover:bg-white/[0.04]"
+                    className="flex w-full items-center justify-between rounded-xl border border-border px-4 py-3.5 transition-all hover:bg-secondary"
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-fd-green/15 text-fd-green">
@@ -507,8 +498,7 @@ export function ConfigForm({ profile, config, canExportPdf = false }: ConfigForm
       {tab === "Financeiro" && (
         <form onSubmit={handleSubmit}>
           <div
-            className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] p-6"
-            style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.4)" }}
+            className="rounded-xl border border-border bg-card p-6 shadow-card"
           >
             <h2 className="mb-5 text-sm font-semibold">Dados financeiros</h2>
             <div className="space-y-4">
@@ -534,12 +524,12 @@ export function ConfigForm({ profile, config, canExportPdf = false }: ConfigForm
                     step="0.01"
                     defaultValue={defaultValue}
                     placeholder={placeholder}
-                    className="w-full rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2 font-mono text-sm outline-none transition-colors focus:border-fd-green/40 focus:bg-white/[0.06] placeholder:text-muted-foreground/50"
+                    className="w-full rounded-lg border border-border bg-secondary px-3 py-2 font-mono text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/20 placeholder:text-muted-foreground/50"
                   />
                 </div>
               ))}
 
-              <div className="border-t border-white/[0.05] pt-4">
+              <div className="border-t border-border pt-4">
                 <button
                   type="submit"
                   disabled={pending}

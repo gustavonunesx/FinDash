@@ -1,35 +1,38 @@
 @import "tailwindcss";
 
 /* ============================================================
-   LIGHT MODE (QPay) — defaults written to :root via @theme
+   PALETA 60/30/10
+   60% → fundo branco suave  #F7F8F7
+   30% → verde teal          #0E8F6A  (primário)
+   10% → verde escuro        #0A3D2E  (destaque/acento)
    ============================================================ */
 @theme inline {
   /* Surfaces */
-  --color-background:           oklch(97.1% 0.004 185);
-  --color-foreground:           oklch(24.5% 0.038 185);
-  --color-card:                 oklch(99.8% 0.001 185);
-  --color-card-foreground:      oklch(24.5% 0.038 185);
-  --color-popover:              oklch(99.8% 0.001 185);
-  --color-popover-foreground:   oklch(24.5% 0.038 185);
+  --color-background:           #F7F8F7;
+  --color-foreground:           #0F1F19;
+  --color-card:                 #FFFFFF;
+  --color-card-foreground:      #0F1F19;
+  --color-popover:              #FFFFFF;
+  --color-popover-foreground:   #0F1F19;
 
-  /* Brand */
-  --color-primary:              oklch(71.8% 0.148 185);
-  --color-primary-foreground:   oklch(99.8% 0.001 185);
+  /* Brand 30% */
+  --color-primary:              #0E8F6A;
+  --color-primary-foreground:   #FFFFFF;
 
   /* Secondary / muted */
-  --color-secondary:            oklch(94.2% 0.028 185);
-  --color-secondary-foreground: oklch(24.5% 0.038 185);
-  --color-muted:                oklch(95.6% 0.018 185);
-  --color-muted-foreground:     oklch(57.2% 0.038 185);
-  --color-accent:               oklch(94.2% 0.028 185);
-  --color-accent-foreground:    oklch(24.5% 0.038 185);
+  --color-secondary:            #EDF2EF;
+  --color-secondary-foreground: #0F1F19;
+  --color-muted:                #EDF2EF;
+  --color-muted-foreground:     #6B8078;
+  --color-accent:               #EDF2EF;
+  --color-accent-foreground:    #0F1F19;
 
   /* Semantic */
-  --color-destructive:          oklch(53.8% 0.178 25);
-  --color-destructive-foreground: oklch(99.8% 0.001 185);
-  --color-border:               oklch(93.1% 0.023 185);
-  --color-input:                oklch(93.1% 0.023 185);
-  --color-ring:                 oklch(71.8% 0.148 185);
+  --color-destructive:          #D94F4F;
+  --color-destructive-foreground: #FFFFFF;
+  --color-border:               #DDE8E4;
+  --color-input:                #DDE8E4;
+  --color-ring:                 #0E8F6A;
 
   /* Radius */
   --radius-sm: 0.375rem;
@@ -37,12 +40,15 @@
   --radius-lg: 0.625rem;
   --radius-xl: 0.875rem;
 
-  /* FinDash category tokens — slightly darkened for light bg readability */
-  --color-fd-green:  oklch(57.4% 0.138 165);
-  --color-fd-amber:  oklch(66.8% 0.168  50);
-  --color-fd-blue:   oklch(52.8% 0.128 248);
-  --color-fd-red:    oklch(46.8% 0.168  25);
-  --color-fd-purple: oklch(46.4% 0.148 285);
+  /* FinDash category tokens — ajustados para fundo claro */
+  --color-fd-green:  #0E8F6A;
+  --color-fd-amber:  #C4820A;
+  --color-fd-blue:   #2563EB;
+  --color-fd-red:    #D94F4F;
+  --color-fd-purple: #7C3AED;
+
+  /* Acento 10% */
+  --color-fd-accent: #0A3D2E;
 
   /* Fonts */
   --font-sans: var(--font-dm-sans), var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
@@ -50,71 +56,61 @@
 }
 
 /* ============================================================
-   DYNAMIC CSS PROPERTIES — resolved at runtime per theme
+   DYNAMIC CSS PROPERTIES
    ============================================================ */
 :root {
-  --glass-bg:              oklch(99.8% 0.001 185 / 88%);
-  --glass-border:          oklch(93.1% 0.023 185);
-  --card-shadow:           0 1px 4px oklch(71.8% 0.148 185 / 6%), 0 4px 16px oklch(0% 0 0 / 4%);
-  --shadow-premium-val:    0 1px 4px oklch(71.8% 0.148 185 / 8%), 0 8px 32px oklch(0% 0 0 / 10%);
-  --glow-primary:          oklch(71.8% 0.148 185 / 10%);
-  --pulse-color:           oklch(71.8% 0.148 185 / 30%);
-  --glow-low:              oklch(71.8% 0.148 185 / 12%);
-  --glow-high:             oklch(71.8% 0.148 185 / 24%);
-  --ambient-1:             oklch(71.8% 0.148 185 / 10%);
-  --ambient-2:             oklch(57.4% 0.138 165 / 6%);
+  --glass-bg:              rgba(255, 255, 255, 0.85);
+  --glass-border:          #DDE8E4;
+  --card-shadow:           0 1px 3px rgba(14, 143, 106, 0.06), 0 4px 16px rgba(0, 0, 0, 0.05);
+  --shadow-premium-val:    0 1px 3px rgba(14, 143, 106, 0.08), 0 8px 32px rgba(0, 0, 0, 0.08);
+  --glow-primary:          rgba(14, 143, 106, 0.08);
+  --pulse-color:           rgba(14, 143, 106, 0.25);
+  --glow-low:              rgba(14, 143, 106, 0.10);
+  --glow-high:             rgba(14, 143, 106, 0.20);
+  --ambient-1:             rgba(14, 143, 106, 0.04);
+  --ambient-2:             rgba(10, 61, 46, 0.03);
 }
 
 /* ============================================================
-   DARK MODE — overrides @theme :root variables
-   html.dark has specificity (0,1,1) > :root (0,1,0), so wins
+   DARK MODE
    ============================================================ */
 html.dark {
-  /* Surfaces */
-  --color-background:           oklch(7.8%  0.009 285);
-  --color-foreground:           oklch(95.2% 0.005 285);
-  --color-card:                 oklch(13.2% 0.015 285);
-  --color-card-foreground:      oklch(95.2% 0.005 285);
-  --color-popover:              oklch(13.2% 0.015 285);
-  --color-popover-foreground:   oklch(95.2% 0.005 285);
+  --color-background:           #0f0f13;
+  --color-foreground:           #f0f0f5;
+  --color-card:                 #1a1a24;
+  --color-card-foreground:      #f0f0f5;
+  --color-popover:              #1a1a24;
+  --color-popover-foreground:   #f0f0f5;
+  --color-primary:              #1d9e75;
+  --color-primary-foreground:   #f0f0f5;
+  --color-secondary:            #2a2a38;
+  --color-secondary-foreground: #f0f0f5;
+  --color-muted:                #2a2a38;
+  --color-muted-foreground:     #8888a0;
+  --color-accent:               #2a2a38;
+  --color-accent-foreground:    #f0f0f5;
+  --color-destructive:          #c94040;
+  --color-destructive-foreground: #f0f0f5;
+  --color-border:               #2a2a38;
+  --color-input:                #2a2a38;
+  --color-ring:                 #1d9e75;
+  --color-fd-green:             #1d9e75;
+  --color-fd-amber:             #e8923a;
+  --color-fd-blue:              #378add;
+  --color-fd-red:               #c94040;
+  --color-fd-purple:            #7c5cbf;
+  --color-fd-accent:            #1d9e75;
 
-  /* Brand — keep green in dark mode */
-  --color-primary:              oklch(61.2% 0.138 165);
-  --color-primary-foreground:   oklch(95.2% 0.005 285);
-
-  /* Secondary / muted */
-  --color-secondary:            oklch(20.1% 0.015 285);
-  --color-secondary-foreground: oklch(95.2% 0.005 285);
-  --color-muted:                oklch(20.1% 0.015 285);
-  --color-muted-foreground:     oklch(57.8% 0.038 285);
-  --color-accent:               oklch(20.1% 0.015 285);
-  --color-accent-foreground:    oklch(95.2% 0.005 285);
-
-  /* Semantic */
-  --color-destructive:          oklch(46.8% 0.168  25);
-  --color-destructive-foreground: oklch(95.2% 0.005 285);
-  --color-border:               oklch(20.1% 0.015 285);
-  --color-input:                oklch(20.1% 0.015 285);
-  --color-ring:                 oklch(61.2% 0.138 165);
-
-  /* FinDash category tokens — vibrant on dark bg */
-  --color-fd-green:  oklch(61.2% 0.138 165);
-  --color-fd-amber:  oklch(66.8% 0.168  50);
-  --color-fd-blue:   oklch(57.8% 0.138 248);
-  --color-fd-red:    oklch(46.8% 0.168  25);
-  --color-fd-purple: oklch(49.2% 0.148 285);
-
-  /* Dynamic utilities */
-  --glass-bg:           oklch(100% 0 0 / 5%);
-  --glass-border:       oklch(100% 0 0 / 8%);
-  --card-shadow:        none;
-  --shadow-premium-val: 0 0 0 1px oklch(100% 0 0 / 5%), 0 24px 48px -12px oklch(0% 0 0 / 50%);
-  --glow-primary:       oklch(61.2% 0.138 165 / 12%);
-  --pulse-color:        oklch(61.2% 0.138 165 / 30%);
-  --glow-low:           oklch(61.2% 0.138 165 / 15%);
-  --glow-high:          oklch(61.2% 0.138 165 / 30%);
-  --ambient-1:          oklch(61.2% 0.138 165 / 6%);
-  --ambient-2:          oklch(57.8% 0.138 248 / 4%);
+  --glass-bg:              rgba(255, 255, 255, 0.05);
+  --glass-border:          rgba(255, 255, 255, 0.08);
+  --card-shadow:           none;
+  --shadow-premium-val:    0 0 0 1px rgba(255,255,255,0.05), 0 24px 48px -12px rgba(0,0,0,0.5);
+  --glow-primary:          rgba(29, 158, 117, 0.12);
+  --pulse-color:           rgba(29, 158, 117, 0.30);
+  --glow-low:              rgba(29, 158, 117, 0.15);
+  --glow-high:             rgba(29, 158, 117, 0.30);
+  --ambient-1:             rgba(29, 158, 117, 0.06);
+  --ambient-2:             rgba(55, 138, 221, 0.04);
 }
 
 /* ============================================================
@@ -139,7 +135,6 @@ html.dark {
    UTILITIES
    ============================================================ */
 @layer utilities {
-  /* Glassmorphism */
   .glass {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -150,11 +145,11 @@ html.dark {
   .glass-subtle {
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    background: oklch(from var(--glass-bg) l c h / 60%);
+    background: var(--glass-bg);
     border: 1px solid var(--glass-border);
+    opacity: 0.7;
   }
 
-  /* Hover lift */
   .hover-lift {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
@@ -164,7 +159,6 @@ html.dark {
     box-shadow: var(--card-shadow);
   }
 
-  /* Card with mouse-tracking glow */
   .card-glow {
     position: relative;
     overflow: hidden;
@@ -188,17 +182,14 @@ html.dark {
     opacity: 1;
   }
 
-  /* Card shadow */
   .shadow-card {
     box-shadow: var(--card-shadow);
   }
 
-  /* Premium shadow */
   .shadow-premium {
     box-shadow: var(--shadow-premium-val);
   }
 
-  /* Ambient background blobs */
   .ambient-bg {
     position: fixed;
     inset: 0;
@@ -220,19 +211,7 @@ html.dark {
     background: radial-gradient(ellipse 40% 30% at 90% 90%, var(--ambient-2), transparent);
   }
 
-  /* Hero banner (QPay style) */
-  .hero-banner {
-    background: linear-gradient(110deg, oklch(94.2% 0.045 185) 0%, oklch(97.1% 0.025 185) 55%, oklch(98.5% 0.01 185) 100%);
-    border-radius: 16px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  html.dark .hero-banner {
-    background: linear-gradient(110deg, oklch(13.2% 0.015 285) 0%, oklch(15% 0.02 285) 100%);
-  }
-
-  /* Animations */
+  /* Animações */
   .animate-fade-up {
     animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
@@ -259,7 +238,6 @@ html.dark {
     animation: glow-pulse 3s ease-in-out infinite;
   }
 
-  /* Button ripple */
   .btn-ripple {
     position: relative;
     overflow: hidden;
@@ -269,7 +247,7 @@ html.dark {
     content: "";
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle, oklch(100% 0 0 / 25%) 10%, transparent 10%);
+    background: radial-gradient(circle, rgba(255,255,255,0.25) 10%, transparent 10%);
     transform: scale(10);
     opacity: 0;
     transition: transform 0.5s, opacity 0.8s;
@@ -285,28 +263,18 @@ html.dark {
     transition: 0s;
   }
 
-  /* Input floating label */
-  .input-float-label {
-    position: relative;
-  }
-
-  .input-float-label input:focus + label,
-  .input-float-label input:not(:placeholder-shown) + label {
-    transform: translateY(-1.5rem) scale(0.85);
+  /* text-gradient: usa o verde primário sólido no light, gradiente sutil no dark */
+  .text-gradient {
     color: var(--color-primary);
   }
 
-  .input-float-label label {
-    position: absolute;
-    left: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    transition: transform 0.2s ease, color 0.2s ease;
-    pointer-events: none;
-    color: var(--color-muted-foreground);
+  html.dark .text-gradient {
+    background: linear-gradient(135deg, #1d9e75, #378add);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
-  /* Skeleton shimmer */
   .skeleton-shimmer {
     background: linear-gradient(
       90deg,
