@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   IconBell,
   IconCalculator,
   IconChartBar,
-  IconChartPie,
   IconLayoutDashboard,
   IconLogout,
   IconPigMoney,
@@ -17,55 +16,54 @@ import {
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+
+const SIDEBAR_EXPANDED = 280;
+const SIDEBAR_COLLAPSED = 68;
 
 const navMain = [
-  { href: "/dashboard",   label: "Dashboard",     icon: IconLayoutDashboard },
-  { href: "/gastos",      label: "Gastos",         icon: IconReceipt },
-  { href: "/fundos",      label: "Fundos",         icon: IconPigMoney },
-  { href: "/calculadora", label: "Calculadora",    icon: IconCalculator },
-  { href: "/historico",   label: "Histórico",      icon: IconChartBar },
-  { href: "/familia",     label: "Família",        icon: IconUsers },
+  { href: "/dashboard",   label: "Dashboard",  icon: IconLayoutDashboard },
+  { href: "/gastos",      label: "Gastos",      icon: IconReceipt },
+  { href: "/fundos",      label: "Fundos",      icon: IconPigMoney },
+  { href: "/calculadora", label: "Calculadora", icon: IconCalculator },
+  { href: "/historico",   label: "Histórico",   icon: IconChartBar },
+  { href: "/familia",     label: "Família",     icon: IconUsers },
 ];
 
 const navBottom = [
   { href: "/configuracoes", label: "Configurações", icon: IconSettings },
 ];
 
-// Animated hamburger / X icon
+// ── Hamburger ↔ X ────────────────────────────────────────────────────────────
 function MenuIcon({ open }: { open: boolean }) {
   return (
-    <div className="relative h-5 w-5 flex flex-col justify-center gap-[5px]">
+    <div className="relative h-5 w-5">
       <AnimatePresence initial={false}>
         {open ? (
-          // X
           <motion.div
             key="x"
             className="absolute inset-0 flex items-center justify-center"
             initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
             animate={{ rotate: 0, opacity: 1, scale: 1 }}
             exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
-            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
           >
             <IconX className="h-5 w-5" />
           </motion.div>
         ) : (
-          // Three lines that slide in from left
           <motion.div
             key="bars"
             className="absolute inset-0 flex flex-col justify-center gap-[5px]"
-            initial={{ x: -14, opacity: 0 }}
+            initial={{ x: -10, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 14, opacity: 0 }}
-            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            exit={{ x: 10, opacity: 0 }}
+            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
           >
             {[0, 1, 2].map((i) => (
-              <motion.span
+              <span
                 key={i}
                 className="block h-[2px] rounded-full bg-current"
-                initial={{ scaleX: 0, originX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: 0.3, delay: i * 0.06, ease: [0.4, 0, 0.2, 1] }}
                 style={{ width: i === 1 ? "75%" : "100%" }}
               />
             ))}
@@ -76,24 +74,121 @@ function MenuIcon({ open }: { open: boolean }) {
   );
 }
 
+// ── NavItem ───────────────────────────────────────────────────────────────────
+function NavItem({
+  href,
+  label,
+  icon: Icon,
+  collapsed,
+  active,
+}: {
+  href: string;
+  label: string;
+  icon: (props: { className?: string }) => React.ReactNode;
+  collapsed: boolean;
+  active: boolean;
+}) {
+  return (
+    <motion.div
+      whileHover={{ x: 4 }}
+      whileTap={{ scale: 0.93 }}
+      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+    >
+      <Link
+        href={href}
+        title={collapsed ? label : undefined}
+        className={cn(
+          "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[13.5px] font-medium transition-colors duration-150",
+          active ? "text-white" : "text-white/50 hover:text-white/80 hover:bg-white/[0.05]"
+        )}
+        style={active ? {
+          background: "rgba(16,185,129,0.15)",
+          boxShadow: "0 0 0 1px rgba(16,185,129,0.2)",
+        } : {}}
+      >
+        <motion.span
+          className="shrink-0 flex items-center justify-center"
+          whileHover={{ scale: 1.22 }}
+          whileTap={{ scale: 0.88 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        >
+          <Icon className="h-[18px] w-[18px]" />
+        </motion.span>
+
+        {/* max-width via CSS — nunca anima width, zero reflow */}
+        <span
+          className="whitespace-nowrap overflow-hidden"
+          style={{
+            maxWidth: collapsed ? 0 : 200,
+            opacity: collapsed ? 0 : 1,
+            transition: "max-width 0.28s cubic-bezier(0.4,0,0.2,1), opacity 0.2s ease",
+          }}
+        >
+          {label}
+        </span>
+      </Link>
+    </motion.div>
+  );
+}
+
+// ── AppShell ─────────────────────────────────────────────────────────────────
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const router = useRouter();
+  const [collapsed, setCollapsed] = useState(false);
+  const [userInitials, setUserInitials] = useState("?");
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      const user = data.user;
+      if (!user) return;
+      const name: string =
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email ||
+        "?";
+      const parts = name.trim().split(/\s+/);
+      const initials =
+        parts.length >= 2
+          ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+          : name.slice(0, 2).toUpperCase();
+      setUserInitials(initials);
+    });
+  }, []);
+
+  const sidebarW = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
 
   return (
-    <div className="flex min-h-screen" style={{ background: "#F8FAFC" }}>
-
-      {/* ── Sidebar escura (desktop) ── */}
+    /*
+      Layout raiz usa CSS grid com coluna da sidebar animada.
+      Isso garante que o conteúdo se mova junto sem reflow nem fundo vazando.
+    */
+    <div
+      className="min-h-screen"
+      style={{
+        display: "grid",
+        gridTemplateColumns: `${sidebarW}px 1fr`,
+        gridTemplateRows: "1fr",
+        transition: "grid-template-columns 0.28s cubic-bezier(0.4,0,0.2,1)",
+        background: "#F8FAFC",
+      }}
+    >
+      {/* ── Sidebar (desktop) ── */}
       <aside
-        className="hidden md:flex md:flex-col md:w-[280px] md:shrink-0 fixed left-0 top-0 h-screen z-30"
+        className="hidden md:flex md:flex-col fixed left-0 top-0 h-screen z-30 overflow-hidden"
         style={{
+          width: sidebarW,
+          minWidth: SIDEBAR_COLLAPSED,
           background: "linear-gradient(180deg, #0F172A 0%, #111827 100%)",
+          transition: "width 0.28s cubic-bezier(0.4,0,0.2,1)",
+          willChange: "width",
         }}
       >
         {/* Logo */}
-        <div className="flex h-[70px] items-center gap-3 px-6 border-b border-white/[0.06]">
+        <div className="flex h-[70px] shrink-0 items-center gap-3 px-[14px] border-b border-white/[0.06] overflow-hidden">
           <div
-            className="flex h-9 w-9 items-center justify-center rounded-xl"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
             style={{ background: "#059669" }}
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -101,77 +196,112 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <path d="M12 6H14V8" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          <span className="text-[17px] font-bold tracking-tight text-white">FINDASH</span>
+          <span
+            className="whitespace-nowrap overflow-hidden text-[17px] font-bold tracking-tight text-white"
+            style={{
+              maxWidth: collapsed ? 0 : 200,
+              opacity: collapsed ? 0 : 1,
+              transition: "max-width 0.28s cubic-bezier(0.4,0,0.2,1), opacity 0.18s ease",
+            }}
+          >
+            FINDASH
+          </span>
         </div>
 
         {/* Nav principal */}
-        <nav className="flex-1 px-4 py-5 space-y-0.5 overflow-y-auto">
-          <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-widest text-white/30">
+        <nav className="flex-1 py-5 space-y-0.5 overflow-y-auto overflow-x-hidden px-[10px]">
+          <span
+            className="block px-3 pb-2 text-[11px] font-semibold uppercase tracking-widest text-white/30 whitespace-nowrap overflow-hidden"
+            style={{
+              maxWidth: collapsed ? 0 : 200,
+              opacity: collapsed ? 0 : 1,
+              transition: "max-width 0.28s cubic-bezier(0.4,0,0.2,1), opacity 0.18s ease",
+            }}
+          >
             Menu Principal
-          </p>
-          {navMain.map(({ href, label, icon: Icon }) => {
+          </span>
+
+          {navMain.map(({ href, label, icon }) => {
             const isActive =
               href === "/dashboard"
                 ? pathname === "/dashboard"
                 : pathname.startsWith(href);
-
             return (
-              <Link
+              <NavItem
                 key={href}
                 href={href}
-                className={cn(
-                  "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[13.5px] font-medium transition-all duration-150",
-                  isActive
-                    ? "text-white"
-                    : "text-white/50 hover:text-white/80 hover:bg-white/[0.05]"
-                )}
-                style={isActive ? {
-                  background: "rgba(16,185,129,0.15)",
-                  boxShadow: "0 0 0 1px rgba(16,185,129,0.2)",
-                } : {}}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                {label}
-              </Link>
+                label={label}
+                icon={icon}
+                collapsed={collapsed}
+                active={isActive}
+              />
             );
           })}
         </nav>
 
         {/* Bottom */}
-        <div className="px-4 py-4 border-t border-white/[0.06] space-y-0.5">
-          <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-widest text-white/30">
+        <div className="py-4 border-t border-white/[0.06] space-y-0.5 overflow-x-hidden px-[10px]">
+          <span
+            className="block px-3 pb-2 text-[11px] font-semibold uppercase tracking-widest text-white/30 whitespace-nowrap overflow-hidden"
+            style={{
+              maxWidth: collapsed ? 0 : 200,
+              opacity: collapsed ? 0 : 1,
+              transition: "max-width 0.28s cubic-bezier(0.4,0,0.2,1), opacity 0.18s ease",
+            }}
+          >
             Outros
-          </p>
-          {navBottom.map(({ href, label, icon: Icon }) => (
-            <Link
+          </span>
+
+          {navBottom.map(({ href, label, icon }) => (
+            <NavItem
               key={href}
               href={href}
-              className={cn(
-                "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[13.5px] font-medium transition-all",
-                pathname.startsWith(href)
-                  ? "text-white"
-                  : "text-white/50 hover:text-white/80 hover:bg-white/[0.05]"
-              )}
-              style={pathname.startsWith(href) ? {
-                background: "rgba(16,185,129,0.15)",
-                boxShadow: "0 0 0 1px rgba(16,185,129,0.2)",
-              } : {}}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              {label}
-            </Link>
+              label={label}
+              icon={icon}
+              collapsed={collapsed}
+              active={pathname.startsWith(href)}
+            />
           ))}
-          <button className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-[13.5px] font-medium text-white/50 transition-all hover:text-white/80 hover:bg-white/[0.05]">
-            <IconLogout className="h-4 w-4 shrink-0" />
-            Sair
-          </button>
+
+          {/* Sair */}
+          <motion.div
+            whileHover={{ x: 4 }}
+            whileTap={{ scale: 0.93 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            <button
+              title={collapsed ? "Sair" : undefined}
+              className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-[13.5px] font-medium text-white/50 transition-colors hover:text-white/80 hover:bg-white/[0.05]"
+            >
+              <motion.span
+                className="shrink-0 flex items-center justify-center"
+                whileHover={{ scale: 1.22 }}
+                whileTap={{ scale: 0.88 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
+              >
+                <IconLogout className="h-[18px] w-[18px]" />
+              </motion.span>
+              <span
+                className="whitespace-nowrap overflow-hidden"
+                style={{
+                  maxWidth: collapsed ? 0 : 200,
+                  opacity: collapsed ? 0 : 1,
+                  transition: "max-width 0.28s cubic-bezier(0.4,0,0.2,1), opacity 0.2s ease",
+                }}
+              >
+                Sair
+              </span>
+            </button>
+          </motion.div>
         </div>
       </aside>
 
-      {/* ── Área principal ── */}
-      <div className="flex flex-1 flex-col min-w-0 md:ml-[280px]">
-
-        {/* Header escuro aprimorado */}
+      {/* ── Área principal — coluna 2 do grid ── */}
+      <div
+        className="flex flex-col min-w-0 md:col-start-2"
+        style={{ background: "#F8FAFC" }}
+      >
+        {/* Header */}
         <header
           className="sticky top-0 z-20 flex h-[70px] items-center justify-between px-8"
           style={{
@@ -180,17 +310,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             boxShadow: "0 4px 24px rgba(0,0,0,0.28)",
           }}
         >
-          {/* Botão menu com animação */}
           <motion.button
-            className="relative text-white/70 hover:text-white transition-colors overflow-hidden"
-            onClick={() => setMobileNavOpen((v) => !v)}
+            className="relative text-white/70 hover:text-white transition-colors"
+            onClick={() => setCollapsed((v) => !v)}
             whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.92 }}
-            aria-label="Abrir menu"
+            aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
           >
-            {/* Glow ring on hover */}
             <motion.span
-              className="absolute inset-0 rounded-lg"
+              className="absolute inset-0 rounded-lg pointer-events-none"
               initial={{ opacity: 0 }}
               whileHover={{ opacity: 1 }}
               style={{
@@ -198,12 +326,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               }}
             />
             <span className="relative z-10 flex items-center justify-center h-9 w-9">
-              <MenuIcon open={mobileNavOpen} />
+              <MenuIcon open={!collapsed} />
             </span>
           </motion.button>
 
           <div className="flex items-center gap-4">
-            {/* Notificação */}
             <motion.button
               className="relative text-white/70 hover:text-white transition-colors"
               whileHover={{ scale: 1.1 }}
@@ -220,15 +347,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </motion.span>
             </motion.button>
 
-            {/* Avatar */}
-            <motion.div
-              className="h-9 w-9 rounded-full ring-2 ring-white/20 overflow-hidden flex items-center justify-center text-white font-semibold text-sm cursor-pointer"
+            <motion.button
+              onClick={() => router.push("/configuracoes")}
+              className="h-9 w-9 rounded-full ring-2 ring-white/20 flex items-center justify-center text-white font-semibold text-sm cursor-pointer"
               style={{ background: "linear-gradient(135deg, #059669, #047857)" }}
               whileHover={{ scale: 1.07 }}
               whileTap={{ scale: 0.95 }}
+              aria-label="Perfil"
             >
-              C
-            </motion.div>
+              {userInitials}
+            </motion.button>
           </div>
         </header>
 
