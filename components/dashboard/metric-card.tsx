@@ -4,43 +4,60 @@ import { useEffect, useRef, useState } from "react";
 import { animateCounter, formatCurrency, handleCardGlow } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
+interface TrendProps {
+  value: number;
+  label: string;
+  formatAsCurrency?: boolean;
+}
+
 interface MetricCardProps {
   title: string;
   value: number;
   progress?: number;
-  badge?: { label: string; variant: "green" | "amber" | "blue" | "purple" | "destructive" };
   formatAsCurrency?: boolean;
+  formatTrendAsCount?: boolean;
   className?: string;
   icon: React.ReactNode;
   iconColor?: "green" | "blue" | "amber" | "purple";
-  trend?: { value: number; label: string };
+  trend?: TrendProps;
+  statusLabel?: string;
+  statusVariant?: "green" | "amber" | "blue" | "purple" | "destructive";
 }
 
-const iconBg: Record<string, string> = {
-  green: "bg-fd-green/15 text-fd-green",
-  blue: "bg-fd-blue/15 text-fd-blue",
-  amber: "bg-fd-amber/15 text-fd-amber",
-  purple: "bg-fd-purple/15 text-fd-purple",
+const iconStyles: Record<string, string> = {
+  green:  "bg-emerald-50  text-fd-green",
+  blue:   "bg-blue-50     text-fd-blue",
+  amber:  "bg-amber-50    text-fd-amber",
+  purple: "bg-purple-50   text-fd-purple",
 };
 
-const trendColor: Record<string, string> = {
-  green: "text-fd-green",
-  blue: "text-fd-blue",
-  amber: "text-fd-amber",
-  purple: "text-fd-purple",
-  destructive: "text-fd-red",
+const statusStyles: Record<string, string> = {
+  green:       "bg-emerald-50  text-fd-green",
+  blue:        "bg-blue-50     text-fd-blue",
+  amber:       "bg-amber-50    text-fd-amber",
+  purple:      "bg-purple-50   text-fd-purple",
+  destructive: "bg-red-50      text-fd-red",
+};
+
+const progressColors: Record<string, string> = {
+  green:  "var(--color-fd-green)",
+  blue:   "var(--color-fd-blue)",
+  amber:  "var(--color-fd-amber)",
+  purple: "var(--color-fd-purple)",
 };
 
 export function MetricCard({
   title,
   value,
   progress,
-  badge,
   formatAsCurrency = true,
+  formatTrendAsCount = false,
   className,
   icon,
   iconColor = "green",
   trend,
+  statusLabel,
+  statusVariant,
 }: MetricCardProps) {
   const [displayValue, setDisplayValue] = useState(0);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -53,58 +70,50 @@ export function MetricCard({
     <div
       ref={cardRef}
       className={cn(
-        "card-glow group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-[#1a1a24] p-5 cursor-default",
-        "transition-all duration-300 hover:-translate-y-1",
+        "card-glow group relative rounded-xl border border-border bg-card p-5 cursor-default shadow-card",
+        "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
         className
       )}
       onMouseMove={handleCardGlow}
-      style={{
-        boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.4)",
-      }}
     >
-      {/* Glow no hover */}
-      <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style={{ background: "radial-gradient(180px circle at var(--mouse-x,50%) var(--mouse-y,50%), rgba(29,158,117,0.06), transparent)" }}
-      />
-
-      <div className="flex items-start justify-between gap-3">
-        {/* Ícone circular */}
-        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", iconBg[iconColor])}>
+      {/* Linha superior: ícone + badge de status */}
+      <div className="flex items-start justify-between gap-2">
+        <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", iconStyles[iconColor])}>
           {icon}
         </div>
-
-        {badge && (
-          <span className={cn(
-            "rounded-full px-2 py-0.5 text-[11px] font-medium",
-            badge.variant === "green" && "bg-fd-green/15 text-fd-green",
-            badge.variant === "blue" && "bg-fd-blue/15 text-fd-blue",
-            badge.variant === "amber" && "bg-fd-amber/15 text-fd-amber",
-            badge.variant === "purple" && "bg-fd-purple/15 text-fd-purple",
-            badge.variant === "destructive" && "bg-fd-red/15 text-fd-red",
-          )}>
-            {badge.label}
+        {statusLabel && statusVariant && (
+          <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-semibold", statusStyles[statusVariant])}>
+            {statusLabel}
           </span>
         )}
       </div>
 
-      <p className="mt-4 text-xs text-muted-foreground">{title}</p>
-      <p className="mt-1 font-mono text-2xl font-bold tracking-tight md:text-3xl">
+      {/* Valor principal */}
+      <p className="mt-4 text-xs font-medium text-muted-foreground">{title}</p>
+      <p className="mt-1 font-mono text-2xl font-bold tracking-tight text-foreground md:text-3xl">
         {formatAsCurrency ? formatCurrency(displayValue) : Math.round(displayValue)}
       </p>
 
+      {/* Trend */}
       {trend && (
-        <p className={cn("mt-1 text-xs font-medium", trendColor[badge?.variant ?? "green"])}>
-          ▲ {trend.value}% {trend.label}
+        <p className="mt-1.5 text-xs text-muted-foreground">
+          {formatTrendAsCount
+            ? <><span className="font-semibold text-foreground">{Math.round(trend.value)}</span> {trend.label}</>
+            : trend.formatAsCurrency
+              ? <><span className="font-semibold text-fd-green">+{formatCurrency(trend.value)}</span> {trend.label}</>
+              : <><span className="font-semibold text-fd-green">↑ {trend.value}%</span> {trend.label}</>
+          }
         </p>
       )}
 
+      {/* Progress bar */}
       {progress !== undefined && (
-        <div className="mt-4 h-1 overflow-hidden rounded-full bg-white/5">
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-secondary">
           <div
             className="h-full rounded-full transition-all duration-1000"
             style={{
               width: `${Math.min(progress, 100)}%`,
-              background: "var(--color-fd-green)",
+              background: progressColors[iconColor],
             }}
           />
         </div>

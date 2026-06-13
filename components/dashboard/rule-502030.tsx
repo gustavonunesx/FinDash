@@ -93,8 +93,7 @@ export function Rule502030({ data }: Rule502030Props) {
   return (
     <div
       ref={containerRef}
-      className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] p-6 md:p-7"
-      style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.4)" }}
+      className="rounded-xl border border-border bg-card p-6 shadow-card md:p-7"
     >
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
@@ -145,10 +144,10 @@ export function Rule502030({ data }: Rule502030Props) {
               </div>
 
               {/* Track */}
-              <div className="relative h-2 overflow-hidden rounded-full bg-white/5">
+              <div className="relative h-2 overflow-hidden rounded-full bg-secondary">
                 {/* Meta marker */}
                 <div
-                  className="absolute top-0 h-full w-px bg-white/20 z-10"
+                  className="absolute top-0 h-full w-px bg-border z-10"
                   style={{ left: `${cat.meta * 100}%` }}
                 />
                 {/* Bar */}

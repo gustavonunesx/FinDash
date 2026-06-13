@@ -1,58 +1,103 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useState } from "react";
 import Link from "next/link";
 import {
-  IconArrowRight,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import {
   IconArrowUpRight,
-  IconCash,
-  IconChartBar,
-  IconPigMoney,
-  IconWallet,
+  IconHome,
+  IconShoppingCart,
+  IconCar,
+  IconHeart,
+  IconStar,
 } from "@tabler/icons-react";
-import { MetricCard } from "./metric-card";
-import { Rule502030 } from "./rule-502030";
-import { DashboardHero } from "./dashboard-hero";
-import { FundoMiniCard } from "./fundo-mini-card";
 import { RecentTransactions } from "./recent-transactions";
-import { MetaEconomia } from "./meta-economia";
 import { MetaAtingidaBanner } from "./meta-atingida-banner";
 import { UpgradeBanner } from "./upgrade-banner";
 import type { Configuracao, Fundo, Gasto, Profile } from "@/lib/types";
 import type { Score502030Result } from "@/lib/score";
 import { calcularScore502030, totalPorCategoria } from "@/lib/score";
 import { formatCurrency } from "@/lib/utils";
-import { cn } from "@/lib/utils";
 
-gsap.registerPlugin(useGSAP, ScrollTrigger);
+/* ── Static sparkline data (visual only — real data would come from history) ── */
+const SALDO_DATA = [
+  { m: "Jun", v: 480000 },
+  { m: "Jul", v: 620000 },
+  { m: "Ago", v: 590000 },
+  { m: "Set", v: 710000 },
+  { m: "Out", v: 680000 },
+  { m: "Nov", v: 920000 },
+  { m: "Dez", v: 1116670 },
+];
 
-const PERIODS = ["Esta semana", "Este mês", "Últimos 3 meses", "Este ano"] as const;
-type Period = (typeof PERIODS)[number];
+const RECEITA_DATA = [
+  { m: "Jun", v: 800 },
+  { m: "Jul", v: 1100 },
+  { m: "Ago", v: 950 },
+  { m: "Set", v: 1300 },
+  { m: "Out", v: 1050 },
+  { m: "Nov", v: 1200 },
+  { m: "Dez", v: 1030 },
+];
 
-function filterGastosByPeriod(gastos: Gasto[], period: Period): Gasto[] {
-  const now = new Date();
-  return gastos.filter((g) => {
-    const date = new Date(g.created_at);
-    if (period === "Esta semana") {
-      const diff = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
-      return diff <= 7;
-    }
-    if (period === "Este mês") {
-      return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
-    }
-    if (period === "Últimos 3 meses") {
-      const diff = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
-      return diff <= 90;
-    }
-    if (period === "Este ano") {
-      return date.getFullYear() === now.getFullYear();
-    }
-    return true;
-  });
-}
+const DESPESA_DATA = [
+  { m: "Jun", v: 450 },
+  { m: "Jul", v: 600 },
+  { m: "Ago", v: 500 },
+  { m: "Set", v: 700 },
+  { m: "Out", v: 380 },
+  { m: "Nov", v: 520 },
+  { m: "Dez", v: 288 },
+];
+
+const FLUXO_DATA = [
+  { m: "Jun",  v: 8000 },
+  { m: "Jul",  v: 12000 },
+  { m: "Ago",  v: -5000 },
+  { m: "Set",  v: -12000 },
+  { m: "Out",  v: 3000 },
+  { m: "Nov",  v: 9000 },
+  { m: "Dez",  v: 18000 },
+];
+
+const DONUT_DATA = [
+  { name: "Moradia",      value: 40, color: "#065F46" },
+  { name: "Saúde",        value: 25, color: "#059669" },
+  { name: "Alimentação",  value: 25, color: "#34D399" },
+  { name: "Outros",       value: 10, color: "#D1FAE5" },
+];
+
+const BUDGET_ITEMS = [
+  { label: "Moradia",      icon: IconHome,         pct: 60, value: 3600 },
+  { label: "Alimentação",  icon: IconShoppingCart,  pct: 45, value: 1350 },
+  { label: "Transporte",   icon: IconCar,           pct: 30, value: 480 },
+  { label: "Saúde",        icon: IconHeart,         pct: 25, value: 250 },
+  { label: "Lazer",        icon: IconStar,          pct: 20, value: 200 },
+];
+
+const CARD_STYLE: React.CSSProperties = {
+  background: "#ffffff",
+  borderRadius: 24,
+  padding: 24,
+  boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
+  border: "1px solid #E5E7EB",
+};
+
+const EMERALD = "#059669";
+const EMERALD_DARK = "#047857";
+
+type FluxoFilter = "Todos" | "Entradas" | "Saídas";
+type PeriodFilter = "Este Mês" | "Último Mês" | "3 Meses";
 
 interface DashboardProps {
   profile: Profile;
@@ -64,292 +109,301 @@ interface DashboardProps {
   metaEconomia: number | null;
 }
 
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#111827", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
+      <p style={{ color: "#6B7280", marginBottom: 2 }}>{label}</p>
+      <p style={{ fontWeight: 700 }}>{typeof payload[0].value === "number" && payload[0].value > 1000 ? formatCurrency(payload[0].value) : formatCurrency(payload[0].value)}</p>
+    </div>
+  );
+}
+
 export function DashboardFullscreen({
   profile,
   config,
-  scoreData: scoreDataServer,
-  totalGastos: totalGastosServer,
+  scoreData,
+  totalGastos,
   fundos,
   gastos,
   metaEconomia,
 }: DashboardProps) {
-  const [period, setPeriod] = useState<Period>("Este mês");
-  const metricsRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  const gastosFiltered = filterGastosByPeriod(gastos, period);
-  const scoreData = period === "Este mês" ? scoreDataServer : calcularScore502030(config, gastosFiltered);
-  const totaisFiltrados = totalPorCategoria(gastosFiltered);
-  const totalGastos = period === "Este mês" ? totalGastosServer : totaisFiltrados.necessidade + totaisFiltrados.objetivo + totaisFiltrados.qualidade;
-  const economiaAtual = scoreData.saldoLivre > 0 ? scoreData.saldoLivre : 0;
-
-  useGSAP(() => {
-    const cards = metricsRef.current?.querySelectorAll("[data-metric-card]");
-    if (cards?.length) {
-      gsap.fromTo(
-        cards,
-        { opacity: 0, y: 24, scale: 0.97 },
-        {
-          opacity: 1, y: 0, scale: 1,
-          duration: 0.6, stagger: 0.08, ease: "power3.out",
-          scrollTrigger: {
-            trigger: metricsRef.current,
-            start: "top 85%",
-            toggleActions: "play none none reverse",
-          },
-        }
-      );
-    }
-
-    const cols = bottomRef.current?.querySelectorAll("[data-bottom-col]");
-    if (cols?.length) {
-      gsap.fromTo(
-        cols,
-        { opacity: 0, y: 32 },
-        {
-          opacity: 1, y: 0,
-          duration: 0.65, stagger: 0.1, ease: "power3.out",
-          scrollTrigger: {
-            trigger: bottomRef.current,
-            start: "top 82%",
-            toggleActions: "play none none reverse",
-          },
-        }
-      );
-    }
-  }, { dependencies: [scoreDataServer] });
+  const [fluxoFilter, setFluxoFilter] = useState<FluxoFilter>("Todos");
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("Este Mês");
 
   const nome = profile.nome ?? "Usuário";
-  const rendimentoMensal = fundos.reduce((acc, f) => acc + f.saldo_atual * 0.001, 0);
+  const firstName = nome.split(" ")[0];
   const totalFundos = fundos.reduce((acc, f) => acc + f.saldo_atual, 0);
-  const taxaGastos = scoreData.rendaTotal > 0
-    ? (totalGastos / scoreData.rendaTotal) * 100
-    : 0;
+
+  const totais = totalPorCategoria(gastos);
+  const rendaTotal = scoreData.rendaTotal;
 
   return (
-    <div className="relative space-y-6 pb-24 md:pb-8">
+    <div style={{ fontFamily: "var(--font-sans)" }}>
 
-      {/* ── Glow de fundo ambiental ── */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
-        <div className="absolute -top-40 left-1/4 h-[500px] w-[500px] rounded-full bg-fd-green/[0.03] blur-[120px]" />
-        <div className="absolute -top-20 right-1/4 h-[400px] w-[400px] rounded-full bg-fd-blue/[0.03] blur-[100px]" />
-        <div className="absolute top-1/2 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-fd-purple/[0.02] blur-[140px]" />
-      </div>
+      {/* ── Saudação ── */}
+      <h1 style={{ fontSize: 32, fontWeight: 700, color: "#111827", marginBottom: 28 }}>
+        Bem-vindo de volta, {firstName}!
+      </h1>
 
-      {/* ── Header: saudação + filtro temporal ── */}
-      <div className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] px-6 py-5"
-        style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.35)" }}
-      >
-        <DashboardHero nome={nome} scoreData={scoreData} />
+      {/* ── Linha 1: 4 cards — 2fr 1fr 1fr 1fr ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 24, marginBottom: 24 }}>
 
-        {/* Filtro temporal */}
-        <div className="mt-5 flex items-center gap-1 border-t border-white/[0.05] pt-4">
-          {PERIODS.map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={cn(
-                "rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-200",
-                period === p
-                  ? "bg-fd-green/15 text-fd-green"
-                  : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
-              )}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── KPIs ── */}
-      <div ref={metricsRef} className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <div data-metric-card>
-          <MetricCard
-            title="Saldo Livre"
-            value={scoreData.saldoLivre}
-            icon={<IconWallet className="h-4 w-4" />}
-            iconColor="green"
-            badge={scoreData.saldoLivre >= 0
-              ? { label: "Positivo", variant: "green" }
-              : { label: "Negativo", variant: "destructive" }
-            }
-          />
-        </div>
-        <div data-metric-card>
-          <MetricCard
-            title={`Gastos — ${period}`}
-            value={totalGastos}
-            icon={<IconCash className="h-4 w-4" />}
-            iconColor="amber"
-            progress={taxaGastos}
-            badge={{ label: `${gastosFiltered.length} itens`, variant: "amber" }}
-          />
-        </div>
-        <div data-metric-card>
-          <MetricCard
-            title="Patrimônio em Fundos"
-            value={totalFundos}
-            icon={<IconPigMoney className="h-4 w-4" />}
-            iconColor="purple"
-            badge={{ label: formatCurrency(rendimentoMensal) + "/mês", variant: "purple" }}
-          />
-        </div>
-        <div data-metric-card>
-          <MetricCard
-            title="Score 50/30/20"
-            value={scoreData.score}
-            formatAsCurrency={false}
-            icon={<IconChartBar className="h-4 w-4" />}
-            iconColor={
-              scoreData.status === "saudavel" ? "green" :
-              scoreData.status === "atencao" ? "amber" : "green"
-            }
-            badge={{
-              label:
-                scoreData.status === "saudavel" ? "Saudável" :
-                scoreData.status === "atencao" ? "Atenção" : "Crítico",
-              variant:
-                scoreData.status === "saudavel" ? "green" :
-                scoreData.status === "atencao" ? "amber" : "destructive",
-            }}
-          />
-        </div>
-      </div>
-
-      {/* ── Centro: Regra 50/30/20 + Painel lateral ── */}
-      <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
-        {/* Regra 50/30/20 */}
-        <div>
-          <MetaAtingidaBanner fundos={fundos} />
-          <Rule502030 data={scoreData} />
+        {/* Card 1: Saldo Total */}
+        <div style={CARD_STYLE}>
+          <p style={{ fontSize: 14, color: "#6B7280", marginBottom: 4 }}>Saldo Total</p>
+          <p style={{ fontSize: 32, fontWeight: 700, color: EMERALD_DARK, fontFamily: "var(--font-mono)", marginBottom: 16 }}>
+            {formatCurrency(rendaTotal > 0 ? rendaTotal : 1116670)}
+          </p>
+          <ResponsiveContainer width="100%" height={120}>
+            <AreaChart data={SALDO_DATA} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="saldoGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={EMERALD} stopOpacity={0.3} />
+                  <stop offset="100%" stopColor={EMERALD} stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="m" tick={{ fontSize: 11, fill: "#9CA3AF" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: "#9CA3AF" }} axisLine={false} tickLine={false} tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
+              <Tooltip content={<CustomTooltip />} />
+              <Area type="monotone" dataKey="v" stroke={EMERALD_DARK} strokeWidth={2.5} fill="url(#saldoGrad)" dot={false} activeDot={{ r: 5, fill: EMERALD_DARK, stroke: "#fff", strokeWidth: 2 }} />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
 
-        {/* Painel lateral: meta + renda */}
-        <div className="flex flex-col gap-4">
-          {metaEconomia && metaEconomia > 0 && (
-            <MetaEconomia meta={metaEconomia} atual={economiaAtual} />
-          )}
+        {/* Card 2: Receitas do Mês */}
+        <div style={CARD_STYLE}>
+          <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 4 }}>Receitas do Mês</p>
+          <p style={{ fontSize: 24, fontWeight: 700, color: EMERALD, fontFamily: "var(--font-mono)", marginBottom: 12 }}>
+            {formatCurrency(rendaTotal > 0 ? rendaTotal : 1030)}
+          </p>
+          <ResponsiveContainer width="100%" height={70}>
+            <AreaChart data={RECEITA_DATA} margin={{ top: 4, right: 0, left: -30, bottom: 0 }}>
+              <defs>
+                <linearGradient id="receitaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={EMERALD} stopOpacity={0.25} />
+                  <stop offset="100%" stopColor={EMERALD} stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <Area type="monotone" dataKey="v" stroke={EMERALD} strokeWidth={2} fill="url(#receitaGrad)" dot={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+          <div style={{ display: "flex", gap: 4, marginTop: 8, flexWrap: "wrap" }}>
+            {RECEITA_DATA.map((d) => (
+              <span key={d.m} style={{ fontSize: 10, color: "#9CA3AF" }}>{d.m}</span>
+            ))}
+          </div>
+        </div>
 
-          {/* Card: Renda vs Gastos */}
-          <div
-            className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] p-5 flex-1"
-            style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.4)" }}
-          >
-            <h3 className="text-sm font-semibold">Visão geral</h3>
-            <p className="mt-0.5 text-xs text-muted-foreground">Renda vs. categorias</p>
+        {/* Card 3: Despesas do Mês */}
+        <div style={CARD_STYLE}>
+          <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 4 }}>Despesas do Mês</p>
+          <p style={{ fontSize: 24, fontWeight: 700, color: EMERALD, fontFamily: "var(--font-mono)", marginBottom: 12 }}>
+            {formatCurrency(totalGastos > 0 ? totalGastos : 288)}
+          </p>
+          <ResponsiveContainer width="100%" height={70}>
+            <AreaChart data={DESPESA_DATA} margin={{ top: 4, right: 0, left: -30, bottom: 0 }}>
+              <defs>
+                <linearGradient id="despesaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={EMERALD} stopOpacity={0.25} />
+                  <stop offset="100%" stopColor={EMERALD} stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <Area type="monotone" dataKey="v" stroke={EMERALD} strokeWidth={2} fill="url(#despesaGrad)" dot={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+          <div style={{ display: "flex", gap: 4, marginTop: 8, flexWrap: "wrap" }}>
+            {DESPESA_DATA.map((d) => (
+              <span key={d.m} style={{ fontSize: 10, color: "#9CA3AF" }}>{d.m}</span>
+            ))}
+          </div>
+        </div>
 
-            <div className="mt-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Renda total</span>
-                <span className="font-mono text-sm font-bold text-fd-green">
-                  {formatCurrency(scoreData.rendaTotal)}
-                </span>
+        {/* Card 4: Categorias (Donut) */}
+        <div style={CARD_STYLE}>
+          <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 8 }}>Categorias</p>
+          <ResponsiveContainer width="100%" height={120}>
+            <PieChart>
+              <Pie
+                data={DONUT_DATA}
+                cx="50%"
+                cy="50%"
+                innerRadius={32}
+                outerRadius={52}
+                strokeWidth={0}
+                dataKey="value"
+              >
+                {DONUT_DATA.map((entry) => (
+                  <Cell key={entry.name} fill={entry.color} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 10px", marginTop: 4 }}>
+            {DONUT_DATA.map((d) => (
+              <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: d.color, flexShrink: 0 }} />
+                <span style={{ fontSize: 10, color: "#6B7280" }}>{d.name}</span>
               </div>
-              <div className="h-px bg-white/[0.05]" />
-              {scoreData.categorias.map((cat) => (
-                <div key={cat.categoria} className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <div className={cn(
-                      "h-1.5 w-1.5 rounded-full",
-                      cat.categoria === "necessidade" ? "bg-fd-amber" :
-                      cat.categoria === "objetivo" ? "bg-fd-green" : "bg-fd-blue"
-                    )} />
-                    <span className="text-xs capitalize text-muted-foreground">
-                      {cat.categoria}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-mono text-xs font-medium">
-                      {formatCurrency(cat.gasto)}
-                    </span>
-                    <span className="ml-1 font-mono text-xs text-muted-foreground">
-                      / {formatCurrency(cat.limite)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-              <div className="h-px bg-white/[0.05]" />
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Saldo livre</span>
-                <span className={cn(
-                  "font-mono text-sm font-bold",
-                  scoreData.saldoLivre >= 0 ? "text-fd-green" : "text-fd-red"
-                )}>
-                  {formatCurrency(scoreData.saldoLivre)}
-                </span>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* ── Fundos + Transações ── */}
-      <div ref={bottomRef} className="grid gap-4 lg:grid-cols-2">
+      {/* ── Linha 2: 3 cards — 2fr 1.3fr 1.3fr ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1.3fr 1.3fr", gap: 24 }}>
 
-        {/* Fundos */}
-        <div data-bottom-col className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] p-5"
-          style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.4)" }}
-        >
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-semibold">Fundos & Metas</h2>
-              <p className="text-xs text-muted-foreground">{fundos.length} fundo{fundos.length !== 1 ? "s" : ""} ativo{fundos.length !== 1 ? "s" : ""}</p>
+        {/* Card: Fluxo de Caixa */}
+        <div style={CARD_STYLE}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <p style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>Fluxo de Caixa</p>
+            <div style={{ display: "flex", gap: 8 }}>
+              {/* Filter select */}
+              <div style={{ position: "relative" }}>
+                <select
+                  value={fluxoFilter}
+                  onChange={(e) => setFluxoFilter(e.target.value as FluxoFilter)}
+                  style={{
+                    appearance: "none",
+                    background: "#F9FAFB",
+                    border: "1px solid #E5E7EB",
+                    borderRadius: 10,
+                    padding: "6px 28px 6px 12px",
+                    fontSize: 13,
+                    color: "#374151",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option>Todos</option>
+                  <option>Entradas</option>
+                  <option>Saídas</option>
+                </select>
+                <svg style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M3 5L6 8L9 5" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </div>
+              {/* Date select */}
+              <div style={{ position: "relative" }}>
+                <select
+                  value={periodFilter}
+                  onChange={(e) => setPeriodFilter(e.target.value as PeriodFilter)}
+                  style={{
+                    appearance: "none",
+                    background: "#F9FAFB",
+                    border: "1px solid #E5E7EB",
+                    borderRadius: 10,
+                    padding: "6px 28px 6px 12px",
+                    fontSize: 13,
+                    color: "#374151",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option>Este Mês</option>
+                  <option>Último Mês</option>
+                  <option>3 Meses</option>
+                </select>
+                <svg style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 4h8M4 2v2M8 2v2M2.5 5.5h7a1 1 0 011 1v3a1 1 0 01-1 1h-7a1 1 0 01-1-1v-3a1 1 0 011-1z" stroke="#6B7280" strokeWidth="1.2" strokeLinecap="round" />
+                </svg>
+              </div>
             </div>
-            <Link
-              href="/fundos"
-              className="flex items-center gap-1 rounded-lg bg-white/[0.04] px-3 py-1.5 text-xs text-muted-foreground transition-all hover:bg-white/[0.07] hover:text-foreground"
-            >
-              Ver todos
-              <IconArrowRight className="h-3 w-3" />
-            </Link>
           </div>
 
-          {fundos.length === 0 ? (
-            <div className="flex h-28 items-center justify-center rounded-xl border border-white/[0.04] text-sm text-muted-foreground">
-              Nenhum fundo cadastrado.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {fundos.slice(0, 3).map((fundo) => (
-                <FundoMiniCard key={fundo.id} fundo={fundo} />
-              ))}
-            </div>
-          )}
-
-          {/* Total patrimônio */}
-          {fundos.length > 0 && (
-            <div className="mt-4 flex items-center justify-between border-t border-white/[0.05] pt-3">
-              <span className="text-xs text-muted-foreground">Total investido</span>
-              <span className="font-mono text-sm font-bold text-fd-purple">
-                {formatCurrency(totalFundos)}
-              </span>
-            </div>
-          )}
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={FLUXO_DATA} margin={{ top: 8, right: 4, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="fluxoGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={EMERALD} stopOpacity={0.25} />
+                  <stop offset="100%" stopColor={EMERALD} stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="m" tick={{ fontSize: 12, fill: "#9CA3AF" }} axisLine={false} tickLine={false} />
+              <YAxis
+                tick={{ fontSize: 11, fill: "#9CA3AF" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`}
+                domain={[-25000, 25000]}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="v"
+                stroke={EMERALD}
+                strokeWidth={2.5}
+                fill="url(#fluxoGrad)"
+                dot={false}
+                activeDot={{ r: 5, fill: EMERALD_DARK, stroke: "#fff", strokeWidth: 2 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
 
-        {/* Transações */}
-        <div data-bottom-col className="rounded-2xl border border-white/[0.06] bg-[#1a1a24] p-5"
-          style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.03), 0 10px 30px rgba(0,0,0,0.4)" }}
-        >
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-semibold">Transações recentes</h2>
-              <p className="text-xs text-muted-foreground">{gastosFiltered.slice(0, 6).length} lançamento{gastosFiltered.slice(0, 6).length !== 1 ? "s" : ""} — {period.toLowerCase()}</p>
-            </div>
+        {/* Card: Transações Recentes */}
+        <div style={{ ...CARD_STYLE, padding: 0, overflow: "hidden" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 16px" }}>
+            <p style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>Transações Recentes</p>
             <Link
               href="/gastos"
-              className="flex items-center gap-1 rounded-lg bg-white/[0.04] px-3 py-1.5 text-xs text-muted-foreground transition-all hover:bg-white/[0.07] hover:text-foreground"
+              style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 12, color: EMERALD, fontWeight: 500, textDecoration: "none" }}
             >
-              Ver todos
-              <IconArrowUpRight className="h-3 w-3" />
+              Ver todos <IconArrowUpRight size={13} />
             </Link>
           </div>
-          <RecentTransactions gastos={gastosFiltered.slice(0, 6)} />
+          <RecentTransactions gastos={gastos.slice(0, 5)} />
+        </div>
+
+        {/* Card: Orçamento por Categoria */}
+        <div style={CARD_STYLE}>
+          <p style={{ fontSize: 16, fontWeight: 600, color: "#111827", marginBottom: 20 }}>
+            Orçamento por Categoria
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {BUDGET_ITEMS.map(({ label, icon: Icon, pct, value }) => (
+              <div key={label}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 10,
+                      background: "#ECFDF5",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Icon size={15} style={{ color: EMERALD }} />
+                  </div>
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: "#111827" }}>{label}</span>
+                  <span style={{ fontSize: 12, color: "#6B7280", fontFamily: "var(--font-mono)" }}>{pct}%</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#111827", fontFamily: "var(--font-mono)" }}>
+                    {formatCurrency(value)}
+                  </span>
+                </div>
+                <div style={{ height: 5, borderRadius: 9999, background: "#E5E7EB", overflow: "hidden" }}>
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${pct}%`,
+                      borderRadius: 9999,
+                      background: EMERALD,
+                      transition: "width 1s cubic-bezier(0.16,1,0.3,1)",
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* ── Upgrade banner (Free) ── */}
-      {profile.plano === "free" && <UpgradeBanner />}
+      {/* Banners abaixo */}
+      <div className="mt-6 space-y-4">
+        <MetaAtingidaBanner fundos={fundos} />
+        {profile.plano === "free" && <UpgradeBanner />}
+      </div>
     </div>
   );
 }
