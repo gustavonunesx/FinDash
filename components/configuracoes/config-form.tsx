@@ -146,9 +146,8 @@ export function ConfigForm({ profile, config, canExportPdf = false }: ConfigForm
     const fd = new FormData(e.currentTarget);
     startTransition(async () => {
       const result = await salvarConfiguracoes({
-        nome: fd.get("nome") as string,
         salario: parseFloat(fd.get("salario") as string) || 0,
-        renda_extra: parseFloat(fd.get("renda_extra") as string) || 0,
+        renda_extra: config.renda_extra,
         custo_vida: parseFloat(fd.get("custo_vida") as string) || 0,
         meta_economia_mensal: parseFloat(fd.get("meta_economia") as string) || null,
       });
@@ -265,33 +264,27 @@ export function ConfigForm({ profile, config, canExportPdf = false }: ConfigForm
         <div className="space-y-4">
 
           {/* Perfil */}
-          <form onSubmit={handleSubmit}>
-          <div
-            className="rounded-xl border border-border bg-card p-6 shadow-card"
-          >
+          <div className="rounded-xl border border-border bg-card p-6 shadow-card">
             <h2 className="mb-4 text-sm font-semibold">Perfil</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-xs text-muted-foreground" htmlFor="nome">
-                  Nome de exibição
-                </label>
-                <input
-                  id="nome"
-                  name="nome"
-                  defaultValue={profile.nome ?? ""}
-                  className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary/20"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={pending}
-                className="rounded-lg bg-fd-green/15 px-4 py-2 text-sm font-medium text-fd-green transition-all hover:bg-fd-green/25 disabled:opacity-50"
+            <div className="flex items-center gap-4">
+              <div
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white font-bold text-base"
+                style={{ background: "linear-gradient(135deg, #059669, #047857)" }}
               >
-                {pending ? "Salvando..." : "Salvar nome"}
-              </button>
+                {profile.nome
+                  ? profile.nome.trim().split(/\s+/).length >= 2
+                    ? (profile.nome.trim().split(/\s+/)[0][0] + profile.nome.trim().split(/\s+/).at(-1)![0]).toUpperCase()
+                    : profile.nome.slice(0, 2).toUpperCase()
+                  : "?"}
+              </div>
+              <div>
+                <p className="text-sm font-semibold">{profile.nome ?? "—"}</p>
+                <p className="text-xs text-muted-foreground">
+                  {profile.plano === "premium" ? "Premium" : "Gratuito"}
+                </p>
+              </div>
             </div>
           </div>
-          </form>
 
           {/* Sessão */}
           <div
@@ -504,7 +497,6 @@ export function ConfigForm({ profile, config, canExportPdf = false }: ConfigForm
             <div className="space-y-4">
               {[
                 { id: "salario", label: "Salário mensal", defaultValue: config.salario },
-                { id: "renda_extra", label: "Renda extra", defaultValue: config.renda_extra },
                 { id: "custo_vida", label: "Custo de vida mensal", defaultValue: config.custo_vida },
                 {
                   id: "meta_economia",
