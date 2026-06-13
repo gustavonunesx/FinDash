@@ -3,17 +3,13 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { FaqSection } from "@/components/marketing/faq-section";
-import FloatingLines from "@/components/ui/floating-lines";
 import { CardNav } from "@/components/marketing/CardNav";
-import { DeviceShowcaseSection } from "@/components/marketing/DeviceShowcaseSection";
-import { formatCurrency } from "@/lib/utils";
+import { CinematicHero } from "@/components/marketing/CinematicHero";
 import {
   IconCheck,
   IconSparkles,
   IconArrowRight,
-  IconTrendingUp,
   IconChartBar,
   IconAdjustments,
   IconShieldCheck,
@@ -21,23 +17,6 @@ import {
   IconLayersLinked,
   IconRefresh,
 } from "@tabler/icons-react";
-import { ArrowRight, Zap } from "lucide-react";
-import {
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  Cell,
-  RadialBarChart,
-  RadialBar,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  Tooltip,
-} from "recharts";
-
-// ── paleta do site para o FloatingLines
-const PALETTE = ["#1d9e75", "#378add", "#1d9e75", "#7c5cbf", "#378add"];
 
 const freeFeatures = [
   "Até 10 gastos por mês",
@@ -101,206 +80,8 @@ const pricingBenefits = [
     desc: "Rendimento dos fundos calculado via API do BCB.",
   },
 ];
-const mockBars = [
-  { label: "Necessidades", pct: 42, color: "bg-fd-amber",  hex: "#e8923a" },
-  { label: "Objetivos",    pct: 28, color: "bg-fd-green",  hex: "#1d9e75" },
-  { label: "Qualidade",    pct: 15, color: "bg-fd-blue",   hex: "#378add" },
-];
-const areaData = [
-  { mes: "Jan", saldo: 800  },
-  { mes: "Fev", saldo: 1100 },
-  { mes: "Mar", saldo: 950  },
-  { mes: "Abr", saldo: 1400 },
-  { mes: "Mai", saldo: 1250 },
-  { mes: "Jun", saldo: 1847 },
-];
-const barData = [
-  { cat: "Neces.", val: 2100, fill: "#e8923a" },
-  { cat: "Obj.",   val: 1400, fill: "#1d9e75" },
-  { cat: "Qual.",  val:  750, fill: "#378add" },
-];
-const radialData = [{ name: "Score", value: 82, fill: "#1d9e75" }];
-
-// ── Dashboard mock full-width ──────────────────────────────────────────────
-function MockDashboard() {
-  const ref    = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-60px" });
-
-  return (
-    <div
-      ref={ref}
-      className="relative w-full rounded-2xl md:rounded-none glass border border-border/30 md:border-x-0 md:border-t md:border-b shadow-premium overflow-hidden text-left transition-opacity duration-700"
-      style={{ opacity: inView ? 1 : 0 }}
-    >
-      {/* ── top bar ── */}
-      <div className="flex items-center justify-between border-b border-border/30 px-4 sm:px-6 py-3">
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-sm font-bold text-gradient">FinDash</span>
-          <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
-            Preview
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <IconTrendingUp size={12} className="text-fd-green" />
-          Junho 2025
-        </div>
-      </div>
-
-      {/* ── metric row — animado só quando visível ── */}
-      <div className="grid grid-cols-3 divide-x divide-border/30 border-b border-border/30">
-        {[
-          { label: "Saldo livre",  value: formatCurrency(1847), color: "text-fd-green", delay: "0ms"   },
-          { label: "Gasto no mês", value: formatCurrency(4250), color: "text-fd-amber", delay: "100ms" },
-          { label: "Score",        value: "82 / 100",           color: "text-fd-blue",  delay: "200ms" },
-        ].map((m) => (
-          <div
-            key={m.label}
-            className="px-3 sm:px-6 py-4"
-            style={{
-              opacity: inView ? 1 : 0,
-              transform: inView ? "translateY(0)" : "translateY(12px)",
-              transition: inView ? `opacity 0.5s ease ${m.delay}, transform 0.5s ease ${m.delay}` : "none",
-            }}
-          >
-            <p className="mb-1 text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground truncate">{m.label}</p>
-            <p className={`font-mono text-base sm:text-xl lg:text-2xl font-bold ${m.color}`}>{m.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* ── charts ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr_1fr] divide-y lg:divide-y-0 lg:divide-x divide-border/30">
-
-        {/* area — evolução saldo */}
-        <div className="p-4 sm:p-6">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-            Evolução do saldo
-          </p>
-          <ResponsiveContainer width="100%" height={140}>
-            <AreaChart data={areaData} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
-              <defs>
-                <linearGradient id="gradSaldo" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#1d9e75" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#1d9e75" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="mes" tick={{ fontSize: 10, fill: "#8888a0" }} axisLine={false} tickLine={false} />
-              <YAxis hide />
-              <Tooltip
-                contentStyle={{ background: "#ffffff", border: "1px solid #DDE8E4", borderRadius: 8, fontSize: 11, color: "#0F1F19" }}
-                formatter={(v: number) => [formatCurrency(v), "Saldo"]}
-              />
-              <Area
-                type="monotone"
-                dataKey="saldo"
-                stroke="#1d9e75"
-                strokeWidth={2.5}
-                fill="url(#gradSaldo)"
-                isAnimationActive={inView}
-                animationDuration={900}
-                animationEasing="ease-out"
-                dot={{ r: 3, fill: "#1d9e75", strokeWidth: 0 }}
-                activeDot={{ r: 5, fill: "#1d9e75" }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* bar — categorias */}
-        <div className="p-4 sm:p-6">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-            Categorias
-          </p>
-          <ResponsiveContainer width="100%" height={140}>
-            <BarChart data={barData} margin={{ top: 4, right: 4, bottom: 0, left: -24 }} barSize={18}>
-              <XAxis dataKey="cat" tick={{ fontSize: 10, fill: "#8888a0" }} axisLine={false} tickLine={false} />
-              <YAxis hide />
-              <Tooltip
-                contentStyle={{ background: "#ffffff", border: "1px solid #DDE8E4", borderRadius: 8, fontSize: 11, color: "#0F1F19" }}
-                formatter={(v: number) => [formatCurrency(v)]}
-              />
-              <Bar dataKey="val" radius={[5, 5, 0, 0]} isAnimationActive={inView} animationDuration={800} animationEasing="ease-out">
-                {barData.map((entry, i) => (
-                  <Cell key={i} fill={entry.fill} fillOpacity={0.85} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* radial gauge + 50/30/20 bars */}
-        <div className="flex flex-col gap-5 p-4 sm:p-6">
-          <div>
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-              Score 50/30/20
-            </p>
-            <div className="flex items-center gap-4">
-              <div className="relative shrink-0" style={{ width: 80, height: 80 }}>
-                <RadialBarChart
-                  width={80}
-                  height={80}
-                  innerRadius={26}
-                  outerRadius={38}
-                  startAngle={210}
-                  endAngle={-30}
-                  data={radialData}
-                  barSize={9}
-                >
-                  <RadialBar
-                    dataKey="value"
-                    cornerRadius={6}
-                    background={{ fill: "#2a2a38" }}
-                    isAnimationActive={inView}
-                    animationDuration={1000}
-                    animationEasing="ease-out"
-                  />
-                </RadialBarChart>
-                <span className="absolute inset-0 flex items-center justify-center font-mono text-base font-black text-gradient">
-                  82
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Ótima distribuição financeira este mês.
-              </p>
-            </div>
-          </div>
-
-          {/* 50/30/20 bars — disparam só quando o dashboard entra na viewport */}
-          <div className="space-y-3">
-            {mockBars.map((bar, i) => (
-              <div key={bar.label}>
-                <div className="mb-1 flex justify-between text-[11px]">
-                  <span className="text-muted-foreground">{bar.label}</span>
-                  <span className="font-mono text-muted-foreground">{bar.pct}%</span>
-                </div>
-                <div className="relative h-1.5 rounded-full bg-secondary overflow-hidden">
-                  <div
-                    className={`absolute inset-y-0 left-0 rounded-full ${bar.color}`}
-                    style={{
-                      width: `${bar.pct * (100 / 50)}%`,
-                      transform: inView ? "scaleX(1)" : "scaleX(0)",
-                      transformOrigin: "left",
-                      transition: inView
-                        ? `transform 1s cubic-bezier(0.34,1.56,0.64,1) ${0.4 + i * 0.12}s`
-                        : "none",
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Landing ────────────────────────────────────────────────────────────────
 export function LandingPage() {
-  // ref para a hero — animações do hero só disparam quando a seção está visível
-  const heroRef  = useRef<HTMLDivElement>(null);
-  const heroView = useInView(heroRef, { once: true, margin: "-80px" });
-
   // ref para o footer — animate-pulse-soft só roda quando visível
   const footerRef  = useRef<HTMLDivElement>(null);
   const footerView = useInView(footerRef, { once: false, margin: "0px" });
@@ -312,166 +93,52 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
 
-      {/* ── NAV ── */}
-      <CardNav
-        items={[
-          {
-            label: "Produto",
-            bgColor: "#ffffff",
-            textColor: "#f0f0f5",
-            links: [
-              { label: "Dashboard",   href: "/dashboard",   ariaLabel: "Ver Dashboard" },
-              { label: "Gastos",      href: "/gastos",      ariaLabel: "Gerenciar gastos" },
-              { label: "Fundos",      href: "/fundos",      ariaLabel: "Gerenciar fundos" },
-              { label: "Calculadora", href: "/calculadora", ariaLabel: "Calculadora 50/30/20" },
-            ],
-          },
-          {
-            label: "Planos",
-            bgColor: "#16201c",
-            textColor: "#f0f0f5",
-            links: [
-              { label: "Gratuito", href: "/precos",  ariaLabel: "Plano gratuito" },
-              { label: "Premium",  href: "/precos",  ariaLabel: "Plano premium" },
-              { label: "Família",  href: "/familia", ariaLabel: "Plano família" },
-            ],
-          },
-          {
-            label: "Conta",
-            bgColor: "#ffffff",
-            textColor: "#f0f0f5",
-            links: [
-              { label: "Entrar",        href: "/login",          ariaLabel: "Fazer login" },
-              { label: "Criar conta",   href: "/cadastro",       ariaLabel: "Criar conta grátis" },
-              { label: "Configurações", href: "/configuracoes",  ariaLabel: "Configurações" },
-            ],
-          },
-        ]}
-        buttonLabel="Começar grátis"
-        buttonHref="/cadastro"
-        buttonBgColor="#1d9e75"
-        buttonTextColor="#f0f0f5"
-        menuColor="#f0f0f5"
-      />
+      {/* ── NAV — flutua sobre o CinematicHero ── */}
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <CardNav
+          items={[
+            {
+              label: "Produto",
+              bgColor: "#ffffff",
+              textColor: "#f0f0f5",
+              links: [
+                { label: "Dashboard",   href: "/dashboard",   ariaLabel: "Ver Dashboard" },
+                { label: "Gastos",      href: "/gastos",      ariaLabel: "Gerenciar gastos" },
+                { label: "Fundos",      href: "/fundos",      ariaLabel: "Gerenciar fundos" },
+                { label: "Calculadora", href: "/calculadora", ariaLabel: "Calculadora 50/30/20" },
+              ],
+            },
+            {
+              label: "Planos",
+              bgColor: "#16201c",
+              textColor: "#f0f0f5",
+              links: [
+                { label: "Gratuito", href: "/precos",  ariaLabel: "Plano gratuito" },
+                { label: "Premium",  href: "/precos",  ariaLabel: "Plano premium" },
+                { label: "Família",  href: "/familia", ariaLabel: "Plano família" },
+              ],
+            },
+            {
+              label: "Conta",
+              bgColor: "#ffffff",
+              textColor: "#f0f0f5",
+              links: [
+                { label: "Entrar",        href: "/login",          ariaLabel: "Fazer login" },
+                { label: "Criar conta",   href: "/cadastro",       ariaLabel: "Criar conta grátis" },
+                { label: "Configurações", href: "/configuracoes",  ariaLabel: "Configurações" },
+              ],
+            },
+          ]}
+          buttonLabel="Começar grátis"
+          buttonHref="/cadastro"
+          buttonBgColor="#1d9e75"
+          buttonTextColor="#f0f0f5"
+          menuColor="#f0f0f5"
+        />
+      </div>
 
-      {/* ── HERO ── */}
-      <section ref={heroRef} className="relative min-h-screen overflow-x-hidden flex flex-col">
-
-        {/* FloatingLines — pausa quando a hero não está visível */}
-        <div className="absolute inset-0 z-0">
-          <FloatingLines
-            linesGradient={PALETTE}
-            enabledWaves={["top", "middle", "bottom"]}
-            lineCount={[4, 6, 6]}
-            lineDistance={[8, 6, 4]}
-            bendRadius={4.5}
-            bendStrength={-0.6}
-            animationSpeed={heroView ? 0.7 : 0}
-            interactive={true}
-            parallax={true}
-            parallaxStrength={0.15}
-            mixBlendMode="screen"
-          />
-        </div>
-
-        <div className="pointer-events-none absolute inset-0 z-[1] bg-background/70" />
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[1] h-32 bg-gradient-to-t from-background to-transparent" />
-
-        {/* hero content — flex-1 faz ocupar toda a altura disponível e centraliza verticalmente */}
-        <div className="relative z-10 mx-auto flex flex-1 w-full flex-col items-center justify-center px-6 py-24 text-center">
-
-          {/* eyebrow — entra quando hero fica visível */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={heroView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="mb-8"
-          >
-            <span className="relative inline-flex items-center gap-3 rounded-full border border-primary/30 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 px-6 py-3 backdrop-blur-xl shadow-2xl">
-              <div className={`absolute inset-0 rounded-full bg-gradient-to-r from-primary/10 via-transparent to-primary/10 ${heroView ? "animate-pulse" : ""}`} />
-              <span className={`h-2 w-2 rounded-full bg-primary ${heroView ? "animate-ping" : ""}`} />
-              <span className="relative z-10 text-sm font-bold uppercase tracking-wider text-primary">
-                Método 50/30/20 embutido
-              </span>
-              <span className={`h-2 w-2 rounded-full bg-primary ${heroView ? "animate-ping" : ""}`} />
-            </span>
-          </motion.div>
-
-          {/* title */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={heroView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-            transition={{ duration: 1, delay: 0.3 }}
-            className="space-y-3"
-          >
-            <p className="text-4xl font-light text-foreground/60 md:text-5xl lg:text-6xl">
-              Transforme números em
-            </p>
-            <h1 className="relative inline-block text-5xl font-black tracking-tighter leading-tight sm:text-6xl md:text-7xl lg:text-8xl">
-              <span className="text-gradient">decisões claras</span>
-              {/* underline só anima quando hero está visível */}
-              <motion.div
-                initial={{ width: 0 }}
-                animate={heroView ? { width: "100%" } : { width: 0 }}
-                transition={{ duration: 1.5, delay: 1.2, ease: "easeOut" }}
-                className="absolute -bottom-3 left-0 h-1.5 rounded-full bg-gradient-to-r from-fd-green via-fd-green/80 to-transparent shadow-lg shadow-fd-green/40"
-              />
-            </h1>
-          </motion.div>
-
-          {/* subtitle */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={heroView ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 0.8, delay: 0.8 }}
-            className="mx-auto mt-10 max-w-2xl text-lg text-muted-foreground md:text-xl leading-relaxed"
-          >
-            FinDash combina dashboard de inteligência financeira com um método guiado.{" "}
-            <span className="rounded-md bg-gradient-to-r from-primary/20 to-primary/10 px-2 py-0.5 font-semibold text-foreground">
-              Saiba em 10 segundos
-            </span>{" "}
-            para onde vai seu dinheiro.
-          </motion.p>
-
-          {/* CTAs */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={heroView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            transition={{ duration: 0.8, delay: 1 }}
-            className="mt-10 flex flex-col items-center justify-center gap-5 sm:flex-row"
-          >
-            <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.98 }}>
-              <Link
-                href="/cadastro"
-                className="group relative inline-flex items-center gap-3 overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-r from-primary via-primary to-primary/90 px-8 py-4 text-lg font-semibold text-primary-foreground shadow-xl transition-all duration-500 hover:shadow-primary/30"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/5 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent"
-                  initial={{ x: "-100%" }}
-                  whileHover={{ x: "100%" }}
-                  transition={{ duration: 0.8 }}
-                />
-                <span className="relative z-10 tracking-wide">Começar grátis</span>
-                <ArrowRight className="relative z-10 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-              </Link>
-            </motion.div>
-
-            <motion.div whileHover={{ scale: 1.05, y: -2 }} whileTap={{ scale: 0.98 }}>
-              <Link
-                href="/precos"
-                className="group relative inline-flex items-center gap-3 overflow-hidden rounded-xl border-2 border-border/40 bg-background/60 px-8 py-4 text-lg font-semibold shadow-lg backdrop-blur-xl transition-all duration-500 hover:border-primary/40 hover:bg-background/90"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                <Zap className="relative z-10 h-5 w-5 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6" />
-                <span className="relative z-10 tracking-wide">Ver planos</span>
-              </Link>
-            </motion.div>
-          </motion.div>
-
-        </div>
-
-      </section>
+      {/* ── CINEMATIC HERO — seção de rolagem pinada ── */}
+      <CinematicHero />
 
       {/* ── COMO FUNCIONA ── */}
       <section className="border-t border-border/40 py-24">
@@ -504,9 +171,6 @@ export function LandingPage() {
           </div>
         </div>
       </section>
-
-      {/* ── DEVICE SHOWCASE ── */}
-      <DeviceShowcaseSection />
 
       {/* ── PRICING ── */}
       <section ref={pricingRef} className="relative py-24 overflow-hidden">
