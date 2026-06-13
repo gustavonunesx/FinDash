@@ -6,47 +6,84 @@ import {
   IconBell,
   IconCalculator,
   IconChartBar,
+  IconChartPie,
   IconLayoutDashboard,
   IconLogout,
-  IconMenu2,
   IconPigMoney,
   IconReceipt,
   IconSettings,
   IconUsers,
+  IconX,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
-
-const navItems = [
-  { href: "/dashboard",   label: "Dashboard",   icon: IconLayoutDashboard },
-  { href: "/gastos",      label: "Receitas",     icon: IconReceipt },
-  { href: "/gastos",      label: "Despesas do Mês", icon: IconChartBar, exact: true },
-  { href: "/fundos",      label: "Fluxo de Caixa",  icon: IconPigMoney },
-  { href: "/historico",   label: "Transações Recentes", icon: IconChartBar },
-  { href: "/calculadora", label: "Orçamento",    icon: IconCalculator },
-  { href: "/historico",   label: "Relatórios",   icon: IconChartBar },
-];
+import { AnimatePresence, motion } from "framer-motion";
+import { useState } from "react";
 
 const navMain = [
-  { href: "/dashboard",   label: "Dashboard",        icon: IconLayoutDashboard },
-  { href: "/gastos",      label: "Receitas",          icon: IconReceipt },
-  { href: "/fundos",      label: "Despesas do Mês",   icon: IconChartBar },
-  { href: "/historico",   label: "Fluxo de Caixa",    icon: IconPigMoney },
-  { href: "/familia",     label: "Transações Recentes", icon: IconUsers },
-  { href: "/calculadora", label: "Orçamento",         icon: IconCalculator },
-  { href: "/historico",   label: "Relatórios",        icon: IconChartBar },
+  { href: "/dashboard",   label: "Dashboard",     icon: IconLayoutDashboard },
+  { href: "/gastos",      label: "Gastos",         icon: IconReceipt },
+  { href: "/fundos",      label: "Fundos",         icon: IconPigMoney },
+  { href: "/calculadora", label: "Calculadora",    icon: IconCalculator },
+  { href: "/historico",   label: "Histórico",      icon: IconChartBar },
+  { href: "/familia",     label: "Família",        icon: IconUsers },
 ];
 
 const navBottom = [
   { href: "/configuracoes", label: "Configurações", icon: IconSettings },
 ];
 
+// Animated hamburger / X icon
+function MenuIcon({ open }: { open: boolean }) {
+  return (
+    <div className="relative h-5 w-5 flex flex-col justify-center gap-[5px]">
+      <AnimatePresence initial={false}>
+        {open ? (
+          // X
+          <motion.div
+            key="x"
+            className="absolute inset-0 flex items-center justify-center"
+            initial={{ rotate: -90, opacity: 0, scale: 0.6 }}
+            animate={{ rotate: 0, opacity: 1, scale: 1 }}
+            exit={{ rotate: 90, opacity: 0, scale: 0.6 }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <IconX className="h-5 w-5" />
+          </motion.div>
+        ) : (
+          // Three lines that slide in from left
+          <motion.div
+            key="bars"
+            className="absolute inset-0 flex flex-col justify-center gap-[5px]"
+            initial={{ x: -14, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 14, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+          >
+            {[0, 1, 2].map((i) => (
+              <motion.span
+                key={i}
+                className="block h-[2px] rounded-full bg-current"
+                initial={{ scaleX: 0, originX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.3, delay: i * 0.06, ease: [0.4, 0, 0.2, 1] }}
+                style={{ width: i === 1 ? "75%" : "100%" }}
+              />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen" style={{ background: "#F8FAFC" }}>
 
-      {/* ── Sidebar escura ── */}
+      {/* ── Sidebar escura (desktop) ── */}
       <aside
         className="hidden md:flex md:flex-col md:w-[280px] md:shrink-0 fixed left-0 top-0 h-screen z-30"
         style={{
@@ -73,13 +110,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             Menu Principal
           </p>
           {navMain.map(({ href, label, icon: Icon }) => {
-            const active = pathname === href || (href !== "/" && pathname.startsWith(href) && href === "/dashboard" && pathname === "/dashboard");
-            const isDashActive = href === "/dashboard" && pathname === "/dashboard";
-            const isActive = isDashActive || (href !== "/dashboard" && pathname.startsWith(href));
+            const isActive =
+              href === "/dashboard"
+                ? pathname === "/dashboard"
+                : pathname.startsWith(href);
 
             return (
               <Link
-                key={`${href}-${label}`}
+                key={href}
                 href={href}
                 className={cn(
                   "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[13.5px] font-medium transition-all duration-150",
@@ -108,7 +146,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link
               key={href}
               href={href}
-              className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[13.5px] font-medium text-white/50 transition-all hover:text-white/80 hover:bg-white/[0.05]"
+              className={cn(
+                "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[13.5px] font-medium transition-all",
+                pathname.startsWith(href)
+                  ? "text-white"
+                  : "text-white/50 hover:text-white/80 hover:bg-white/[0.05]"
+              )}
+              style={pathname.startsWith(href) ? {
+                background: "rgba(16,185,129,0.15)",
+                boxShadow: "0 0 0 1px rgba(16,185,129,0.2)",
+              } : {}}
             >
               <Icon className="h-4 w-4 shrink-0" />
               {label}
@@ -121,37 +168,67 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* ── Área principal (offset pela sidebar) ── */}
+      {/* ── Área principal ── */}
       <div className="flex flex-1 flex-col min-w-0 md:ml-[280px]">
 
-        {/* Header escuro */}
+        {/* Header escuro aprimorado */}
         <header
           className="sticky top-0 z-20 flex h-[70px] items-center justify-between px-8"
-          style={{ background: "#374151" }}
+          style={{
+            background: "linear-gradient(90deg, #1a2235 0%, #1e293b 60%, #1a2235 100%)",
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.28)",
+          }}
         >
-          <button className="text-white/70 hover:text-white transition-colors">
-            <IconMenu2 className="h-5 w-5" />
-          </button>
+          {/* Botão menu com animação */}
+          <motion.button
+            className="relative text-white/70 hover:text-white transition-colors overflow-hidden"
+            onClick={() => setMobileNavOpen((v) => !v)}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.92 }}
+            aria-label="Abrir menu"
+          >
+            {/* Glow ring on hover */}
+            <motion.span
+              className="absolute inset-0 rounded-lg"
+              initial={{ opacity: 0 }}
+              whileHover={{ opacity: 1 }}
+              style={{
+                background: "radial-gradient(circle, rgba(16,185,129,0.18) 0%, transparent 70%)",
+              }}
+            />
+            <span className="relative z-10 flex items-center justify-center h-9 w-9">
+              <MenuIcon open={mobileNavOpen} />
+            </span>
+          </motion.button>
 
           <div className="flex items-center gap-4">
             {/* Notificação */}
-            <button className="relative text-white/70 hover:text-white transition-colors">
+            <motion.button
+              className="relative text-white/70 hover:text-white transition-colors"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
               <IconBell className="h-5 w-5" />
-              <span
+              <motion.span
                 className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white"
                 style={{ background: "#059669" }}
+                animate={{ scale: [1, 1.18, 1] }}
+                transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
               >
                 2
-              </span>
-            </button>
+              </motion.span>
+            </motion.button>
 
             {/* Avatar */}
-            <div
-              className="h-9 w-9 rounded-full ring-2 ring-white/20 overflow-hidden flex items-center justify-center text-white font-semibold text-sm"
+            <motion.div
+              className="h-9 w-9 rounded-full ring-2 ring-white/20 overflow-hidden flex items-center justify-center text-white font-semibold text-sm cursor-pointer"
               style={{ background: "linear-gradient(135deg, #059669, #047857)" }}
+              whileHover={{ scale: 1.07 }}
+              whileTap={{ scale: 0.95 }}
             >
               C
-            </div>
+            </motion.div>
           </div>
         </header>
 
@@ -167,10 +244,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         <div className="flex justify-around py-2">
           {navMain.slice(0, 5).map(({ href, label, icon: Icon }) => {
-            const isActive = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
+            const isActive =
+              href === "/dashboard"
+                ? pathname === "/dashboard"
+                : pathname.startsWith(href);
             return (
               <Link
-                key={`mob-${href}-${label}`}
+                key={`mob-${href}`}
                 href={href}
                 className="flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium transition-colors"
                 style={{ color: isActive ? "#10B981" : "rgba(255,255,255,0.4)" }}
