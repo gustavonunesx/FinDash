@@ -1,12 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { CardNav } from "@/components/marketing/CardNav";
 import { CinematicHero } from "@/components/marketing/CinematicHero";
 import { faqItems } from "@/lib/site-config";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
   IconCheck,
   IconSparkles,
@@ -17,7 +23,6 @@ import {
   IconDeviceDesktopAnalytics,
   IconLayersLinked,
   IconRefresh,
-  IconChevronDown,
 } from "@tabler/icons-react";
 
 if (typeof window !== "undefined") {
@@ -162,16 +167,7 @@ const PAGE_STYLES = `
     -webkit-text-fill-color: transparent; background-clip: text; -webkit-background-clip: text;
   }
 
-  .lp-faq-item {
-    border: 1px solid #DDE8E4;
-    background: #FFFFFF;
-    border-radius: 16px; overflow: hidden;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  }
-  .lp-faq-item:hover { border-color: #b8d4cc; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
-  .lp-faq-item.open  { border-color: rgba(14,143,106,0.3); box-shadow: 0 0 0 3px rgba(14,143,106,0.06); }
-
-  .lp-shimmer {
+.lp-shimmer {
     position: absolute; inset: 0;
     background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%);
     transform: translateX(-100%);
@@ -456,7 +452,6 @@ function PricingSection() {
 // ── seção FAQ ─────────────────────────────────────────────────────────────────
 function FaqSectionCinematic() {
   const ref = useRef<HTMLElement>(null);
-  const [open, setOpen] = useState<number | null>(0);
   useGsapReveal(ref);
 
   return (
@@ -467,45 +462,44 @@ function FaqSectionCinematic() {
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(124,58,237,0.03), transparent 70%)" }} />
       </div>
 
-      <div className="relative mx-auto max-w-2xl px-6">
-        <div className="mb-14 text-center lp-reveal">
+      <div className="relative mx-auto max-w-3xl px-6">
+        <div className="mx-auto mb-14 flex max-w-2xl flex-col items-center text-center lp-reveal">
           <div className="lp-badge mb-6">Dúvidas</div>
-          <h2 className="text-4xl sm:text-5xl font-bold tracking-tight lp-text-gradient" style={{ lineHeight: 1.15 }}>
+          <h2 className="text-4xl sm:text-5xl font-bold tracking-tight lp-text-gradient mb-4" style={{ lineHeight: 1.15 }}>
             Perguntas frequentes.
           </h2>
+          <p className="text-base" style={{ color: "#6B8078" }}>
+            Não encontrou sua dúvida? Entre em contato com nosso suporte.
+          </p>
         </div>
 
-        <div className="lp-stagger-group space-y-3">
+        <Accordion
+          type="single"
+          collapsible
+          defaultValue="faq-0"
+          className="lp-stagger-group w-full"
+        >
           {faqItems.map((item, i) => (
-            <div
+            <AccordionItem
               key={item.q}
-              className={`lp-stagger-child lp-faq-item${open === i ? " open" : ""}`}
+              value={`faq-${i}`}
+              className="lp-stagger-child mb-3 rounded-2xl overflow-hidden bg-white border border-[#DDE8E4] data-[state=open]:border-[rgba(14,143,106,0.3)] data-[state=open]:shadow-[0_0_0_3px_rgba(14,143,106,0.06)] hover:border-[#b8d4cc] hover:shadow-[0_4px_16px_rgba(0,0,0,0.05)] transition-[border-color,box-shadow] duration-300"
               style={{ opacity: 0, transform: "translateY(40px)" }}
             >
-              <button
-                type="button"
-                className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
-                onClick={() => setOpen(open === i ? null : i)}
+              <AccordionTrigger
+                className="px-5 py-4 text-left hover:no-underline hover:opacity-80 transition-opacity duration-200 data-[state=open]:border-b data-[state=open]:border-[#DDE8E4]"
+                style={{ color: "#0F1F19" }}
               >
-                <span className="font-semibold" style={{ color: "#0F1F19" }}>{item.q}</span>
-                <IconChevronDown
-                  size={16}
-                  style={{
-                    color: "#6B8078",
-                    flexShrink: 0,
-                    transform: open === i ? "rotate(180deg)" : "rotate(0deg)",
-                    transition: "transform 0.3s ease",
-                  }}
-                />
-              </button>
-              {open === i && (
-                <p className="px-5 pb-5 text-sm leading-relaxed" style={{ color: "#4A5E58", borderTop: "1px solid #DDE8E4", paddingTop: 16 }}>
+                <span className="font-semibold text-sm sm:text-base pr-4">{item.q}</span>
+              </AccordionTrigger>
+              <AccordionContent className="px-5">
+                <p className="text-sm leading-relaxed pt-1" style={{ color: "#4A5E58" }}>
                   {item.a}
                 </p>
-              )}
-            </div>
+              </AccordionContent>
+            </AccordionItem>
           ))}
-        </div>
+        </Accordion>
       </div>
     </section>
   );
