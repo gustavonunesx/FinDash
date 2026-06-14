@@ -17,130 +17,126 @@ const INJECTED_STYLES = `
 
   .ch-film-grain {
     position: absolute; inset: 0; width: 100%; height: 100%;
-    pointer-events: none; z-index: 50; opacity: 0.04; mix-blend-mode: overlay;
+    pointer-events: none; z-index: 50; opacity: 0.015; mix-blend-mode: multiply;
     background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="noiseFilter"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noiseFilter)"/></svg>');
   }
 
   .ch-bg-grid {
     background-size: 60px 60px;
     background-image:
-      linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px);
+      linear-gradient(to right, rgba(14,143,106,0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(14,143,106,0.06) 1px, transparent 1px);
     mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
     -webkit-mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
   }
 
   .ch-text-3d {
-    color: #f0f0f5;
+    color: #0F1F19;
     text-shadow:
-      0 10px 30px rgba(29,158,117,0.15),
-      0 2px 4px rgba(0,0,0,0.5);
+      0 10px 30px rgba(14,143,106,0.1),
+      0 2px 4px rgba(0,0,0,0.06);
   }
 
   .ch-text-gradient-reveal {
-    background: linear-gradient(180deg, #f0f0f5 0%, rgba(240,240,245,0.5) 100%);
+    background: linear-gradient(180deg, #0F1F19 0%, rgba(15,31,25,0.55) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     transform: translateZ(0);
-    filter:
-      drop-shadow(0px 10px 20px rgba(29,158,117,0.2))
-      drop-shadow(0px 2px 4px rgba(0,0,0,0.4));
+    filter: drop-shadow(0px 4px 12px rgba(14,143,106,0.12));
   }
 
   .ch-text-green-reveal {
-    background: linear-gradient(180deg, #1d9e75 0%, #378add 100%);
+    background: linear-gradient(180deg, #0E8F6A 0%, #2563EB 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     transform: translateZ(0);
-    filter: drop-shadow(0px 0px 20px rgba(29,158,117,0.4));
+    filter: drop-shadow(0px 0px 20px rgba(14,143,106,0.2));
   }
 
-  /* Deep card — fundo escuro FinDash */
+  /* Card — fundo branco light */
   .ch-premium-card {
-    background: linear-gradient(145deg, #0f1a14 0%, #0f0f13 100%);
+    background: linear-gradient(145deg, #f0faf6 0%, #FFFFFF 100%);
     box-shadow:
-      0 40px 100px -20px rgba(0,0,0,0.95),
-      0 20px 40px -20px rgba(0,0,0,0.8),
-      inset 0 1px 2px rgba(29,158,117,0.12),
-      inset 0 -2px 4px rgba(0,0,0,0.8);
-    border: 1px solid rgba(29,158,117,0.08);
+      0 40px 100px -20px rgba(0,0,0,0.12),
+      0 20px 40px -20px rgba(0,0,0,0.08),
+      inset 0 1px 2px rgba(14,143,106,0.08),
+      inset 0 -1px 2px rgba(0,0,0,0.03);
+    border: 1px solid rgba(14,143,106,0.14);
     position: relative;
   }
 
   .ch-card-sheen {
     position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 50;
-    background: radial-gradient(800px circle at var(--ch-mouse-x, 50%) var(--ch-mouse-y, 50%), rgba(29,158,117,0.05) 0%, transparent 40%);
-    mix-blend-mode: screen; transition: opacity 0.3s ease;
+    background: radial-gradient(800px circle at var(--ch-mouse-x, 50%) var(--ch-mouse-y, 50%), rgba(14,143,106,0.04) 0%, transparent 40%);
+    mix-blend-mode: multiply; transition: opacity 0.3s ease;
   }
 
-  /* iPhone bezel */
+  /* iPhone bezel — cinza claro elegante */
   .ch-iphone-bezel {
-    background: linear-gradient(165deg, #38384a 0%, #22222e 50%, #18181f 100%);
+    background: linear-gradient(165deg, #d4d4d8 0%, #a1a1aa 50%, #71717a 100%);
     box-shadow:
-      0 0 0 1px rgba(255,255,255,0.09),
-      0 0 0 2px rgba(0,0,0,0.5),
-      0 40px 80px -16px rgba(0,0,0,0.95),
-      8px 8px 32px rgba(0,0,0,0.6),
-      -4px 0 20px rgba(29,158,117,0.06);
+      0 0 0 1px rgba(0,0,0,0.08),
+      0 0 0 2px rgba(255,255,255,0.6),
+      0 40px 80px -16px rgba(0,0,0,0.25),
+      8px 8px 32px rgba(0,0,0,0.12),
+      -4px 0 20px rgba(14,143,106,0.06);
     transform-style: preserve-3d;
   }
 
   .ch-hardware-btn {
-    background: linear-gradient(90deg, #2a2a38 0%, #1a1a24 100%);
+    background: linear-gradient(90deg, #a1a1aa 0%, #71717a 100%);
     box-shadow:
-      -2px 0 5px rgba(0,0,0,0.8),
-      inset -1px 0 1px rgba(255,255,255,0.06),
-      inset 1px 0 2px rgba(0,0,0,0.8);
+      -1px 0 3px rgba(0,0,0,0.2),
+      inset -1px 0 1px rgba(255,255,255,0.3),
+      inset 1px 0 1px rgba(0,0,0,0.1);
   }
 
   .ch-screen-glare {
-    background: linear-gradient(110deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 45%);
+    background: linear-gradient(110deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 45%);
   }
 
   .ch-widget-depth {
-    background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+    background: linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(247,248,247,0.8) 100%);
     box-shadow:
-      0 10px 20px rgba(0,0,0,0.3),
-      inset 0 1px 1px rgba(255,255,255,0.04),
-      inset 0 -1px 1px rgba(0,0,0,0.5);
-    border: 1px solid rgba(255,255,255,0.03);
+      0 2px 8px rgba(0,0,0,0.06),
+      inset 0 1px 1px rgba(255,255,255,0.9);
+    border: 1px solid rgba(221,232,228,0.8);
   }
 
   .ch-floating-badge {
-    background: linear-gradient(135deg, rgba(29,158,117,0.10) 0%, rgba(29,158,117,0.02) 100%);
+    background: rgba(255,255,255,0.92);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     box-shadow:
-      0 0 0 1px rgba(29,158,117,0.15),
-      0 25px 50px -12px rgba(0,0,0,0.8),
-      inset 0 1px 1px rgba(29,158,117,0.1),
-      inset 0 -1px 1px rgba(0,0,0,0.5);
+      0 0 0 1px rgba(14,143,106,0.12),
+      0 8px 32px rgba(0,0,0,0.1),
+      inset 0 1px 1px rgba(255,255,255,0.9);
   }
 
   .ch-btn-primary {
     transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-    background: linear-gradient(180deg, #22b886 0%, #1d9e75 100%);
+    background: linear-gradient(180deg, #12a87d 0%, #0E8F6A 100%);
     color: #fff;
-    box-shadow: 0 0 0 1px rgba(29,158,117,0.3), 0 2px 4px rgba(0,0,0,0.4), 0 12px 24px -4px rgba(29,158,117,0.3), inset 0 1px 1px rgba(255,255,255,0.2), inset 0 -3px 6px rgba(0,0,0,0.2);
+    box-shadow: 0 0 0 1px rgba(14,143,106,0.2), 0 2px 4px rgba(14,143,106,0.15), 0 12px 24px -4px rgba(14,143,106,0.2), inset 0 1px 1px rgba(255,255,255,0.3);
   }
   .ch-btn-primary:hover {
     transform: translateY(-3px);
-    box-shadow: 0 0 0 1px rgba(29,158,117,0.4), 0 6px 12px -2px rgba(29,158,117,0.2), 0 20px 32px -6px rgba(29,158,117,0.4), inset 0 1px 1px rgba(255,255,255,0.25), inset 0 -3px 6px rgba(0,0,0,0.2);
+    box-shadow: 0 0 0 1px rgba(14,143,106,0.3), 0 6px 12px -2px rgba(14,143,106,0.2), 0 20px 32px -6px rgba(14,143,106,0.25), inset 0 1px 1px rgba(255,255,255,0.35);
   }
   .ch-btn-primary:active { transform: translateY(1px); }
 
   .ch-btn-secondary {
     transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-    background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
-    color: #f0f0f5;
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.4), 0 12px 24px -4px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.08);
+    background: #FFFFFF;
+    color: #0F1F19;
+    box-shadow: 0 0 0 1px #DDE8E4, 0 2px 4px rgba(0,0,0,0.05), 0 8px 16px rgba(0,0,0,0.04);
   }
   .ch-btn-secondary:hover {
     transform: translateY(-3px);
-    background: linear-gradient(180deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.04) 100%);
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.15), 0 6px 12px -2px rgba(0,0,0,0.5), 0 20px 32px -6px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.12);
+    background: #F7F8F7;
+    box-shadow: 0 0 0 1px #b8d4cc, 0 6px 16px rgba(0,0,0,0.08);
   }
   .ch-btn-secondary:active { transform: translateY(1px); }
 
@@ -263,7 +259,7 @@ export function CinematicHero() {
     <div
       ref={containerRef}
       className="relative w-screen h-screen overflow-hidden flex items-center justify-center"
-      style={{ background: "#0f0f13", perspective: "1500px" }}
+      style={{ background: "#F7F8F7", perspective: "1500px" }}
     >
       <style dangerouslySetInnerHTML={{ __html: INJECTED_STYLES }} />
       <div className="ch-film-grain" aria-hidden="true" />
@@ -271,9 +267,9 @@ export function CinematicHero() {
 
       {/* Ambient glows */}
       <div className="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 60% 50% at 30% 50%, rgba(29,158,117,0.03), transparent 70%)" }} />
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 50% 40% at 70% 50%, rgba(55,138,221,0.02), transparent 70%)" }} />
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 40% 60% at 50% 80%, rgba(124,92,191,0.02), transparent 70%)" }} />
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 60% 50% at 30% 50%, rgba(14,143,106,0.06), transparent 70%)" }} />
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 50% 40% at 70% 50%, rgba(37,99,235,0.04), transparent 70%)" }} />
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 40% 60% at 50% 80%, rgba(124,58,237,0.03), transparent 70%)" }} />
       </div>
 
       {/* HERO TEXT — fundo, desaparece ao rolar */}
@@ -291,7 +287,7 @@ export function CinematicHero() {
         <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 tracking-tight ch-text-gradient-reveal">
           Pronto para começar?
         </h2>
-        <p className="text-muted-foreground text-lg md:text-xl mb-12 max-w-xl mx-auto font-light leading-relaxed" style={{ color: "rgba(240,240,245,0.5)" }}>
+        <p className="text-muted-foreground text-lg md:text-xl mb-12 max-w-xl mx-auto font-light leading-relaxed" style={{ color: "#6B8078" }}>
           Crie sua conta grátis. Sem cartão de crédito. Veja em 10 segundos para onde vai seu dinheiro.
         </p>
         <div className="flex flex-col sm:flex-row gap-6">
@@ -326,19 +322,19 @@ export function CinematicHero() {
 
             {/* 1. TOP mobile / RIGHT desktop — tagline */}
             <div className="ch-card-right-text ch-gsap-reveal order-1 lg:order-3 flex flex-col justify-center lg:justify-end items-center lg:items-end z-20 w-full text-center lg:text-right">
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] mb-3" style={{ color: "rgba(29,158,117,0.7)" }}>
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] mb-3" style={{ color: "#0E8F6A" }}>
                 Inteligência financeira
               </span>
               <h2 className="text-5xl md:text-[5rem] lg:text-[7rem] font-black uppercase tracking-tighter leading-none" style={{
-                background: "linear-gradient(180deg, #f0f0f5 0%, rgba(240,240,245,0.45) 100%)",
+                background: "linear-gradient(180deg, #0F1F19 0%, rgba(15,31,25,0.45) 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
-                filter: "drop-shadow(0px 12px 24px rgba(0,0,0,0.8))",
+                filter: "drop-shadow(0px 4px 12px rgba(14,143,106,0.12))",
               }}>
                 FinDash
               </h2>
-              <p className="text-sm mt-3 max-w-[200px] leading-relaxed hidden lg:block" style={{ color: "rgba(240,240,245,0.35)" }}>
+              <p className="text-sm mt-3 max-w-[200px] leading-relaxed hidden lg:block" style={{ color: "#6B8078" }}>
                 Método 50/30/20 aplicado à vida real com dados em tempo real.
               </p>
             </div>
@@ -361,20 +357,21 @@ export function CinematicHero() {
                   <div className="ch-hardware-btn absolute top-[170px] rounded-r-md" style={{ right: -3, width: 3, height: 70 }} aria-hidden="true" />
 
                   {/* Screen */}
-                  <div className="absolute overflow-hidden text-white z-10" style={{
+                  <div className="absolute overflow-hidden z-10" style={{
                     inset: 7,
-                    background: "#050914",
+                    background: "#F8FAFC",
                     borderRadius: "2.5rem",
-                    boxShadow: "inset 0 0 15px rgba(0,0,0,1)",
+                    boxShadow: "inset 0 0 8px rgba(0,0,0,0.06)",
                   }}>
                     <div className="ch-screen-glare absolute inset-0 z-40 pointer-events-none" aria-hidden="true" />
 
                     {/* Dynamic Island */}
-                    <div className="absolute left-1/2 -translate-x-1/2 bg-black rounded-full z-50 flex items-center justify-end px-3" style={{
+                    <div className="absolute left-1/2 -translate-x-1/2 rounded-full z-50 flex items-center justify-end px-3" style={{
                       top: 5, width: 100, height: 28,
-                      boxShadow: "inset 0 -1px 2px rgba(255,255,255,0.06)",
+                      background: "#1c1c1e",
+                      boxShadow: "inset 0 -1px 2px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.15)",
                     }}>
-                      <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#1d9e75", boxShadow: "0 0 8px rgba(29,158,117,0.8)" }} />
+                      <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "#0E8F6A", boxShadow: "0 0 8px rgba(14,143,106,0.8)" }} />
                     </div>
 
                     {/* App content */}
@@ -383,38 +380,38 @@ export function CinematicHero() {
                       {/* Header */}
                       <div className="ch-phone-widget flex justify-between items-center mb-5">
                         <div className="flex flex-col">
-                          <span className="uppercase tracking-widest font-bold mb-1" style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>Dashboard</span>
-                          <span className="font-bold tracking-tight" style={{ fontSize: 18, color: "#f0f0f5" }}>
-                            <span style={{ background: "linear-gradient(135deg,#1d9e75,#378add)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FinDash</span>
+                          <span className="uppercase tracking-widest font-bold mb-1" style={{ fontSize: 10, color: "#6B8078" }}>Dashboard</span>
+                          <span className="font-bold tracking-tight" style={{ fontSize: 18, color: "#0F1F19" }}>
+                            <span style={{ background: "linear-gradient(135deg,#0E8F6A,#2563EB)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FinDash</span>
                           </span>
                         </div>
-                        <div className="rounded-full flex items-center justify-center font-bold text-white text-sm border" style={{
+                        <div className="rounded-full flex items-center justify-center font-bold text-white text-sm" style={{
                           width: 36, height: 36,
-                          background: "linear-gradient(135deg,#1d9e75,#378add)",
-                          border: "1px solid rgba(255,255,255,0.1)",
+                          background: "linear-gradient(135deg,#0E8F6A,#2563EB)",
+                          boxShadow: "0 2px 8px rgba(14,143,106,0.25)",
                         }}>G</div>
                       </div>
 
                       {/* Score radial */}
                       <div className="ch-phone-widget relative flex items-center justify-center mb-5" style={{ width: 176, height: 176, margin: "0 auto 20px" }}>
                         <svg className="absolute inset-0 w-full h-full" aria-hidden="true">
-                          <circle cx="88" cy="88" r="64" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="12" />
-                          <circle className="ch-progress-ring" cx="88" cy="88" r="64" fill="none" stroke="#1d9e75" strokeWidth="12" />
+                          <circle cx="88" cy="88" r="64" fill="none" stroke="rgba(14,143,106,0.1)" strokeWidth="12" />
+                          <circle className="ch-progress-ring" cx="88" cy="88" r="64" fill="none" stroke="#0E8F6A" strokeWidth="12" />
                         </svg>
                         <div className="text-center z-10 flex flex-col items-center">
-                          <span className="ch-counter-val text-4xl font-extrabold tracking-tighter text-white">0</span>
-                          <span className="uppercase tracking-[0.1em] font-bold mt-0.5" style={{ fontSize: 8, color: "rgba(29,158,117,0.5)" }}>Score 50/30/20</span>
+                          <span className="ch-counter-val text-4xl font-extrabold tracking-tighter" style={{ color: "#0F1F19" }}>0</span>
+                          <span className="uppercase tracking-[0.1em] font-bold mt-0.5" style={{ fontSize: 8, color: "rgba(14,143,106,0.6)" }}>Score 50/30/20</span>
                         </div>
                       </div>
 
                       {/* Metric cards */}
                       <div className="ch-phone-widget grid grid-cols-2 gap-2 mb-4">
                         {[
-                          { label: "Saldo livre", value: formatCurrency(1847), color: "#1d9e75" },
-                          { label: "Gasto no mês", value: formatCurrency(4250), color: "#e8923a" },
+                          { label: "Saldo livre", value: formatCurrency(1847), color: "#0E8F6A" },
+                          { label: "Gasto no mês", value: formatCurrency(4250), color: "#C4820A" },
                         ].map((m) => (
                           <div key={m.label} className="ch-widget-depth rounded-xl p-3">
-                            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 4 }}>{m.label}</div>
+                            <div style={{ fontSize: 10, color: "#6B8078", marginBottom: 4 }}>{m.label}</div>
                             <div className="font-bold" style={{ fontFamily: "monospace", fontSize: 13, color: m.color }}>{m.value}</div>
                           </div>
                         ))}
@@ -423,10 +420,10 @@ export function CinematicHero() {
                       {/* Area chart mini */}
                       <div className="ch-phone-widget ch-widget-depth rounded-xl p-3">
                         <div className="flex items-center justify-between mb-2">
-                          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Evolução</span>
+                          <span style={{ fontSize: 10, color: "#6B8078", textTransform: "uppercase", letterSpacing: "0.08em" }}>Evolução</span>
                           <div className="flex items-center gap-1">
-                            <IconTrendingUp size={10} color="#1d9e75" />
-                            <span style={{ fontSize: 10, color: "#1d9e75" }}>+12%</span>
+                            <IconTrendingUp size={10} color="#0E8F6A" />
+                            <span style={{ fontSize: 10, color: "#0E8F6A" }}>+12%</span>
                           </div>
                         </div>
                         <div style={{ height: 48 }}>
@@ -434,20 +431,20 @@ export function CinematicHero() {
                             <AreaChart data={areaData} margin={{ top: 2, right: 2, bottom: 0, left: -30 }}>
                               <defs>
                                 <linearGradient id="chGradPhone" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="5%" stopColor="#1d9e75" stopOpacity={0.35} />
-                                  <stop offset="95%" stopColor="#1d9e75" stopOpacity={0} />
+                                  <stop offset="5%" stopColor="#0E8F6A" stopOpacity={0.25} />
+                                  <stop offset="95%" stopColor="#0E8F6A" stopOpacity={0} />
                                 </linearGradient>
                               </defs>
-                              <XAxis dataKey="mes" tick={{ fontSize: 6, fill: "#8888a0" }} axisLine={false} tickLine={false} />
+                              <XAxis dataKey="mes" tick={{ fontSize: 6, fill: "#6B8078" }} axisLine={false} tickLine={false} />
                               <YAxis hide />
-                              <Area type="monotone" dataKey="saldo" stroke="#1d9e75" strokeWidth={1.5} fill="url(#chGradPhone)" dot={false} isAnimationActive={false} />
+                              <Area type="monotone" dataKey="saldo" stroke="#0E8F6A" strokeWidth={1.5} fill="url(#chGradPhone)" dot={false} isAnimationActive={false} />
                             </AreaChart>
                           </ResponsiveContainer>
                         </div>
                       </div>
 
                       {/* Home indicator */}
-                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full" style={{ width: 120, height: 4, background: "rgba(255,255,255,0.2)" }} />
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full" style={{ width: 120, height: 4, background: "rgba(15,31,25,0.12)" }} />
                     </div>
                   </div>
                 </div>
@@ -456,14 +453,14 @@ export function CinematicHero() {
                 <div className="ch-floating-badge absolute flex items-center gap-3 rounded-2xl p-4 z-30" style={{ top: 24, left: -60 }}>
                   <div className="rounded-full flex items-center justify-center" style={{
                     width: 40, height: 40,
-                    background: "linear-gradient(135deg, rgba(29,158,117,0.2), rgba(29,158,117,0.05))",
-                    border: "1px solid rgba(29,158,117,0.3)",
+                    background: "linear-gradient(135deg, rgba(14,143,106,0.15), rgba(14,143,106,0.05))",
+                    border: "1px solid rgba(14,143,106,0.2)",
                   }}>
                     <span style={{ fontSize: 18 }} aria-hidden="true">📈</span>
                   </div>
                   <div>
-                    <p className="font-bold tracking-tight" style={{ fontSize: 13, color: "#f0f0f5" }}>Score 82/100</p>
-                    <p style={{ fontSize: 11, color: "rgba(29,158,117,0.6)" }}>Ótima distribuição</p>
+                    <p className="font-bold tracking-tight" style={{ fontSize: 13, color: "#0F1F19" }}>Score 82/100</p>
+                    <p style={{ fontSize: 11, color: "#0E8F6A" }}>Ótima distribuição</p>
                   </div>
                 </div>
 
@@ -471,14 +468,14 @@ export function CinematicHero() {
                 <div className="ch-floating-badge absolute flex items-center gap-3 rounded-2xl p-4 z-30" style={{ bottom: 60, right: -60 }}>
                   <div className="rounded-full flex items-center justify-center" style={{
                     width: 40, height: 40,
-                    background: "linear-gradient(135deg, rgba(55,138,221,0.2), rgba(55,138,221,0.05))",
-                    border: "1px solid rgba(55,138,221,0.3)",
+                    background: "linear-gradient(135deg, rgba(37,99,235,0.12), rgba(37,99,235,0.04))",
+                    border: "1px solid rgba(37,99,235,0.18)",
                   }}>
                     <span style={{ fontSize: 18 }} aria-hidden="true">💰</span>
                   </div>
                   <div>
-                    <p className="font-bold tracking-tight" style={{ fontSize: 13, color: "#f0f0f5" }}>Saldo livre</p>
-                    <p style={{ fontSize: 11, color: "rgba(55,138,221,0.6)" }}>{formatCurrency(1847)}</p>
+                    <p className="font-bold tracking-tight" style={{ fontSize: 13, color: "#0F1F19" }}>Saldo livre</p>
+                    <p style={{ fontSize: 11, color: "#2563EB" }}>{formatCurrency(1847)}</p>
                   </div>
                 </div>
 
@@ -488,22 +485,22 @@ export function CinematicHero() {
             {/* 3. BOTTOM mobile / LEFT desktop — descrição */}
             <div className="ch-card-left-text ch-gsap-reveal order-3 lg:order-1 flex flex-col justify-center text-center lg:text-left z-20 w-full px-4 lg:px-0">
               <div className="inline-flex items-center gap-2 mb-4 justify-center lg:justify-start">
-                <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#1d9e75" }} />
-                <span className="text-xs font-semibold uppercase tracking-[0.15em]" style={{ color: "rgba(29,158,117,0.7)" }}>Método 50/30/20</span>
+                <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#0E8F6A" }} />
+                <span className="text-xs font-semibold uppercase tracking-[0.15em]" style={{ color: "#0E8F6A" }}>Método 50/30/20</span>
               </div>
-              <h3 className="font-bold mb-3 tracking-tight" style={{ fontSize: "clamp(22px,2.5vw,36px)", color: "#f0f0f5" }}>
+              <h3 className="font-bold mb-3 tracking-tight" style={{ fontSize: "clamp(22px,2.5vw,36px)", color: "#0F1F19" }}>
                 Controle total das suas finanças.
               </h3>
-              <p className="hidden md:block font-normal leading-relaxed" style={{ fontSize: "clamp(13px,1.2vw,17px)", color: "rgba(240,240,245,0.45)", maxWidth: 340 }}>
-                <span className="font-semibold" style={{ color: "#f0f0f5" }}>FinDash</span> transforma lançamentos em clareza financeira com score em tempo real, regra 50/30/20 automática e fundos com CDI atualizado.
+              <p className="hidden md:block font-normal leading-relaxed" style={{ fontSize: "clamp(13px,1.2vw,17px)", color: "#6B8078", maxWidth: 340 }}>
+                <span className="font-semibold" style={{ color: "#0F1F19" }}>FinDash</span> transforma lançamentos em clareza financeira com score em tempo real, regra 50/30/20 automática e fundos com CDI atualizado.
               </p>
               {/* mini badges */}
               <div className="hidden md:flex flex-wrap gap-2 mt-5">
                 {["Score 50/30/20", "CDI automático", "Histórico mensal", "Exportação PDF"].map((tag) => (
                   <span key={tag} className="rounded-full px-3 py-1 text-[11px] font-semibold" style={{
-                    background: "rgba(29,158,117,0.08)",
-                    border: "1px solid rgba(29,158,117,0.15)",
-                    color: "rgba(29,158,117,0.8)",
+                    background: "rgba(14,143,106,0.07)",
+                    border: "1px solid rgba(14,143,106,0.18)",
+                    color: "#0E8F6A",
                   }}>{tag}</span>
                 ))}
               </div>

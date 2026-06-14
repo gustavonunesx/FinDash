@@ -13,13 +13,14 @@
   display: block;
   height: 56px;
   padding: 0;
-  background-color: rgb(15 15 19 / 80%);
+  background-color: rgb(255 255 255 / 88%);
   backdrop-filter: blur(16px);
-  border: 1px solid rgb(255 255 255 / 8%);
+  border: 1px solid rgb(14 143 106 / 12%);
   border-radius: 0.875rem;
   box-shadow:
-    0 4px 24px rgb(0 0 0 / 40%),
-    0 0 0 0.5px rgb(255 255 255 / 4%) inset;
+    0 1px 3px rgb(14 143 106 / 6%),
+    0 8px 32px rgb(0 0 0 / 8%),
+    0 0 0 0.5px rgb(221 232 228 / 60%) inset;
   position: relative;
   overflow: hidden;
   will-change: height;
@@ -79,7 +80,7 @@
   font-family: var(--font-jetbrains), ui-monospace, monospace;
   font-size: 1rem;
   font-weight: 700;
-  background: linear-gradient(135deg, #1d9e75, #378add);
+  background: linear-gradient(135deg, #0E8F6A, #2563EB);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -143,7 +144,7 @@
   padding: 14px 16px;
   gap: 8px;
   user-select: none;
-  border: 1px solid rgb(255 255 255 / 6%);
+  border: 1px solid rgb(221 232 228 / 70%);
   overflow: hidden;
 }
 
@@ -153,7 +154,7 @@
   inset: 0;
   background: radial-gradient(
     ellipse 80% 60% at 50% 0%,
-    rgb(255 255 255 / 3%),
+    rgb(14 143 106 / 4%),
     transparent 70%
   );
   pointer-events: none;
