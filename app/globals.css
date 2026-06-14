@@ -324,6 +324,19 @@ html.dark {
   100% { background-position:  200% 0; }
 }
 
+@keyframes accordion-down {
+  from { height: 0; opacity: 0; }
+  to   { height: var(--radix-accordion-content-height); opacity: 1; }
+}
+
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); opacity: 1; }
+  to   { height: 0; opacity: 0; }
+}
+
+.animate-accordion-down { animation: accordion-down 0.28s cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-accordion-up   { animation: accordion-up   0.22s cubic-bezier(0.4, 0, 1, 1); }
+
 /* ============================================================
    REDUCED MOTION
    ============================================================ */
