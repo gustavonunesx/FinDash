@@ -3,15 +3,12 @@
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
-  IconPencil,
   IconPlus,
-  IconTrash,
-  IconSearch,
-  IconRepeat,
   IconX,
   IconCheck,
 } from "@tabler/icons-react";
 import { CsvImportDialog } from "@/components/gastos/csv-import-dialog";
+import { GastosTable } from "@/components/gastos/gastos-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,7 +31,6 @@ import {
 import {
   CATEGORIA_EMOJI,
   CATEGORIA_LABELS,
-  CATEGORIA_COLORS,
   LIMITES_FREE,
   type CategoriaGasto,
   type Gasto,
@@ -90,14 +86,6 @@ export function GastosClient({ gastos, plano }: GastosClientProps) {
   const maxTotal = Math.max(totais.necessidade, totais.objetivo, totais.qualidade, 1);
 
   const categorias: CategoriaGasto[] = ["necessidade", "objetivo", "qualidade"];
-
-  const filtrados = gastos.filter((g) => {
-    const matchBusca =
-      g.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      g.subcategoria?.toLowerCase().includes(busca.toLowerCase());
-    const matchTab = tab === "todos" || g.categoria === tab;
-    return matchBusca && matchTab;
-  });
 
   function openCreate() {
     if (plano === "free" && gastos.length >= LIMITES_FREE.gastos) {
@@ -215,115 +203,28 @@ export function GastosClient({ gastos, plano }: GastosClientProps) {
             })}
           </div>
 
-          {/* List card */}
-          <div className="rounded-xl border border-border bg-card shadow-card overflow-hidden">
-            {/* List header: tabs + search */}
-            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-              <div className="flex gap-1">
-                {(["todos", ...categorias] as FilterTab[]).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setTab(t)}
-                    className={[
-                      "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                      tab === t
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                    ].join(" ")}
-                  >
-                    {t === "todos" ? "Todos" : CATEGORIA_LABELS[t]}
-                  </button>
-                ))}
-              </div>
-              <div className="relative">
-                <IconSearch className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Buscar..."
-                  value={busca}
-                  onChange={(e) => setBusca(e.target.value)}
-                  className="h-8 rounded-lg border border-border bg-secondary pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none w-40"
-                />
-              </div>
+          {/* List card — tabela redesenhada */}
+          {gastos.length === 0 ? (
+            <div className="rounded-xl border border-border bg-card shadow-card p-6">
+              <EmptyState
+                icon="💸"
+                title="Nenhum gasto cadastrado"
+                description="Adicione seu primeiro gasto ou importe um CSV para começar a acompanhar seu método 50/30/20."
+                actionLabel="Adicionar gasto"
+                onAction={openCreate}
+              />
             </div>
-
-            {/* List body */}
-            {gastos.length === 0 ? (
-              <div className="p-6">
-                <EmptyState
-                  icon="💸"
-                  title="Nenhum gasto cadastrado"
-                  description="Adicione seu primeiro gasto ou importe um CSV para começar a acompanhar seu método 50/30/20."
-                  actionLabel="Adicionar gasto"
-                  onAction={openCreate}
-                />
-              </div>
-            ) : filtrados.length === 0 ? (
-              <p className="py-10 text-center text-sm text-muted-foreground">
-                Nenhum gasto encontrado.
-              </p>
-            ) : (
-              <ul>
-                {filtrados.map((g, i) => (
-                  <li
-                    key={g.id}
-                    className={[
-                      "group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-secondary/40",
-                      i !== 0 ? "border-t border-border/60" : "",
-                    ].join(" ")}
-                  >
-                    {/* Category icon circle */}
-                    <div
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base ${CATEGORIA_BG[g.categoria]}`}
-                    >
-                      {CATEGORIA_EMOJI[g.categoria]}
-                    </div>
-
-                    {/* Name + meta */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="truncate text-sm font-medium">{g.nome}</span>
-                        {g.recorrente && (
-                          <span className="flex items-center gap-0.5 rounded-full bg-fd-blue/10 px-1.5 py-0.5 text-[10px] font-medium text-fd-blue">
-                            <IconRepeat className="h-2.5 w-2.5" />
-                            Recorrente
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {CATEGORIA_LABELS[g.categoria]}
-                        {g.subcategoria ? ` · ${g.subcategoria}` : ""}
-                      </p>
-                    </div>
-
-                    {/* Amount */}
-                    <span
-                      className="font-mono text-sm font-semibold tabular-nums"
-                      style={{ color: CATEGORIA_COLORS[g.categoria] }}
-                    >
-                      -{formatCurrency(g.valor)}
-                    </span>
-
-                    {/* Actions — visible on hover */}
-                    <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                      <button
-                        onClick={() => openEdit(g)}
-                        className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-                      >
-                        <IconPencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(g.id)}
-                        className="rounded-lg p-1.5 text-muted-foreground hover:bg-fd-red/10 hover:text-fd-red transition-colors"
-                      >
-                        <IconTrash className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          ) : (
+            <GastosTable
+              gastos={gastos}
+              onEdit={openEdit}
+              onDelete={handleDelete}
+              busca={busca}
+              onBuscaChange={setBusca}
+              tab={tab}
+              onTabChange={setTab}
+            />
+          )}
         </div>
 
         {/* ── Right panel: inline form ── */}
