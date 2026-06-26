@@ -85,13 +85,13 @@ export function AuthCard({ defaultMode = "login" }: { defaultMode?: AuthMode }) 
               <Input id="nome" name="nome" placeholder="Seu nome" required />
             </div>
           )}
-          <div className="input-float-label space-y-2">
-            <Input id="email" name="email" type="email" placeholder=" " required />
+          <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
+            <Input id="email" name="email" type="email" placeholder="seu@email.com" required />
           </div>
-          <div className="input-float-label space-y-2">
-            <Input id="senha" name="password" type="password" placeholder=" " required />
+          <div className="space-y-2">
             <Label htmlFor="senha">Senha</Label>
+            <Input id="senha" name="password" type="password" placeholder="••••••••" required />
           </div>
           {mode === "login" && (
             <Link

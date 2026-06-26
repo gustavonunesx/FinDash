@@ -14,6 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="pt-BR"
       className={`${dmSans.variable} ${jakarta.variable} ${jetbrains.variable}`}
+      suppressHydrationWarning
     >
       <head>
         {/* No-FOUC: apply theme before first paint */}

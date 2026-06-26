@@ -52,7 +52,7 @@ export async function proxy(request: NextRequest) {
     error: authError,
   } = await supabase.auth.getUser();
 
-  if (authError && authError.code !== "refresh_token_not_found") {
+  if (authError && authError.status !== 0 && authError.status !== 400) {
     console.error(authError);
   }
 

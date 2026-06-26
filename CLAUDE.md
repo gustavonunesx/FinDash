@@ -5,17 +5,44 @@
 FinDash é um SaaS de finanças pessoais com planos Free, Premium e Família.
 Stack: Next.js 15 (App Router) + TypeScript + Supabase + Stripe + Tailwind CSS v4.
 
-## Regras de Workflow (OBRIGATÓRIO)
+## Fluxo de Trabalho por Requisição (feature/correção avulsa)
 
-### Branches e PRs
-- Toda nova feature ou ajuste deve ser desenvolvido em uma branch dedicada: `feature/<descricao-curta>`
-- Nunca commitar diretamente em `main` ou `findash-2.0`
-- Quando o usuário disser **"pode commitar"**: criar PR para `main`, commitar, push e deletar a branch da feature
+Estas regras valem para qualquer pedido de feature, correção, ajuste etc. **fora** do fluxo de milestones formais.
 
-### Commits
-- Usar Conventional Commits: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`
-- Mensagens em português são aceitas
-- Sempre adicionar `Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>`
+1. **Branch por requisição.** Toda vez que o usuário pedir uma feature, correção ou ajuste no projeto, criar uma branch dedicada para aquela requisição seguindo o padrão de git flow antes de escrever código:
+   - Feature nova: `git checkout -b feat/nome-descritivo`
+   - Correção de bug: `git checkout -b fix/nome-descritivo`
+   - Ajuste/refino/chore: `git checkout -b chore/nome-descritivo`
+   - Sempre criar a branch a partir de `master` atualizada.
+
+2. **Commit + PR sob comando "pode commitar".** Quando o usuário disser **"pode commitar"** ao finalizar uma feature/correção que pediu:
+   - Fazer o commit das alterações na branch da requisição, incluindo as atualizações dos arquivos de memória, `CLAUDE.md` e `docs/PLAN.md` quando relevantes.
+   - Mensagem no padrão Conventional Commits (`type(scope): description`) terminando com a linha de co-autoria.
+   - `git push -u origin <branch>`
+   - Abrir PR para `master` com `gh pr create`.
+   - **Não fazer merge automático** — apenas commit, push e PR, e aguardar instrução.
+
+3. **Gatilho "contexto".** Quando o usuário disser **"contexto"** (geralmente no início de uma nova sessão), isso significa: se contextualizar do projeto para dar seguimento de onde paramos. Ler os arquivos de memória do projeto, o `CLAUDE.md` e o `docs/PLAN.md` (principalmente estes dois), entender o estado atual e o que ficou pendente, e então aguardar o próximo pedido.
+
+---
+
+## Milestone Git Flow
+
+**⚠️ Regra importante:** Nunca iniciar uma nova milestone (criar branch, instalar dependências, escrever código) sem pedido explícito do usuário. Ao concluir o merge de uma milestone, parar e aguardar instrução.
+
+**Início de cada milestone:**
+1. Criar branch: `git checkout -b feat/nome-da-milestone`
+
+**Final de cada milestone:**
+1. Marcar todas as entregas como `[x]` no `docs/PLAN.md`
+2. Atualizar status da milestone na tabela de Milestones acima (neste arquivo)
+3. Commit final com a mensagem exata definida no bloco `Commit final` do PLAN.md
+4. Push: `git push -u origin <branch>`
+5. PR: `gh pr create`
+6. Merge: `gh pr merge --merge --delete-branch`
+7. Deletar branch local: `git branch -d <branch>`
+8. Voltar para master: `git checkout master && git pull`
+9. **Parar. Não iniciar a próxima milestone.**
 
 ## Regras de Desenvolvimento
 
