@@ -1,104 +1,369 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
-import {
-  IconArrowUpRight,
-  IconHome,
-  IconShoppingCart,
-  IconCar,
-  IconHeart,
-  IconStar,
-} from "@tabler/icons-react";
-import { RecentTransactions } from "./recent-transactions";
-import { MetaAtingidaBanner } from "./meta-atingida-banner";
-import { UpgradeBanner } from "./upgrade-banner";
-import type { Configuracao, Fundo, Gasto, Profile } from "@/lib/types";
+  House,
+  Target,
+  Sparkles,
+  TrendingUp,
+  AlertTriangle,
+  Calendar,
+  WalletMinimal,
+  Eye,
+  EyeOff,
+  ChevronDown,
+} from "lucide-react";
+import type {
+  CategoriaGasto,
+  Configuracao,
+  Fundo,
+  Gasto,
+  HistoricoMensal,
+  Profile,
+} from "@/lib/types";
 import type { Score502030Result } from "@/lib/score";
-import { calcularScore502030, totalPorCategoria } from "@/lib/score";
-import { formatCurrency } from "@/lib/utils";
+import { CATEGORIA_LABELS } from "@/lib/types";
 
-/* ── Static sparkline data (visual only — real data would come from history) ── */
-const SALDO_DATA = [
-  { m: "Jun", v: 480000 },
-  { m: "Jul", v: 620000 },
-  { m: "Ago", v: 590000 },
-  { m: "Set", v: 710000 },
-  { m: "Out", v: 680000 },
-  { m: "Nov", v: 920000 },
-  { m: "Dez", v: 1116670 },
-];
+// ── Tokens ────────────────────────────────────────────────────────────────────
+const T = {
+  bg: "#F4F7F5",
+  card: "#FFFFFF",
+  border: "rgba(11,58,36,.08)",
+  shadow: "0 1px 2px rgba(11,58,36,.05)",
+  text: "#16241D",
+  textSec: "#5E6E66",
+  textMut: "#9AA8A0",
+  track: "#EDF2EE",
+  green: "#0B6B3F",
+  greenMid: "#16A35A",
+  greenLight: "#4FB87E",
+  alertText: "#C0341D",
+  alertBg: "#FBEAE5",
+  alertBorder: "#F1C7BC",
+  alertIconBg: "#F3D2C8",
+  alertIconText: "#B23A1E",
+  warnText: "#9A6410",
+  warnBg: "#FAF0DC",
+} as const;
 
-const RECEITA_DATA = [
-  { m: "Jun", v: 800 },
-  { m: "Jul", v: 1100 },
-  { m: "Ago", v: 950 },
-  { m: "Set", v: 1300 },
-  { m: "Out", v: 1050 },
-  { m: "Nov", v: 1200 },
-  { m: "Dez", v: 1030 },
-];
-
-const DESPESA_DATA = [
-  { m: "Jun", v: 450 },
-  { m: "Jul", v: 600 },
-  { m: "Ago", v: 500 },
-  { m: "Set", v: 700 },
-  { m: "Out", v: 380 },
-  { m: "Nov", v: 520 },
-  { m: "Dez", v: 288 },
-];
-
-const FLUXO_DATA = [
-  { m: "Jun",  v: 8000 },
-  { m: "Jul",  v: 12000 },
-  { m: "Ago",  v: -5000 },
-  { m: "Set",  v: -12000 },
-  { m: "Out",  v: 3000 },
-  { m: "Nov",  v: 9000 },
-  { m: "Dez",  v: 18000 },
-];
-
-const DONUT_DATA = [
-  { name: "Moradia",      value: 40, color: "#065F46" },
-  { name: "Saúde",        value: 25, color: "#059669" },
-  { name: "Alimentação",  value: 25, color: "#34D399" },
-  { name: "Outros",       value: 10, color: "#D1FAE5" },
-];
-
-const BUDGET_ITEMS = [
-  { label: "Moradia",      icon: IconHome,         pct: 60, value: 3600 },
-  { label: "Alimentação",  icon: IconShoppingCart,  pct: 45, value: 1350 },
-  { label: "Transporte",   icon: IconCar,           pct: 30, value: 480 },
-  { label: "Saúde",        icon: IconHeart,         pct: 25, value: 250 },
-  { label: "Lazer",        icon: IconStar,          pct: 20, value: 200 },
-];
-
-const CARD_STYLE: React.CSSProperties = {
-  background: "#ffffff",
-  borderRadius: 24,
-  padding: 24,
-  boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
-  border: "1px solid #E5E7EB",
+// ── Bucket visual definitions (por categoria do banco) ──────────────────────────
+const BUCKET_META: Record<
+  CategoriaGasto,
+  { sub: string; cor: string; bg: string; Icon: typeof House; pct: number }
+> = {
+  necessidade: { sub: "moradia e essenciais", cor: "#0B6B3F", bg: "#E6F0EA", Icon: House, pct: 50 },
+  objetivo: { sub: "investimentos e metas", cor: "#16A35A", bg: "#E3F4EA", Icon: Target, pct: 30 },
+  qualidade: { sub: "lazer e extras", cor: "#4FB87E", bg: "#EAF7EF", Icon: Sparkles, pct: 20 },
 };
 
-const EMERALD = "#059669";
-const EMERALD_DARK = "#047857";
+const TX_BUCKET: Record<CategoriaGasto, { label: string; cor: string; bg: string }> = {
+  necessidade: { label: "Necessidades", cor: "#0B6B3F", bg: "#E6F0EA" },
+  objetivo: { label: "Objetivos", cor: "#16A35A", bg: "#E3F4EA" },
+  qualidade: { label: "Qualidade de vida", cor: "#2E8B57", bg: "#EAF7EF" },
+};
 
-type FluxoFilter = "Todos" | "Entradas" | "Saídas";
-type PeriodFilter = "Este Mês" | "Último Mês" | "3 Meses";
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function fmtBRL(v: number): string {
+  return (
+    "R$ " +
+    Number(v).toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  );
+}
 
+function clamp(v: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, v));
+}
+
+function txDateLabel(iso: string): string {
+  return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+}
+
+function monthKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function monthLabel(key: string): string {
+  const [y, m] = key.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+}
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// ── SVG Donut Ring ────────────────────────────────────────────────────────────
+const CIRC = 2 * Math.PI * 34; // ≈ 213.63
+
+function DonutRing({ ratio, color }: { ratio: number; color: string }) {
+  const dash = clamp(ratio, 0, 1) * CIRC;
+  const pctLabel = Math.round(ratio * 100);
+
+  return (
+    <div style={{ position: "relative", width: 132, height: 132, margin: "0 auto" }}>
+      <svg width="132" height="132" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="34" fill="none" stroke={T.track} strokeWidth="7" />
+        <circle
+          cx="40"
+          cy="40"
+          r="34"
+          fill="none"
+          stroke={color}
+          strokeWidth="7"
+          strokeLinecap="round"
+          transform="rotate(-90 40 40)"
+          strokeDasharray={`${dash} ${CIRC}`}
+        />
+      </svg>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 2,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 22,
+            fontWeight: 800,
+            color: color,
+            letterSpacing: "-0.02em",
+            fontVariantNumeric: "tabular-nums",
+            lineHeight: 1,
+          }}
+        >
+          {pctLabel}%
+        </span>
+        <span style={{ fontSize: 10, color: T.textMut }}>do limite</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Status Pill ───────────────────────────────────────────────────────────────
+function StatusPill({
+  label,
+  textColor,
+  bgColor,
+}: {
+  label: string;
+  textColor: string;
+  bgColor: string;
+}) {
+  return (
+    <span
+      style={{
+        display: "inline-block",
+        borderRadius: 999,
+        padding: "3px 10px",
+        fontSize: 11,
+        fontWeight: 600,
+        color: textColor,
+        background: bgColor,
+        letterSpacing: "0.01em",
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+interface BucketView {
+  categoria: CategoriaGasto;
+  nome: string;
+  sub: string;
+  cor: string;
+  bg: string;
+  Icon: typeof House;
+  pct: number;
+  orcamento: number;
+  gasto: number;
+  ratio: number;
+  over: boolean;
+  cats: { nome: string; valor: number }[];
+}
+
+// ── Bucket Card ───────────────────────────────────────────────────────────────
+function BucketCard({ bucket, privacy }: { bucket: BucketView; privacy: boolean }) {
+  const { orcamento, gasto, ratio, over } = bucket;
+  const ringColor = over ? T.alertText : bucket.cor;
+
+  let pillLabel: string;
+  let pillText: string;
+  let pillBg: string;
+
+  if (bucket.categoria === "objetivo") {
+    if (gasto >= orcamento) {
+      pillLabel = "Meta batida";
+      pillText = T.green;
+      pillBg = "#E3F4EA";
+    } else {
+      pillLabel = "Em progresso";
+      pillText = T.greenMid;
+      pillBg = "#E3F4EA";
+    }
+  } else if (over) {
+    pillLabel = "Estourou";
+    pillText = T.alertText;
+    pillBg = "#FBE3DC";
+  } else if (ratio >= 0.85) {
+    pillLabel = "No limite";
+    pillText = T.warnText;
+    pillBg = T.warnBg;
+  } else {
+    pillLabel = "No caminho";
+    pillText = T.green;
+    pillBg = "#E6F0EA";
+  }
+
+  const diff = Math.abs(orcamento - gasto);
+  const diffLabel = over
+    ? "acima do limite"
+    : bucket.categoria === "objetivo"
+    ? "para completar a meta"
+    : "ainda disponível";
+  const diffColor = over ? T.alertText : T.green;
+
+  const BktIcon = bucket.Icon;
+
+  return (
+    <div
+      style={{
+        background: T.card,
+        borderRadius: 18,
+        border: `1px solid ${T.border}`,
+        boxShadow: T.shadow,
+        padding: 20,
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}
+    >
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+        <div
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: 10,
+            background: bucket.bg,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <BktIcon size={16} color={bucket.cor} />
+        </div>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{bucket.nome}</div>
+          <div style={{ fontSize: 11, color: T.textMut, marginTop: 1 }}>{bucket.pct}% da renda</div>
+        </div>
+      </div>
+
+      {/* Donut */}
+      <DonutRing ratio={ratio} color={ringColor} />
+
+      {/* Status pill */}
+      <div style={{ textAlign: "center" }}>
+        <StatusPill label={pillLabel} textColor={pillText} bgColor={pillBg} />
+      </div>
+
+      {/* Valores */}
+      <div
+        style={{
+          textAlign: "center",
+          fontSize: 13,
+          color: T.textSec,
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        <strong style={{ color: T.text, fontWeight: 700 }}>
+          {privacy ? "R$ ••••" : fmtBRL(gasto)}
+        </strong>{" "}
+        de {privacy ? "R$ ••••" : fmtBRL(orcamento)}
+      </div>
+
+      {/* Diff */}
+      <div
+        style={{
+          textAlign: "center",
+          fontSize: 12,
+          color: diffColor,
+          fontWeight: 500,
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
+        {privacy ? "R$ ••••" : fmtBRL(diff)} {diffLabel}
+      </div>
+
+      {/* Divider */}
+      <div style={{ height: 1, background: T.border }} />
+
+      {/* Category list */}
+      {bucket.cats.length > 0 ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {bucket.cats.map((cat) => (
+            <div key={cat.nome} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 7,
+                  background: "#F2F6F3",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: bucket.cor,
+                }}
+              >
+                {cat.nome.charAt(0).toUpperCase()}
+              </div>
+              <span
+                style={{
+                  flex: 1,
+                  fontSize: 12,
+                  color: T.textSec,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {cat.nome}
+              </span>
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: T.text,
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {privacy ? "R$ ••••" : fmtBRL(cat.valor)}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p style={{ fontSize: 12, color: T.textMut, textAlign: "center", padding: "4px 0" }}>
+          Sem lançamentos neste grupo.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ── Props ─────────────────────────────────────────────────────────────────────
 interface DashboardProps {
   profile: Profile;
   config: Configuracao | null;
@@ -106,303 +371,718 @@ interface DashboardProps {
   totalGastos: number;
   fundos: Fundo[];
   gastos: Gasto[];
+  historico: HistoricoMensal[];
   metaEconomia: number | null;
 }
 
-function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#111827", boxShadow: "0 4px 12px rgba(0,0,0,0.08)" }}>
-      <p style={{ color: "#6B7280", marginBottom: 2 }}>{label}</p>
-      <p style={{ fontWeight: 700 }}>{typeof payload[0].value === "number" && payload[0].value > 1000 ? formatCurrency(payload[0].value) : formatCurrency(payload[0].value)}</p>
-    </div>
-  );
-}
-
+// ── Main component ────────────────────────────────────────────────────────────
 export function DashboardFullscreen({
   profile,
-  config,
   scoreData,
-  totalGastos,
   fundos,
   gastos,
-  metaEconomia,
+  historico,
 }: DashboardProps) {
-  const [fluxoFilter, setFluxoFilter] = useState<FluxoFilter>("Todos");
-  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("Este Mês");
+  const [privacy, setPrivacy] = useState(false);
 
-  const nome = profile.nome ?? "Usuário";
+  const nome = profile?.nome ?? "Usuário";
   const firstName = nome.split(" ")[0];
-  const totalFundos = fundos.reduce((acc, f) => acc + f.saldo_atual, 0);
 
-  const totais = totalPorCategoria(gastos);
-  const rendaTotal = scoreData.rendaTotal;
+  // ── Lista de meses disponíveis (histórico + mês atual) ──────────────────────
+  const currentKey = monthKey(new Date());
+  const monthKeys = useMemo(() => {
+    const set = new Set<string>([currentKey]);
+    for (const h of historico) set.add(h.mes.slice(0, 7));
+    return Array.from(set).sort((a, b) => b.localeCompare(a));
+  }, [historico, currentKey]);
+
+  const [mesKey, setMesKey] = useState(currentKey);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const isCurrentMonth = mesKey === currentKey;
+
+  // ── Buckets a partir do score (mês atual) ───────────────────────────────────
+  const catGastos = useMemo(() => {
+    const map: Record<CategoriaGasto, { nome: string; valor: number }[]> = {
+      necessidade: [],
+      objetivo: [],
+      qualidade: [],
+    };
+    for (const g of gastos) map[g.categoria].push({ nome: g.nome, valor: g.valor });
+    for (const k of Object.keys(map) as CategoriaGasto[]) {
+      map[k].sort((a, b) => b.valor - a.valor);
+    }
+    return map;
+  }, [gastos]);
+
+  const buckets: BucketView[] = useMemo(() => {
+    return scoreData.categorias.map((c) => {
+      const meta = BUCKET_META[c.categoria];
+      const orcamento = c.limite;
+      const over = c.categoria !== "objetivo" && c.gasto > orcamento;
+      const ratio = orcamento > 0 ? c.gasto / orcamento : 0;
+      return {
+        categoria: c.categoria,
+        nome: CATEGORIA_LABELS[c.categoria],
+        sub: meta.sub,
+        cor: meta.cor,
+        bg: meta.bg,
+        Icon: meta.Icon,
+        pct: meta.pct,
+        orcamento,
+        gasto: c.gasto,
+        ratio,
+        over,
+        cats: catGastos[c.categoria].slice(0, 4),
+      };
+    });
+  }, [scoreData.categorias, catGastos]);
+
+  const overBuckets = buckets.filter((b) => b.over);
+
+  // ── Aderência (já calculada no score) ───────────────────────────────────────
+  const score = scoreData.score;
+  let scoreLabel: string;
+  let scoreColor: string;
+  if (score >= 90) {
+    scoreLabel = "Ótima aderência";
+    scoreColor = T.greenMid;
+  } else if (score >= 75) {
+    scoreLabel = "Boa aderência";
+    scoreColor = T.greenMid;
+  } else if (score >= 60) {
+    scoreLabel = "Requer atenção";
+    scoreColor = "#C9821F";
+  } else {
+    scoreLabel = "Fora do plano";
+    scoreColor = T.alertText;
+  }
+
+  // ── Fundos / metas reais ────────────────────────────────────────────────────
+  const fundosOrdenados = [...fundos].sort((a, b) => a.ordem - b.ordem);
+  const fundosTotal = fundos.reduce((a, f) => a + f.saldo_atual, 0);
+
+  // Investimentos (agregado dos fundos com custódia)
+  const investidos = fundos.filter((f) => f.custodia);
+  const totalAplicado = investidos.reduce((a, f) => a + f.saldo_atual, 0);
+
+  // ── Transações reais ────────────────────────────────────────────────────────
+  const transacoes = gastos.slice(0, 5);
+
+  const cardStyle: React.CSSProperties = {
+    background: T.card,
+    borderRadius: 18,
+    border: `1px solid ${T.border}`,
+    boxShadow: T.shadow,
+    padding: 20,
+  };
+
+  const mesLabelFull = capitalize(monthLabel(mesKey));
+  const mesNome = mesLabelFull.split(" ")[0];
 
   return (
-    <div style={{ fontFamily: "var(--font-sans)" }}>
-
-      {/* ── Saudação ── */}
-      <h1 style={{ fontSize: 32, fontWeight: 700, color: "#111827", marginBottom: 28 }}>
-        Bem-vindo de volta, {firstName}!
-      </h1>
-
-      {/* ── Linha 1: 4 cards — 2fr 1fr 1fr 1fr ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 24, marginBottom: 24 }}>
-
-        {/* Card 1: Saldo Total */}
-        <div style={CARD_STYLE}>
-          <p style={{ fontSize: 14, color: "#6B7280", marginBottom: 4 }}>Saldo Total</p>
-          <p style={{ fontSize: 32, fontWeight: 700, color: EMERALD_DARK, fontFamily: "var(--font-mono)", marginBottom: 16 }}>
-            {formatCurrency(rendaTotal > 0 ? rendaTotal : 1116670)}
-          </p>
-          <ResponsiveContainer width="100%" height={120}>
-            <AreaChart data={SALDO_DATA} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="saldoGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={EMERALD} stopOpacity={0.3} />
-                  <stop offset="100%" stopColor={EMERALD} stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="m" tick={{ fontSize: 11, fill: "#9CA3AF" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "#9CA3AF" }} axisLine={false} tickLine={false} tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
-              <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="v" stroke={EMERALD_DARK} strokeWidth={2.5} fill="url(#saldoGrad)" dot={false} activeDot={{ r: 5, fill: EMERALD_DARK, stroke: "#fff", strokeWidth: 2 }} />
-            </AreaChart>
-          </ResponsiveContainer>
+    <div style={{ fontFamily: "var(--font-sans)", color: T.text, minHeight: "100%" }}>
+      {/* ── Topbar ────────────────────────────────────────────────────────── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 20,
+        }}
+      >
+        {/* Logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: T.green,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <WalletMinimal size={16} color="#fff" />
+          </div>
+          <span
+            style={{ fontSize: 18, fontWeight: 800, color: T.green, letterSpacing: "-0.02em" }}
+          >
+            FinDash
+          </span>
         </div>
 
-        {/* Card 2: Receitas do Mês */}
-        <div style={CARD_STYLE}>
-          <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 4 }}>Receitas do Mês</p>
-          <p style={{ fontSize: 24, fontWeight: 700, color: EMERALD, fontFamily: "var(--font-mono)", marginBottom: 12 }}>
-            {formatCurrency(rendaTotal > 0 ? rendaTotal : 1030)}
-          </p>
-          <ResponsiveContainer width="100%" height={70}>
-            <AreaChart data={RECEITA_DATA} margin={{ top: 4, right: 0, left: -30, bottom: 0 }}>
-              <defs>
-                <linearGradient id="receitaGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={EMERALD} stopOpacity={0.25} />
-                  <stop offset="100%" stopColor={EMERALD} stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
-              <Area type="monotone" dataKey="v" stroke={EMERALD} strokeWidth={2} fill="url(#receitaGrad)" dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
-          <div style={{ display: "flex", gap: 4, marginTop: 8, flexWrap: "wrap" }}>
-            {RECEITA_DATA.map((d) => (
-              <span key={d.m} style={{ fontSize: 10, color: "#9CA3AF" }}>{d.m}</span>
-            ))}
-          </div>
-        </div>
+        {/* Right: privacy + adherence chip + CTA */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            onClick={() => setPrivacy((v) => !v)}
+            title={privacy ? "Mostrar valores" : "Ocultar valores"}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 12,
+              fontWeight: 600,
+              color: T.textSec,
+              background: T.card,
+              border: `1px solid ${T.border}`,
+              borderRadius: 999,
+              padding: "7px 12px",
+              boxShadow: T.shadow,
+              cursor: "pointer",
+            }}
+          >
+            {privacy ? <EyeOff size={14} color={T.green} /> : <Eye size={14} color={T.green} />}
+            {privacy ? "Mostrar" : "Privacidade"}
+          </button>
 
-        {/* Card 3: Despesas do Mês */}
-        <div style={CARD_STYLE}>
-          <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 4 }}>Despesas do Mês</p>
-          <p style={{ fontSize: 24, fontWeight: 700, color: EMERALD, fontFamily: "var(--font-mono)", marginBottom: 12 }}>
-            {formatCurrency(totalGastos > 0 ? totalGastos : 288)}
-          </p>
-          <ResponsiveContainer width="100%" height={70}>
-            <AreaChart data={DESPESA_DATA} margin={{ top: 4, right: 0, left: -30, bottom: 0 }}>
-              <defs>
-                <linearGradient id="despesaGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={EMERALD} stopOpacity={0.25} />
-                  <stop offset="100%" stopColor={EMERALD} stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
-              <Area type="monotone" dataKey="v" stroke={EMERALD} strokeWidth={2} fill="url(#despesaGrad)" dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
-          <div style={{ display: "flex", gap: 4, marginTop: 8, flexWrap: "wrap" }}>
-            {DESPESA_DATA.map((d) => (
-              <span key={d.m} style={{ fontSize: 10, color: "#9CA3AF" }}>{d.m}</span>
-            ))}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background: T.card,
+              border: `1px solid ${T.border}`,
+              borderRadius: 999,
+              padding: "6px 14px",
+              boxShadow: T.shadow,
+            }}
+          >
+            <span
+              style={{ fontSize: 10, fontWeight: 700, color: T.textMut, letterSpacing: "0.06em" }}
+            >
+              ADERÊNCIA
+            </span>
+            <span
+              style={{
+                fontSize: 20,
+                fontWeight: 800,
+                color: scoreColor,
+                letterSpacing: "-0.02em",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {score}
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: scoreColor }}>{scoreLabel}</span>
           </div>
-        </div>
 
-        {/* Card 4: Categorias (Donut) */}
-        <div style={CARD_STYLE}>
-          <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 8 }}>Categorias</p>
-          <ResponsiveContainer width="100%" height={120}>
-            <PieChart>
-              <Pie
-                data={DONUT_DATA}
-                cx="50%"
-                cy="50%"
-                innerRadius={32}
-                outerRadius={52}
-                strokeWidth={0}
-                dataKey="value"
-              >
-                {DONUT_DATA.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 10px", marginTop: 4 }}>
-            {DONUT_DATA.map((d) => (
-              <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: d.color, flexShrink: 0 }} />
-                <span style={{ fontSize: 10, color: "#6B7280" }}>{d.name}</span>
-              </div>
-            ))}
-          </div>
+          <Link
+            href="/gastos"
+            style={{
+              background: T.green,
+              color: "#fff",
+              border: "none",
+              borderRadius: 10,
+              padding: "8px 16px",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              textDecoration: "none",
+            }}
+          >
+            + Registrar gasto
+          </Link>
         </div>
       </div>
 
-      {/* ── Linha 2: 3 cards — 2fr 1.3fr 1.3fr ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1.3fr 1.3fr", gap: 24 }}>
-
-        {/* Card: Fluxo de Caixa */}
-        <div style={CARD_STYLE}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-            <p style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>Fluxo de Caixa</p>
-            <div style={{ display: "flex", gap: 8 }}>
-              {/* Filter select */}
-              <div style={{ position: "relative" }}>
-                <select
-                  value={fluxoFilter}
-                  onChange={(e) => setFluxoFilter(e.target.value as FluxoFilter)}
-                  style={{
-                    appearance: "none",
-                    background: "#F9FAFB",
-                    border: "1px solid #E5E7EB",
-                    borderRadius: 10,
-                    padding: "6px 28px 6px 12px",
-                    fontSize: 13,
-                    color: "#374151",
-                    cursor: "pointer",
-                  }}
-                >
-                  <option>Todos</option>
-                  <option>Entradas</option>
-                  <option>Saídas</option>
-                </select>
-                <svg style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M3 5L6 8L9 5" stroke="#6B7280" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </div>
-              {/* Date select */}
-              <div style={{ position: "relative" }}>
-                <select
-                  value={periodFilter}
-                  onChange={(e) => setPeriodFilter(e.target.value as PeriodFilter)}
-                  style={{
-                    appearance: "none",
-                    background: "#F9FAFB",
-                    border: "1px solid #E5E7EB",
-                    borderRadius: 10,
-                    padding: "6px 28px 6px 12px",
-                    fontSize: 13,
-                    color: "#374151",
-                    cursor: "pointer",
-                  }}
-                >
-                  <option>Este Mês</option>
-                  <option>Último Mês</option>
-                  <option>3 Meses</option>
-                </select>
-                <svg style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M2 4h8M4 2v2M8 2v2M2.5 5.5h7a1 1 0 011 1v3a1 1 0 01-1 1h-7a1 1 0 01-1-1v-3a1 1 0 011-1z" stroke="#6B7280" strokeWidth="1.2" strokeLinecap="round" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={FLUXO_DATA} margin={{ top: 8, right: 4, left: -10, bottom: 0 }}>
-              <defs>
-                <linearGradient id="fluxoGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={EMERALD} stopOpacity={0.25} />
-                  <stop offset="100%" stopColor={EMERALD} stopOpacity={0.02} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="m" tick={{ fontSize: 12, fill: "#9CA3AF" }} axisLine={false} tickLine={false} />
-              <YAxis
-                tick={{ fontSize: 11, fill: "#9CA3AF" }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`}
-                domain={[-25000, 25000]}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Area
-                type="monotone"
-                dataKey="v"
-                stroke={EMERALD}
-                strokeWidth={2.5}
-                fill="url(#fluxoGrad)"
-                dot={false}
-                activeDot={{ r: 5, fill: EMERALD_DARK, stroke: "#fff", strokeWidth: 2 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+      {/* ── Header ────────────────────────────────────────────────────────── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+          marginBottom: 16,
+        }}
+      >
+        <div>
+          <h1
+            style={{
+              fontSize: 24,
+              fontWeight: 800,
+              color: T.text,
+              letterSpacing: "-0.02em",
+              margin: 0,
+            }}
+          >
+            Olá, {firstName}
+          </h1>
+          <p style={{ fontSize: 14, color: T.textSec, margin: "4px 0 0" }}>
+            Seus 3 grupos da regra 50/30/20 em {mesNome}.
+          </p>
         </div>
 
-        {/* Card: Transações Recentes */}
-        <div style={{ ...CARD_STYLE, padding: 0, overflow: "hidden" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 16px" }}>
-            <p style={{ fontSize: 16, fontWeight: 600, color: "#111827" }}>Transações Recentes</p>
+        {/* Month dropdown */}
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background: T.card,
+              border: `1px solid ${T.border}`,
+              borderRadius: 999,
+              padding: "6px 14px",
+              boxShadow: T.shadow,
+              fontSize: 13,
+              fontWeight: 600,
+              color: T.textSec,
+              cursor: monthKeys.length > 1 ? "pointer" : "default",
+            }}
+          >
+            <Calendar size={14} color={T.textMut} />
+            {mesLabelFull}
+            {monthKeys.length > 1 && (
+              <ChevronDown
+                size={14}
+                color={T.textMut}
+                style={{
+                  transition: "transform 0.18s ease",
+                  transform: menuOpen ? "rotate(180deg)" : "none",
+                }}
+              />
+            )}
+          </button>
+
+          {menuOpen && monthKeys.length > 1 && (
+            <>
+              <div
+                onClick={() => setMenuOpen(false)}
+                style={{ position: "fixed", inset: 0, zIndex: 40 }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 6px)",
+                  right: 0,
+                  minWidth: 160,
+                  background: T.card,
+                  border: `1px solid ${T.border}`,
+                  borderRadius: 12,
+                  boxShadow: "0 8px 24px rgba(11,58,36,.12)",
+                  padding: 6,
+                  zIndex: 41,
+                  maxHeight: 280,
+                  overflowY: "auto",
+                }}
+              >
+                {monthKeys.map((k) => {
+                  const active = k === mesKey;
+                  return (
+                    <button
+                      key={k}
+                      onClick={() => {
+                        setMesKey(k);
+                        setMenuOpen(false);
+                      }}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        textAlign: "left",
+                        background: active ? "#E6F0EA" : "transparent",
+                        border: "none",
+                        borderRadius: 8,
+                        padding: "8px 12px",
+                        fontSize: 13,
+                        fontWeight: active ? 700 : 500,
+                        color: active ? T.green : T.textSec,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {capitalize(monthLabel(k))}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ── Aviso de mês histórico ─────────────────────────────────────────── */}
+      {!isCurrentMonth && (
+        <div
+          style={{
+            background: T.warnBg,
+            borderRadius: 12,
+            padding: "10px 16px",
+            marginBottom: 16,
+            fontSize: 13,
+            color: T.warnText,
+            fontWeight: 500,
+          }}
+        >
+          Você está vendo um resumo de {mesLabelFull}. Os grupos detalhados mostram sempre o mês
+          atual.
+        </div>
+      )}
+
+      {/* ── Alert banner ──────────────────────────────────────────────────── */}
+      {isCurrentMonth && overBuckets.length > 0 && (
+        <div
+          style={{
+            background: T.alertBg,
+            border: `1px solid ${T.alertBorder}`,
+            borderRadius: 14,
+            padding: "14px 18px",
+            marginBottom: 16,
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: T.alertIconBg,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <AlertTriangle size={18} color={T.alertIconText} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#8F2A18" }}>
+              Atenção ao orçamento
+            </div>
+            {overBuckets.map((b) => {
+              const excesso = b.gasto - b.orcamento;
+              return (
+                <div key={b.categoria} style={{ fontSize: 13, color: "#A8503F", marginTop: 2 }}>
+                  {b.nome} passou em <strong>{privacy ? "R$ ••••" : fmtBRL(excesso)}</strong>.
+                </div>
+              );
+            })}
+          </div>
+          <Link
+            href="/calculadora"
+            style={{
+              background: "none",
+              border: `1px solid ${T.alertBorder}`,
+              borderRadius: 8,
+              padding: "6px 14px",
+              fontSize: 12,
+              fontWeight: 600,
+              color: "#A8503F",
+              cursor: "pointer",
+              flexShrink: 0,
+              textDecoration: "none",
+            }}
+          >
+            Ajustar limites
+          </Link>
+        </div>
+      )}
+
+      {/* ── Hero: 3 bucket cards ───────────────────────────────────────────── */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 16,
+          marginBottom: 16,
+        }}
+      >
+        {buckets.map((b) => (
+          <BucketCard key={b.categoria} bucket={b} privacy={privacy} />
+        ))}
+      </div>
+
+      {/* ── Bottom block: transactions + right column ──────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 372px", gap: 16 }}>
+        {/* Transactions card */}
+        <div style={{ ...cardStyle, padding: 0, overflow: "hidden" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "16px 20px 12px",
+            }}
+          >
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: T.text, margin: 0 }}>
+              Transações recentes
+            </h3>
             <Link
               href="/gastos"
-              style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 12, color: EMERALD, fontWeight: 500, textDecoration: "none" }}
+              style={{ fontSize: 12, fontWeight: 600, color: T.green, textDecoration: "none" }}
             >
-              Ver todos <IconArrowUpRight size={13} />
+              Ver todas →
             </Link>
           </div>
-          <RecentTransactions gastos={gastos.slice(0, 5)} />
-        </div>
 
-        {/* Card: Orçamento por Categoria */}
-        <div style={CARD_STYLE}>
-          <p style={{ fontSize: 16, fontWeight: 600, color: "#111827", marginBottom: 20 }}>
-            Orçamento por Categoria
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {BUDGET_ITEMS.map(({ label, icon: Icon, pct, value }) => (
-              <div key={label}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+          {transacoes.length === 0 ? (
+            <p
+              style={{
+                padding: "32px 20px",
+                textAlign: "center",
+                fontSize: 13,
+                color: T.textMut,
+              }}
+            >
+              Nenhum gasto registrado ainda.
+            </p>
+          ) : (
+            <div>
+              {transacoes.map((tx) => {
+                const bkt = TX_BUCKET[tx.categoria];
+                const initial = tx.nome.charAt(0).toUpperCase();
+                return (
                   <div
+                    key={tx.id}
                     style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 10,
-                      background: "#ECFDF5",
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
+                      gap: 12,
+                      padding: "12px 20px",
+                      borderTop: `1px solid ${T.border}`,
                     }}
                   >
-                    <Icon size={15} style={{ color: EMERALD }} />
-                  </div>
-                  <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: "#111827" }}>{label}</span>
-                  <span style={{ fontSize: 12, color: "#6B7280", fontFamily: "var(--font-mono)" }}>{pct}%</span>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: "#111827", fontFamily: "var(--font-mono)" }}>
-                    {formatCurrency(value)}
-                  </span>
-                </div>
-                <div style={{ height: 5, borderRadius: 9999, background: "#E5E7EB", overflow: "hidden" }}>
-                  <div
-                    style={{
-                      height: "100%",
-                      width: `${pct}%`,
-                      borderRadius: 9999,
-                      background: EMERALD,
-                      transition: "width 1s cubic-bezier(0.16,1,0.3,1)",
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 10,
+                        background: bkt.bg,
+                        color: bkt.cor,
+                        fontWeight: 800,
+                        fontSize: 14,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {initial}
+                    </div>
 
-      {/* Banners abaixo */}
-      <div className="mt-6 space-y-4">
-        <MetaAtingidaBanner fundos={fundos} />
-        {profile.plano === "free" && <UpgradeBanner />}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: T.text,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {tx.nome}
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 2,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <span
+                          style={{
+                            display: "inline-block",
+                            borderRadius: 999,
+                            padding: "1px 7px",
+                            fontSize: 10,
+                            fontWeight: 600,
+                            color: bkt.cor,
+                            background: bkt.bg,
+                          }}
+                        >
+                          {bkt.label}
+                        </span>
+                        <span style={{ fontSize: 11, color: T.textMut }}>
+                          · {txDateLabel(tx.created_at)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: T.alertText,
+                        fontVariantNumeric: "tabular-nums",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {privacy
+                        ? "−R$ •••"
+                        : `−R$ ${Number(tx.valor).toLocaleString("pt-BR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}`}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Right column: metas + investimentos */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Metas e fundos */}
+          <div style={cardStyle}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 14,
+              }}
+            >
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: T.text, margin: 0 }}>
+                Metas e fundos
+              </h3>
+              <span
+                style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: T.green,
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {privacy ? "R$ ••••" : fmtBRL(fundosTotal)}
+              </span>
+            </div>
+
+            {fundosOrdenados.length === 0 ? (
+              <p style={{ fontSize: 13, color: T.textMut, padding: "8px 0" }}>
+                Nenhum fundo criado ainda.
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {fundosOrdenados.map((fundo) => {
+                  const pct = fundo.meta > 0 ? Math.min(fundo.saldo_atual / fundo.meta, 1) : 0;
+                  const done = fundo.meta > 0 && fundo.saldo_atual >= fundo.meta;
+
+                  return (
+                    <div key={fundo.id}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          marginBottom: 6,
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            background: fundo.cor || T.greenMid,
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span
+                          style={{
+                            flex: 1,
+                            fontSize: 13,
+                            fontWeight: 500,
+                            color: T.text,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {fundo.nome}
+                        </span>
+                        <StatusPill
+                          label={done ? "Atingida" : `${Math.round(pct * 100)}%`}
+                          textColor={done ? T.green : T.textSec}
+                          bgColor={done ? "#E3F4EA" : T.track}
+                        />
+                      </div>
+                      <div
+                        style={{
+                          height: 8,
+                          borderRadius: 5,
+                          background: T.track,
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          style={{
+                            height: "100%",
+                            width: `${pct * 100}%`,
+                            borderRadius: 5,
+                            background: T.greenMid,
+                            transition: "width 0.6s ease",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Investimentos */}
+          {investidos.length > 0 && (
+            <div style={cardStyle}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 10,
+                }}
+              >
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: T.text, margin: 0 }}>
+                  Investimentos
+                </h3>
+                <span
+                  style={{
+                    display: "inline-block",
+                    borderRadius: 999,
+                    padding: "2px 9px",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: T.green,
+                    background: "#E6F0EA",
+                  }}
+                >
+                  {investidos.length} {investidos.length === 1 ? "ativo" : "ativos"}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  fontSize: 26,
+                  fontWeight: 800,
+                  color: T.text,
+                  letterSpacing: "-0.02em",
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {privacy ? "R$ ••••" : fmtBRL(totalAplicado)}
+              </div>
+              <div style={{ fontSize: 12, color: T.textMut, marginTop: 2, marginBottom: 10 }}>
+                total aplicado
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <TrendingUp size={15} color={T.green} />
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 500,
+                    color: T.textSec,
+                  }}
+                >
+                  {investidos.length} {investidos.length === 1 ? "fundo aplicado" : "fundos aplicados"} com custódia
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
