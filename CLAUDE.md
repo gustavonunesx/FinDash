@@ -52,7 +52,7 @@ Stack: Next.js 15 (App Router) + TypeScript + Supabase + Stripe + Tailwind CSS v
 app/
   (marketing)/precos/     — Página de planos
   (app)/                  — Rotas protegidas (auth + onboarding)
-    dashboard/            — Dashboard premium (scroll único, 3 blocos: hero+KPIs / 50/30/20+sidebar / fundos+transações)
+    dashboard/            — Dashboard 50/30/20-first (verde claro #F4F7F5): topbar c/ aderência, 3 anéis-bucket (SVG), transações + metas/investimentos; renda real, seletor de mês via histórico, modo privacidade
     gastos/               — CRUD de gastos + importação CSV
     fundos/               — Fundos de investimento + CDI
     calculadora/          — Regra 50/30/20

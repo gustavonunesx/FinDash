@@ -64,7 +64,19 @@
 - ✅ MetaAtingidaBanner mantido
 - ✅ UpgradeBanner mantido (Free only)
 - ✅ Animações por ScrollTrigger (KPIs, colunas inferiores, barras 50/30/20, linhas de transação)
-- 🔄 Ajustes finos em andamento (continuação na mesma branch)
+
+### v3 (redesign 50/30/20-first — branch `feat/dashboard-502030-redesign`)
+- ✅ Identidade verde clara (fundo `#F4F7F5`, cards brancos) — `AppShell` recebe prop `pageBg`
+- ✅ Foco na pergunta "Estou seguindo a regra 50/30/20 este mês?"
+- ✅ Removido Recharts do dashboard (rota caiu de ~334 kB para 6.4 kB) — anéis em SVG puro, barras em CSS
+- ✅ 3 cards-bucket (Necessidades/Objetivos/Qualidade) com anel donut SVG, status pill, diff e lista de categorias
+- ✅ Anéis/status/score derivam de `scoreData.categorias` (dados reais do usuário; Objetivos nunca "estoura")
+- ✅ Chip de aderência (score 0–100 + rótulo) e CTA "Registrar gasto" no topbar
+- ✅ Banner de alerta de estouro (só mês atual, quando há bucket acima do limite)
+- ✅ Transações recentes reais (5 últimos gastos) + Metas/fundos reais + card Investimentos (fundos com custódia)
+- ✅ Modo privacidade (toggle que oculta todos os valores → `R$ ••••`)
+- ✅ Seletor de mês no header (dropdown alimentado pelo `historico_mensal` + mês atual)
+- ✅ Renda vem de `config.salario + renda_extra` (removido slider de tweaks)
 
 ---
 

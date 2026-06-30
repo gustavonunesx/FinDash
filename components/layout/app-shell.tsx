@@ -132,7 +132,7 @@ function NavItem({
 }
 
 // ── AppShell ─────────────────────────────────────────────────────────────────
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children, pageBg }: { children: React.ReactNode; pageBg?: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
@@ -171,7 +171,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         gridTemplateColumns: `${sidebarW}px 1fr`,
         gridTemplateRows: "1fr",
         transition: "grid-template-columns 0.28s cubic-bezier(0.4,0,0.2,1)",
-        background: "#F8FAFC",
+        background: pageBg ?? "#F8FAFC",
       }}
     >
       {/* ── Sidebar (desktop) ── */}
@@ -299,7 +299,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* ── Área principal — coluna 2 do grid ── */}
       <div
         className="flex flex-col min-w-0 md:col-start-2"
-        style={{ background: "#F8FAFC" }}
+        style={{ background: pageBg ?? "#F8FAFC" }}
       >
         {/* Header */}
         <header
@@ -360,7 +360,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 px-8 py-8 overflow-auto" style={{ background: "#F8FAFC" }}>
+        <main className="flex-1 px-8 py-8 overflow-auto" style={{ background: pageBg ?? "#F8FAFC" }}>
           {children}
         </main>
       </div>
