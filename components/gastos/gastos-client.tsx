@@ -2,24 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import {
-  IconPlus,
-  IconX,
-  IconCheck,
-} from "@tabler/icons-react";
+import { IconPlus } from "@tabler/icons-react";
 import { CsvImportDialog } from "@/components/gastos/csv-import-dialog";
 import { GastosTable } from "@/components/gastos/gastos-table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import { GastoModal } from "@/components/gastos/gasto-modal";
+import { DonutChart } from "@/components/gastos/donut-chart";
 import { UpgradeModal } from "@/components/shared/upgrade-modal";
 import { EmptyState } from "@/components/shared/empty-state";
 import {
@@ -29,7 +16,6 @@ import {
   type GastoFormData,
 } from "@/app/(app)/gastos/actions";
 import {
-  CATEGORIA_EMOJI,
   CATEGORIA_LABELS,
   LIMITES_FREE,
   type CategoriaGasto,
@@ -52,40 +38,64 @@ const emptyForm: GastoFormData = {
   recorrente: false,
 };
 
-const CATEGORIA_BG: Record<CategoriaGasto, string> = {
-  necessidade: "bg-fd-amber/10 text-fd-amber",
-  objetivo: "bg-fd-green/10 text-fd-green",
-  qualidade: "bg-fd-blue/10 text-fd-blue",
-};
-
-const CATEGORIA_BAR: Record<CategoriaGasto, string> = {
-  necessidade: "bg-fd-amber",
-  objetivo: "bg-fd-green",
-  qualidade: "bg-fd-blue",
-};
-
-const CATEGORIA_RING: Record<CategoriaGasto, string> = {
-  necessidade: "ring-fd-amber/30",
-  objetivo: "ring-fd-green/30",
-  qualidade: "ring-fd-blue/30",
-};
-
 type FilterTab = CategoriaGasto | "todos";
+type ViewTab = "lista" | "analise";
+
+const CATEGORIA_BAR_COLOR: Record<CategoriaGasto, string> = {
+  necessidade: "#C4820A",
+  objetivo:    "#0E8F6A",
+  qualidade:   "#2563EB",
+};
+
+const CATEGORIA_BADGE_BG: Record<CategoriaGasto, string> = {
+  necessidade: "#FBF3E2",
+  objetivo:    "#E3F6EF",
+  qualidade:   "#EAF1FE",
+};
+
+const CATEGORIA_BADGE_TEXT: Record<CategoriaGasto, string> = {
+  necessidade: "#92620A",
+  objetivo:    "#0D7A5E",
+  qualidade:   "#1D4ED8",
+};
+
+const CATEGORIA_ICON_BG: Record<CategoriaGasto, string> = {
+  necessidade: "#FCE8C9",
+  objetivo:    "#CDEFE3",
+  qualidade:   "#D9E6FE",
+};
+
+const CATEGORIA_EMOJI: Record<CategoriaGasto, string> = {
+  necessidade: "🏠",
+  objetivo: "🎯",
+  qualidade: "✨",
+};
 
 export function GastosClient({ gastos, plano }: GastosClientProps) {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [editing, setEditing] = useState<Gasto | null>(null);
-  const [formOpen, setFormOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<GastoFormData>(emptyForm);
   const [busca, setBusca] = useState("");
-  const [tab, setTab] = useState<FilterTab>("todos");
+  const [filterTab, setFilterTab] = useState<FilterTab>("todos");
+  const [viewTab, setViewTab] = useState<ViewTab>("lista");
   const [pending, startTransition] = useTransition();
 
   const totais = totalPorCategoria(gastos);
   const totalGeral = totais.necessidade + totais.objetivo + totais.qualidade;
-  const maxTotal = Math.max(totais.necessidade, totais.objetivo, totais.qualidade, 1);
-
   const categorias: CategoriaGasto[] = ["necessidade", "objetivo", "qualidade"];
+
+  // Maiores gastos (top 3)
+  const maioresGastos = [...gastos]
+    .sort((a, b) => b.valor - a.valor)
+    .slice(0, 3);
+
+  // Média diária do mês atual
+  const hoje = new Date();
+  const diasNoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate();
+  const mediaDiaria = totalGeral / diasNoMes;
+
+  const mesAtual = hoje.toLocaleString("pt-BR", { month: "long" });
 
   function openCreate() {
     if (plano === "free" && gastos.length >= LIMITES_FREE.gastos) {
@@ -94,7 +104,7 @@ export function GastosClient({ gastos, plano }: GastosClientProps) {
     }
     setEditing(null);
     setForm(emptyForm);
-    setFormOpen(true);
+    setModalOpen(true);
   }
 
   function openEdit(gasto: Gasto) {
@@ -107,20 +117,19 @@ export function GastosClient({ gastos, plano }: GastosClientProps) {
       recorrente: gasto.recorrente,
       dia_recorrencia: gasto.dia_recorrencia ?? undefined,
     });
-    setFormOpen(true);
+    setModalOpen(true);
   }
 
-  function closeForm() {
-    setFormOpen(false);
+  function closeModal() {
+    setModalOpen(false);
     setEditing(null);
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function handleSubmit(formData: GastoFormData) {
     startTransition(async () => {
       const result = editing
-        ? await editarGasto(editing.id, form)
-        : await criarGasto(form);
+        ? await editarGasto(editing.id, formData)
+        : await criarGasto(formData);
 
       if (result.error) {
         if (result.error.includes("Limite")) setUpgradeOpen(true);
@@ -128,7 +137,7 @@ export function GastosClient({ gastos, plano }: GastosClientProps) {
         return;
       }
       toast.success(editing ? "Gasto atualizado" : "Gasto criado");
-      closeForm();
+      closeModal();
     });
   }
 
@@ -142,70 +151,172 @@ export function GastosClient({ gastos, plano }: GastosClientProps) {
 
   return (
     <>
-      {/* Page header */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      {/* ── Page header ── */}
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Gastos</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: "#0F1729", lineHeight: 1.2 }}>
+            Gastos
+          </h1>
+          <p style={{ fontSize: 13, color: "#7C8896", marginTop: 4 }}>
             {gastos.length}
             {plano === "free" ? `/${LIMITES_FREE.gastos}` : ""} registros &middot;{" "}
-            <span className="font-mono">{formatCurrency(totalGeral)}</span> total
+            <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+              {formatCurrency(totalGeral)}
+            </span>{" "}
+            total
           </p>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {/* Toggle Lista / Análise */}
+          <div
+            style={{
+              display: "flex",
+              background: "#E6E8EC",
+              borderRadius: 8,
+              padding: 3,
+              gap: 2,
+            }}
+          >
+            {(["lista", "analise"] as ViewTab[]).map((v) => (
+              <button
+                key={v}
+                onClick={() => setViewTab(v)}
+                style={{
+                  padding: "5px 14px",
+                  borderRadius: 6,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  background: viewTab === v ? "#0F1729" : "transparent",
+                  color: viewTab === v ? "#fff" : "#7C8896",
+                }}
+              >
+                {v === "lista" ? "Lista" : "Análise"}
+              </button>
+            ))}
+          </div>
+
+          {/* Importar CSV */}
           <CsvImportDialog />
-          <Button onClick={openCreate} size="sm">
-            <IconPlus className="h-4 w-4" />
+
+          {/* + Novo gasto */}
+          <button
+            onClick={openCreate}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 16px",
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 600,
+              border: "none",
+              background: "#0E8F6A",
+              color: "#fff",
+              cursor: "pointer",
+              transition: "background 0.15s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#0D7A5E")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "#0E8F6A")}
+          >
+            <IconPlus style={{ width: 15, height: 15 }} />
             Novo gasto
-          </Button>
+          </button>
         </div>
       </div>
 
-      {/* Main two-column layout */}
-      <div className="flex gap-5 items-start">
-        {/* ── Left column: category summary + list ── */}
-        <div className="min-w-0 flex-1">
-          {/* Category totals row */}
-          <div className="mb-4 grid grid-cols-3 gap-3">
-            {categorias.map((cat) => {
-              const pct = Math.round((totais[cat] / (totalGeral || 1)) * 100);
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setTab(tab === cat ? "todos" : cat)}
-                  className={[
-                    "group rounded-xl border bg-card p-3.5 text-left shadow-card transition-all duration-150",
-                    "hover:-translate-y-0.5 hover:shadow-md",
-                    tab === cat
-                      ? `ring-2 ${CATEGORIA_RING[cat]} border-transparent`
-                      : "border-border",
-                  ].join(" ")}
+      {/* ── 3 summary cards ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 20 }}>
+        {categorias.map((cat) => {
+          const pct = totalGeral > 0 ? Math.round((totais[cat] / totalGeral) * 100) : 0;
+          return (
+            <div
+              key={cat}
+              style={{
+                background: "#FFFFFF",
+                border: "1px solid #E6E8EC",
+                borderRadius: 14,
+                padding: "18px 20px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "3px 10px",
+                    borderRadius: 999,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    background: CATEGORIA_BADGE_BG[cat],
+                    color: CATEGORIA_BADGE_TEXT[cat],
+                  }}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <span
-                      className={`rounded-lg px-2 py-0.5 text-[11px] font-medium ${CATEGORIA_BG[cat]}`}
-                    >
-                      {CATEGORIA_LABELS[cat]}
-                    </span>
-                    <span className="text-xs text-muted-foreground font-mono">{pct}%</span>
-                  </div>
-                  <p className="font-mono text-base font-semibold tabular-nums">
-                    {formatCurrency(totais[cat])}
-                  </p>
-                  <div className="mt-2 h-1 overflow-hidden rounded-full bg-secondary">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${CATEGORIA_BAR[cat]}`}
-                      style={{ width: `${(totais[cat] / maxTotal) * 100}%` }}
-                    />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                  {CATEGORIA_LABELS[cat]}
+                </span>
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 12,
+                    color: "#9AA3AE",
+                    fontWeight: 500,
+                  }}
+                >
+                  {pct}%
+                </span>
+              </div>
+              <p
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: "#0F1729",
+                  marginBottom: 10,
+                  tabularNums: true,
+                } as React.CSSProperties}
+              >
+                {formatCurrency(totais[cat])}
+              </p>
+              <div
+                style={{
+                  height: 5,
+                  borderRadius: 999,
+                  background: "#F0F1F3",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    borderRadius: 999,
+                    background: CATEGORIA_BAR_COLOR[cat],
+                    width: `${pct}%`,
+                    transition: "width 0.5s ease",
+                  }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-          {/* List card — tabela redesenhada */}
+      {/* ── Main two-column layout ── */}
+      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+        {/* ── Left column: table ── */}
+        <div style={{ flex: 1, minWidth: 0 }}>
           {gastos.length === 0 ? (
-            <div className="rounded-xl border border-border bg-card shadow-card p-6">
+            <div
+              style={{
+                background: "#FFFFFF",
+                border: "1px solid #E6E8EC",
+                borderRadius: 14,
+                padding: 32,
+              }}
+            >
               <EmptyState
                 icon="💸"
                 title="Nenhum gasto cadastrado"
@@ -221,163 +332,190 @@ export function GastosClient({ gastos, plano }: GastosClientProps) {
               onDelete={handleDelete}
               busca={busca}
               onBuscaChange={setBusca}
-              tab={tab}
-              onTabChange={setTab}
+              tab={filterTab}
+              onTabChange={setFilterTab}
             />
           )}
         </div>
 
-        {/* ── Right panel: inline form ── */}
-        <div
-          className={[
-            "w-80 shrink-0 rounded-xl border bg-card shadow-card transition-all duration-200 sticky top-6",
-            formOpen ? "border-border opacity-100" : "border-border/50 opacity-60 pointer-events-none",
-          ].join(" ")}
-        >
-          {/* Panel header */}
-          <div className="flex items-center justify-between border-b border-border px-5 py-4">
-            <h2 className="text-sm font-semibold">
-              {editing ? "Editar gasto" : "Novo gasto"}
-            </h2>
-            {formOpen && (
-              <button
-                onClick={closeForm}
-                className="rounded-lg p-1 text-muted-foreground hover:bg-secondary transition-colors"
-              >
-                <IconX className="h-4 w-4" />
-              </button>
+        {/* ── Right column: 300px ── */}
+        <div style={{ width: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+
+          {/* Card: Distribuição por categoria (donut) */}
+          <div
+            style={{
+              background: "#FFFFFF",
+              border: "1px solid #E6E8EC",
+              borderRadius: 14,
+              padding: "20px 20px 18px",
+            }}
+          >
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#0F1729", marginBottom: 16 }}>
+              Distribuição por categoria
+            </p>
+
+            {totalGeral > 0 ? (
+              <>
+                <DonutChart
+                  necessidade={totais.necessidade}
+                  objetivo={totais.objetivo}
+                  qualidade={totais.qualidade}
+                  total={totalGeral}
+                />
+
+                {/* Legend */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
+                  {categorias.map((cat) => {
+                    const pct = Math.round((totais[cat] / totalGeral) * 100);
+                    return (
+                      <div
+                        key={cat}
+                        style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: "50%",
+                              background: CATEGORIA_BAR_COLOR[cat],
+                              flexShrink: 0,
+                            }}
+                          />
+                          <span style={{ fontSize: 12, color: "#7C8896" }}>
+                            {CATEGORIA_LABELS[cat]}
+                          </span>
+                        </div>
+                        <span
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: "#0F1729",
+                          }}
+                        >
+                          {pct}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            ) : (
+              <p style={{ fontSize: 12, color: "#9AA3AE", textAlign: "center", padding: "20px 0" }}>
+                Nenhum gasto registrado
+              </p>
             )}
           </div>
 
-          {!formOpen ? (
-            <div className="flex flex-col items-center justify-center gap-3 px-5 py-10">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <IconPlus className="h-5 w-5" />
-              </div>
-              <p className="text-center text-sm text-muted-foreground">
-                Clique em <span className="font-medium text-foreground">Novo gasto</span> para
-                registrar um gasto
+          {/* Card: Maiores gastos */}
+          <div
+            style={{
+              background: "#FFFFFF",
+              border: "1px solid #E6E8EC",
+              borderRadius: 14,
+              padding: "20px 20px 18px",
+            }}
+          >
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#0F1729", marginBottom: 14 }}>
+              Maiores gastos
+            </p>
+
+            {maioresGastos.length === 0 ? (
+              <p style={{ fontSize: 12, color: "#9AA3AE", textAlign: "center", padding: "12px 0" }}>
+                Nenhum gasto ainda
               </p>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4 px-5 py-4">
-              {/* From/To summary row — mirrors the transfer confirmation style */}
-              <div className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-2.5">
-                <div
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm ${CATEGORIA_BG[form.categoria]}`}
-                >
-                  {CATEGORIA_EMOJI[form.categoria]}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {form.nome || "Nome do gasto"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {CATEGORIA_LABELS[form.categoria]}
-                  </p>
-                </div>
-                <span className="font-mono text-sm font-semibold tabular-nums">
-                  {form.valor ? formatCurrency(form.valor) : "R$ 0,00"}
-                </span>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {maioresGastos.map((g) => (
+                  <div
+                    key={g.id}
+                    style={{ display: "flex", alignItems: "center", gap: 10 }}
+                  >
+                    <div
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: CATEGORIA_ICON_BG[g.categoria],
+                        fontSize: 14,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {CATEGORIA_EMOJI[g.categoria]}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 500,
+                          color: "#0F1729",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {g.nome}
+                      </p>
+                    </div>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: CATEGORIA_BAR_COLOR[g.categoria],
+                        flexShrink: 0,
+                      }}
+                    >
+                      -{formatCurrency(g.valor)}
+                    </span>
+                  </div>
+                ))}
               </div>
+            )}
+          </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Nome</Label>
-                <Input
-                  value={form.nome}
-                  onChange={(e) => setForm({ ...form, nome: e.target.value })}
-                  placeholder="Ex: Aluguel, Spotify"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Valor (R$)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  className="font-mono"
-                  placeholder="0,00"
-                  value={form.valor || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, valor: parseFloat(e.target.value) || 0 })
-                  }
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Categoria</Label>
-                <Select
-                  value={form.categoria}
-                  onValueChange={(v) => setForm({ ...form, categoria: v as CategoriaGasto })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(CATEGORIA_LABELS) as CategoriaGasto[]).map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {CATEGORIA_EMOJI[c]} {CATEGORIA_LABELS[c]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">
-                  Subcategoria{" "}
-                  <span className="text-muted-foreground/60">(opcional)</span>
-                </Label>
-                <Input
-                  value={form.subcategoria}
-                  onChange={(e) => setForm({ ...form, subcategoria: e.target.value })}
-                  placeholder="Ex: Mercado, Streaming"
-                />
-              </div>
-
-              <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 px-3 py-2.5">
-                <div>
-                  <p className="text-sm font-medium">Recorrente</p>
-                  <p className="text-xs text-muted-foreground">Repete mensalmente</p>
-                </div>
-                <Switch
-                  checked={form.recorrente}
-                  onCheckedChange={(checked: boolean) =>
-                    setForm({ ...form, recorrente: checked })
-                  }
-                />
-              </div>
-
-              {form.recorrente && (
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">Dia do mês</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="31"
-                    placeholder="Ex: 5"
-                    value={form.dia_recorrencia ?? ""}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        dia_recorrencia: parseInt(e.target.value) || undefined,
-                      })
-                    }
-                  />
-                </div>
-              )}
-
-              <Button type="submit" className="w-full" disabled={pending}>
-                <IconCheck className="h-4 w-4" />
-                {pending ? "Salvando..." : editing ? "Salvar alterações" : "Registrar gasto"}
-              </Button>
-            </form>
-          )}
+          {/* Card: Média diária (verde sólido) */}
+          <div
+            style={{
+              background: "#0E8F6A",
+              borderRadius: 14,
+              padding: "20px 20px 18px",
+            }}
+          >
+            <p style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.75)", marginBottom: 6 }}>
+              Média diária em {mesAtual}
+            </p>
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 26,
+                fontWeight: 700,
+                color: "#fff",
+                lineHeight: 1.1,
+                marginBottom: 8,
+              }}
+            >
+              {formatCurrency(mediaDiaria)}
+            </p>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 1.4 }}>
+              Baseado em {diasNoMes} dias no mês e {formatCurrency(totalGeral)} em gastos registrados.
+            </p>
+          </div>
         </div>
       </div>
+
+      {/* ── Modal centralizado ── */}
+      <GastoModal
+        open={modalOpen}
+        onClose={closeModal}
+        editing={editing}
+        onSubmit={handleSubmit}
+        pending={pending}
+      />
 
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </>
