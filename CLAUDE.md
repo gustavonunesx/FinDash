@@ -80,7 +80,7 @@ app/
   (marketing)/precos/     — Página de planos
   (app)/                  — Rotas protegidas (auth + onboarding)
     dashboard/            — Dashboard 50/30/20-first (verde claro #F4F7F5): topbar c/ aderência, 3 anéis-bucket (SVG), transações + metas/investimentos; renda real, seletor de mês via histórico, modo privacidade
-    gastos/               — CRUD de gastos + importação CSV
+    gastos/               — CRUD de gastos + importação CSV; modal centralizado "Novo gasto", 3 cards de resumo, DonutChart SVG, coluna direita com insights (maiores gastos, média diária)
     fundos/               — Fundos de investimento + CDI
     calculadora/          — Regra 50/30/20
     historico/            — Analytics (Premium)
@@ -90,7 +90,7 @@ app/
   (auth)/                 — login, cadastro, recuperar-senha
   api/                    — stripe, cron, notificacoes, exportar-pdf, taxas
   page.tsx                — Landing page
-components/               — 47 componentes React
+components/               — 49 componentes React (incl. GastoModal, DonutChart)
 lib/                      — 19 módulos utilitários
 supabase/migrations/      — 3 migrations SQL
 ```
