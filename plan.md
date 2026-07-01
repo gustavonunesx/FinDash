@@ -1,6 +1,6 @@
 # FinDash 2.0 — Plano e Checklist do Projeto
 
-> Atualizado em: 2026-06-03 (dashboard remodelagem em andamento — branch `feature/dashboard-remodelagem`)
+> Atualizado em: 2026-06-30
 
 ---
 
@@ -89,6 +89,7 @@
 - ✅ Suporte a gastos recorrentes
 - ✅ Importação via CSV (preview + mapeamento automático de categoria)
 - ✅ Gate Free: limite de 10 gastos (modal de upgrade)
+- ✅ Redesign `/gastos` (PR #12): modal centralizado com overlay blur, 3 cards de resumo por categoria, DonutChart SVG, coluna direita com maiores gastos e card de média diária
 
 ---
 
@@ -226,7 +227,7 @@
 
 | Branch | Feature | Status |
 |--------|---------|--------|
-| `findash-2.0` | Base de desenvolvimento (→ main) | ✅ Mergeada |
+| — | Nenhuma branch ativa no momento | — |
 
 ---
 
@@ -235,3 +236,10 @@
 | PR | Branch | Descrição | Status |
 |----|--------|-----------|--------|
 | #1 | `findash-2.0` → `main` | MVP completo: auth, dashboard, gastos, fundos, Stripe, landing redesign | ✅ Mergeado |
+| #5 | `feature/fix-nav-header-animation` | Sidebar colapsável fluida, avatar dinâmico, ajustes em /configuracoes | ✅ Mergeado |
+| #6 | `feature/landing-light-mode` | Landing page light mode, hero cinemático GSAP, mockup iPhone | ✅ Mergeado |
+| #7 | `feature/faq-accordion-redesign` | FAQ com Radix Accordion animado | ✅ Mergeado |
+| #8 | `feature/gastos-table-redesign` | GastosTable interativa shadcn/ui com colunas toggleáveis | ✅ Mergeado |
+| #9 | `fix/auth-inputs-hydration` | Correção de inputs de auth e hydration mismatch | ✅ Mergeado |
+| #11 | `feat/dashboard-502030-redesign` | Dashboard v3 50/30/20-first, anéis SVG, dados reais, seletor de mês | ✅ Mergeado |
+| #12 | `feature/gastos-redesign-modal` | Redesign /gastos: modal centralizado, DonutChart, coluna de insights | ✅ Mergeado |
