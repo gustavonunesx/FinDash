@@ -2,22 +2,19 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { IconPlus } from "@tabler/icons-react";
+import { FundoRow } from "./fundo-row";
+import { ModalNovoFundo } from "./modal-novo-fundo";
+import { ModalConfirmarAporte } from "./modal-confirmar-aporte";
+import { ResumoGeralCard } from "./resumo-geral-card";
+import { RendimentoCard } from "./rendimento-card";
+import { PlanoStatusCard } from "./plano-status-card";
 import { UpgradeModal } from "@/components/shared/upgrade-modal";
-import { FundoMiniCard } from "@/components/dashboard/fundo-mini-card";
 import {
   criarFundo,
   editarFundo,
   deletarFundo,
+  confirmarAporte,
   type FundoFormData,
 } from "@/app/(app)/fundos/actions";
 import { LIMITES_FREE, type Fundo, type Plano } from "@/lib/types";
@@ -25,21 +22,18 @@ import { LIMITES_FREE, type Fundo, type Plano } from "@/lib/types";
 interface FundosClientProps {
   fundos: Fundo[];
   plano: Plano;
+  cdi: number;
 }
 
-const emptyForm: FundoFormData = {
-  nome: "",
-  saldo_atual: 0,
-  meta: 0,
-  aporte_mensal: 0,
-  cor: "#1D9E75",
-};
-
-export function FundosClient({ fundos, plano }: FundosClientProps) {
-  const [modalOpen, setModalOpen] = useState(false);
+export function FundosClient({ fundos, plano, cdi }: FundosClientProps) {
+  const [modalFundoOpen, setModalFundoOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [editing, setEditing] = useState<Fundo | null>(null);
-  const [form, setForm] = useState<FundoFormData>(emptyForm);
+
+  // Modal de aporte
+  const [aporteOpen, setAporteOpen] = useState(false);
+  const [aporteAlvo, setAporteAlvo] = useState<{ fundo: Fundo; index: number } | null>(null);
+
   const [pending, startTransition] = useTransition();
 
   function openCreate() {
@@ -48,30 +42,24 @@ export function FundosClient({ fundos, plano }: FundosClientProps) {
       return;
     }
     setEditing(null);
-    setForm(emptyForm);
-    setModalOpen(true);
+    setModalFundoOpen(true);
   }
 
   function openEdit(fundo: Fundo) {
     setEditing(fundo);
-    setForm({
-      nome: fundo.nome,
-      saldo_atual: fundo.saldo_atual,
-      meta: fundo.meta,
-      meta_data: fundo.meta_data ?? undefined,
-      aporte_mensal: fundo.aporte_mensal,
-      cor: fundo.cor,
-      custodia: fundo.custodia ?? undefined,
-    });
-    setModalOpen(true);
+    setModalFundoOpen(true);
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function openAporte(fundo: Fundo, index: number) {
+    setAporteAlvo({ fundo, index });
+    setAporteOpen(true);
+  }
+
+  function handleFundoSubmit(data: FundoFormData) {
     startTransition(async () => {
       const result = editing
-        ? await editarFundo(editing.id, form)
-        : await criarFundo(form);
+        ? await editarFundo(editing.id, data)
+        : await criarFundo(data);
 
       if (result.error) {
         if (result.error.includes("Limite")) setUpgradeOpen(true);
@@ -79,7 +67,8 @@ export function FundosClient({ fundos, plano }: FundosClientProps) {
         return;
       }
       toast.success(editing ? "Fundo atualizado" : "Fundo criado");
-      setModalOpen(false);
+      setModalFundoOpen(false);
+      setEditing(null);
     });
   }
 
@@ -91,110 +80,160 @@ export function FundosClient({ fundos, plano }: FundosClientProps) {
     });
   }
 
+  function handleConfirmarAporte(fundoId: string, valor: number) {
+    startTransition(async () => {
+      const result = await confirmarAporte(fundoId, valor);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      if (result.metaAtingida) {
+        toast.success(`🎉 Meta do fundo "${result.fundoNome}" atingida!`, {
+          duration: 5000,
+        });
+      } else {
+        toast.success("Aporte confirmado!");
+      }
+      setAporteOpen(false);
+      setAporteAlvo(null);
+    });
+  }
+
   return (
     <>
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+      {/* ── Cabeçalho ── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          marginBottom: 24,
+          gap: 16,
+        }}
+      >
         <div>
-          <h1 className="text-3xl font-bold">Fundos</h1>
-          <p className="mt-2 text-muted-foreground">
-            {fundos.length}/{plano === "free" ? LIMITES_FREE.fundos : "∞"} fundos ativos
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: "#0F1729", lineHeight: 1.2 }}>
+            Fundos
+          </h1>
+          <p style={{ fontSize: 13, color: "#7C8896", marginTop: 4 }}>
+            {fundos.length} {fundos.length === 1 ? "fundo ativo" : "fundos ativos"} &middot; CDI{" "}
+            <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+              {(cdi * 100).toFixed(2)}%
+            </span>{" "}
+            a.a.
           </p>
         </div>
-        <Button onClick={openCreate}>
-          <IconPlus className="h-4 w-4" />
+
+        <button
+          onClick={openCreate}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "9px 18px",
+            borderRadius: 8,
+            fontSize: 13,
+            fontWeight: 600,
+            border: "none",
+            background: "#0E8F6A",
+            color: "#fff",
+            cursor: "pointer",
+            transition: "background 0.15s",
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "#0D7A5E")}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "#0E8F6A")}
+        >
+          <IconPlus style={{ width: 15, height: 15 }} />
           Novo fundo
-        </Button>
+        </button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {fundos.map((f) => (
-          <div key={f.id} className="relative group">
-            <FundoMiniCard fundo={f} />
-            <div className="absolute right-3 top-3 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-              <Button variant="secondary" size="icon" className="h-8 w-8" onClick={() => openEdit(f)}>
-                <IconPencil className="h-3.5 w-3.5" />
-              </Button>
-              <Button variant="secondary" size="icon" className="h-8 w-8" onClick={() => handleDelete(f.id)}>
-                <IconTrash className="h-3.5 w-3.5 text-fd-red" />
-              </Button>
+      {/* ── Layout duas colunas ── */}
+      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+
+        {/* Coluna esquerda: lista compacta */}
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+          {fundos.length === 0 ? (
+            <div
+              style={{
+                background: "#FFFFFF",
+                border: "1px dashed #E6E8EC",
+                borderRadius: 14,
+                padding: "48px 24px",
+                textAlign: "center",
+              }}
+            >
+              <p style={{ fontSize: 32, marginBottom: 12 }}>🏦</p>
+              <p style={{ fontSize: 15, fontWeight: 600, color: "#0F1729", marginBottom: 6 }}>
+                Nenhum fundo criado ainda
+              </p>
+              <p style={{ fontSize: 13, color: "#9AA3AE", marginBottom: 20 }}>
+                Crie seu primeiro fundo para começar a construir patrimônio.
+              </p>
+              <button
+                onClick={openCreate}
+                style={{
+                  padding: "9px 20px",
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  border: "none",
+                  background: "#0E8F6A",
+                  color: "#fff",
+                  cursor: "pointer",
+                }}
+              >
+                + Criar primeiro fundo
+              </button>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {fundos.length === 0 && (
-        <p className="mt-8 text-center text-muted-foreground">
-          Crie seu primeiro fundo para começar a construir patrimônio.
-        </p>
-      )}
-
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editing ? "Editar fundo" : "Novo fundo"}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label>Nome</Label>
-              <Input
-                value={form.nome}
-                onChange={(e) => setForm({ ...form, nome: e.target.value })}
-                required
+          ) : (
+            fundos.map((fundo, index) => (
+              <FundoRow
+                key={fundo.id}
+                fundo={fundo}
+                index={index}
+                onAportar={(f) => openAporte(f, index)}
+                onEdit={openEdit}
+                onDelete={handleDelete}
               />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Saldo atual</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  className="font-mono"
-                  value={form.saldo_atual || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, saldo_atual: parseFloat(e.target.value) || 0 })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Meta</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  className="font-mono"
-                  value={form.meta || ""}
-                  onChange={(e) => setForm({ ...form, meta: parseFloat(e.target.value) || 0 })}
-                  required
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Aporte mensal</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  className="font-mono"
-                  value={form.aporte_mensal || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, aporte_mensal: parseFloat(e.target.value) || 0 })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Prazo</Label>
-                <Input
-                  type="date"
-                  value={form.meta_data ?? ""}
-                  onChange={(e) => setForm({ ...form, meta_data: e.target.value })}
-                />
-              </div>
-            </div>
-            <Button type="submit" className="w-full" disabled={pending}>
-              {pending ? "Salvando..." : editing ? "Salvar" : "Criar fundo"}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+            ))
+          )}
+        </div>
+
+        {/* Coluna direita: 300px com 3 cards */}
+        <div
+          style={{
+            width: 300,
+            flexShrink: 0,
+            display: "flex",
+            flexDirection: "column",
+            gap: 14,
+          }}
+        >
+          <ResumoGeralCard fundos={fundos} />
+          <RendimentoCard fundos={fundos} cdi={cdi} />
+          <PlanoStatusCard plano={plano} usado={fundos.length} />
+        </div>
+      </div>
+
+      {/* ── Modais ── */}
+      <ModalNovoFundo
+        open={modalFundoOpen}
+        onClose={() => { setModalFundoOpen(false); setEditing(null); }}
+        editing={editing}
+        onSubmit={handleFundoSubmit}
+        pending={pending}
+      />
+
+      <ModalConfirmarAporte
+        open={aporteOpen}
+        fundo={aporteAlvo?.fundo ?? null}
+        fundoIndex={aporteAlvo?.index ?? 0}
+        onClose={() => { setAporteOpen(false); setAporteAlvo(null); }}
+        onConfirmar={handleConfirmarAporte}
+        pending={pending}
+      />
 
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </>
