@@ -234,52 +234,53 @@ function HowItWorks() {
   useGsapReveal(ref);
 
   return (
-    <section ref={ref} className="lp-section relative py-28 overflow-hidden">
+    <section ref={ref} className="lp-section relative py-20 overflow-hidden">
       <div className="lp-divider absolute inset-x-0 top-0" />
 
-      {/* glows de fundo */}
+      {/* glow único, assinatura da seção */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 60% 40% at 20% 50%, rgba(14,143,106,0.05), transparent 70%)" }} />
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 50% 40% at 80% 60%, rgba(37,99,235,0.03), transparent 70%)" }} />
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 55% 45% at 15% 30%, rgba(14,143,106,0.055), transparent 70%)" }} />
       </div>
 
       <div className="relative mx-auto max-w-6xl px-6">
 
-        {/* header */}
-        <div className="mb-20 text-center lp-reveal">
-          <div className="lp-badge mb-6">
-            <IconSparkles size={11} />
-            Como funciona
-          </div>
+        {/* header assimétrico: alinhado à esquerda, não centralizado */}
+        <div className="mb-14 max-w-xl lp-reveal">
           <h2 className="text-4xl sm:text-5xl font-bold tracking-tight lp-text-gradient" style={{ lineHeight: 1.15 }}>
-            Três passos para<br />clareza financeira.
+            Três passos para clareza financeira.
           </h2>
         </div>
 
-        {/* steps */}
-        <div className="lp-stagger-group grid gap-6 md:grid-cols-3">
-          {howSteps.map((s) => (
+        {/* steps: coluna 1 destacada (2fr), 2-3 menores — quebra grid 3-iguais */}
+        <div className="lp-stagger-group grid gap-5 md:grid-cols-[1.3fr_1fr_1fr]">
+          {howSteps.map((s, i) => (
             <div
               key={s.num}
-              className="lp-stagger-child lp-card rounded-2xl p-8 flex flex-col gap-5"
-              style={{ opacity: 0, transform: "translateY(40px)" }}
+              className="lp-stagger-child lp-card rounded-2xl flex flex-col gap-5"
+              style={{
+                opacity: 0,
+                transform: "translateY(40px)",
+                padding: i === 0 ? "2.5rem 2rem" : "2rem",
+                marginTop: i === 1 ? "1.5rem" : i === 2 ? "3rem" : 0,
+              }}
             >
-              {/* number */}
               <span
                 className="lp-number-step"
-                style={{ background: `linear-gradient(135deg, ${s.color} 0%, ${s.color}40 100%)` }}
+                style={{
+                  fontSize: i === 0 ? "clamp(56px, 7vw, 96px)" : "clamp(40px, 5vw, 64px)",
+                  background: `linear-gradient(135deg, ${s.color} 0%, ${s.color}40 100%)`,
+                }}
               >
                 {s.num}
               </span>
 
-              {/* dot line accent */}
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
                 <div className="h-px flex-1" style={{ background: `linear-gradient(90deg, ${s.color}40, transparent)` }} />
               </div>
 
               <div>
-                <h3 className="text-lg font-bold mb-2" style={{ color: "#0F1F19" }}>{s.title}</h3>
+                <h3 className={i === 0 ? "text-xl font-bold mb-2" : "text-lg font-bold mb-2"} style={{ color: "#0F1F19" }}>{s.title}</h3>
                 <p className="text-sm leading-relaxed" style={{ color: "#6B8078" }}>{s.desc}</p>
               </div>
             </div>
@@ -296,13 +297,12 @@ function PricingSection() {
   useGsapReveal(ref);
 
   return (
-    <section ref={ref} className="lp-section relative py-28 overflow-hidden">
+    <section ref={ref} className="lp-section relative py-36 overflow-hidden">
       <div className="lp-divider absolute inset-x-0 top-0" />
 
-      {/* glows */}
+      {/* glow único */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
         <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 70% 50% at 50% 100%, rgba(14,143,106,0.05), transparent 70%)" }} />
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 50% 60% at 80% 20%, rgba(37,99,235,0.03), transparent 70%)" }} />
       </div>
 
       <div className="relative mx-auto max-w-5xl px-6">
@@ -366,7 +366,7 @@ function PricingSection() {
                 Gratuito
               </p>
               <div className="flex items-end gap-1.5 mb-1">
-                <span className="font-mono text-5xl font-black tracking-tighter leading-none" style={{ color: "#0F1F19" }}>R$0</span>
+                <span className="font-mono text-4xl font-bold tracking-tighter leading-none" style={{ color: "#4A5E58" }}>R$0</span>
               </div>
               <p className="text-xs" style={{ color: "#6B8078" }}>para sempre, sem cartão</p>
             </div>
@@ -414,7 +414,11 @@ function PricingSection() {
                   </span>
                 </div>
                 <div className="flex items-end gap-1.5 mb-1">
-                  <span className="font-mono text-5xl font-black tracking-tighter leading-none" style={{ color: "#0F1F19" }}>R$19</span>
+                  <span
+                    className="font-mono text-6xl font-black tracking-tighter leading-none lp-text-green"
+                  >
+                    R$19
+                  </span>
                   <span className="mb-1.5 text-sm font-normal" style={{ color: "#6B8078" }}>/mês</span>
                 </div>
                 <p className="text-xs" style={{ color: "#6B8078" }}>ou R$149/ano, 2 meses grátis</p>
@@ -455,51 +459,51 @@ function FaqSectionCinematic() {
   useGsapReveal(ref);
 
   return (
-    <section ref={ref} className="lp-section relative py-28 overflow-hidden">
+    <section ref={ref} className="lp-section relative py-24 overflow-hidden">
       <div className="lp-divider absolute inset-x-0 top-0" />
 
-      <div className="pointer-events-none absolute inset-0" aria-hidden>
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(124,58,237,0.03), transparent 70%)" }} />
-      </div>
+      <div className="relative mx-auto max-w-5xl px-6">
+        <div className="grid gap-10 md:grid-cols-[minmax(0,280px)_1fr]">
 
-      <div className="relative mx-auto max-w-3xl px-6">
-        <div className="mx-auto mb-14 flex max-w-2xl flex-col items-center text-center lp-reveal">
-          <div className="lp-badge mb-6">Dúvidas</div>
-          <h2 className="text-4xl sm:text-5xl font-bold tracking-tight lp-text-gradient mb-4" style={{ lineHeight: 1.15 }}>
-            Perguntas frequentes.
-          </h2>
-          <p className="text-base" style={{ color: "#6B8078" }}>
-            Não encontrou sua dúvida? Entre em contato com nosso suporte.
-          </p>
-        </div>
+          {/* coluna esquerda: título + copy, sticky */}
+          <div className="lp-reveal-left md:sticky md:top-28 md:self-start">
+            <h2 className="text-4xl font-bold tracking-tight lp-text-gradient mb-4" style={{ lineHeight: 1.15 }}>
+              Perguntas frequentes.
+            </h2>
+            <p className="text-base" style={{ color: "#6B8078" }}>
+              Não encontrou sua dúvida? Entre em contato com nosso suporte.
+            </p>
+          </div>
 
-        <Accordion
-          type="single"
-          collapsible
-          defaultValue="faq-0"
-          className="lp-stagger-group w-full"
-        >
-          {faqItems.map((item, i) => (
-            <AccordionItem
-              key={item.q}
-              value={`faq-${i}`}
-              className="lp-stagger-child mb-3 rounded-2xl overflow-hidden bg-white border border-[#DDE8E4] data-[state=open]:border-[rgba(14,143,106,0.3)] data-[state=open]:shadow-[0_0_0_3px_rgba(14,143,106,0.06)] hover:border-[#b8d4cc] hover:shadow-[0_4px_16px_rgba(0,0,0,0.05)] transition-[border-color,box-shadow] duration-300"
-              style={{ opacity: 0, transform: "translateY(40px)" }}
-            >
-              <AccordionTrigger
-                className="px-5 py-4 text-left hover:no-underline hover:opacity-80 transition-opacity duration-200 data-[state=open]:border-b data-[state=open]:border-[#DDE8E4]"
-                style={{ color: "#0F1F19" }}
+          {/* coluna direita: accordion */}
+          <Accordion
+            type="single"
+            collapsible
+            defaultValue="faq-0"
+            className="lp-stagger-group w-full"
+          >
+            {faqItems.map((item, i) => (
+              <AccordionItem
+                key={item.q}
+                value={`faq-${i}`}
+                className="lp-stagger-child mb-3 rounded-2xl overflow-hidden bg-white border border-[#DDE8E4] data-[state=open]:border-[rgba(14,143,106,0.3)] data-[state=open]:shadow-[0_0_0_3px_rgba(14,143,106,0.06)] hover:border-[#b8d4cc] hover:shadow-[0_4px_16px_rgba(0,0,0,0.05)] transition-[border-color,box-shadow] duration-300"
+                style={{ opacity: 0, transform: "translateY(40px)" }}
               >
-                <span className="font-semibold text-sm sm:text-base pr-4">{item.q}</span>
-              </AccordionTrigger>
-              <AccordionContent className="px-5">
-                <p className="text-sm leading-relaxed pt-1" style={{ color: "#4A5E58" }}>
-                  {item.a}
-                </p>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+                <AccordionTrigger
+                  className="px-5 py-4 text-left hover:no-underline hover:opacity-80 transition-opacity duration-200 data-[state=open]:border-b data-[state=open]:border-[#DDE8E4]"
+                  style={{ color: "#0F1F19" }}
+                >
+                  <span className="font-semibold text-sm sm:text-base pr-4">{item.q}</span>
+                </AccordionTrigger>
+                <AccordionContent className="px-5">
+                  <p className="text-sm leading-relaxed pt-1" style={{ color: "#4A5E58" }}>
+                    {item.a}
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
       </div>
     </section>
   );
@@ -511,36 +515,37 @@ function FinalCta() {
   useGsapReveal(ref);
 
   return (
-    <section ref={ref} className="lp-section relative py-36 overflow-hidden text-center">
+    <section ref={ref} className="lp-section relative py-28 overflow-hidden text-center">
       <div className="lp-divider absolute inset-x-0 top-0" />
 
-      {/* glows */}
+      {/* glow único, mais concentrado (seção de maior intenção) */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 70% 70% at 50% 50%, rgba(14,143,106,0.06), transparent 70%)" }} />
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 40% 50% at 20% 100%, rgba(37,99,235,0.03), transparent 70%)" }} />
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 60% 60% at 50% 40%, rgba(14,143,106,0.08), transparent 70%)" }} />
       </div>
 
       <div className="relative mx-auto max-w-lg px-6">
         <div className="lp-reveal">
-          <div className="lp-badge mb-8 mx-auto w-fit">
-            <IconSparkles size={11} />
-            Grátis para começar
-          </div>
           <h2 className="text-4xl sm:text-6xl font-bold tracking-tight mb-6 lp-text-gradient" style={{ lineHeight: 1.1 }}>
             Pronto para organizar<br />
             <span className="lp-text-green">suas finanças?</span>
           </h2>
-          <p className="text-lg mb-10" style={{ color: "#6B8078" }}>
+          <p className="text-lg mb-8" style={{ color: "#6B8078" }}>
             Crie sua conta em menos de 1 minuto. Sem cartão de crédito.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <Link href="/cadastro" className="lp-btn-primary text-base">
-              Criar conta grátis — é rápido
+              Criar conta grátis
               <IconArrowRight size={18} />
             </Link>
             <Link href="/precos" className="lp-btn-secondary text-base">
               Ver planos
             </Link>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5" style={{ border: "1px solid #DDE8E4", background: "#FFFFFF" }}>
+            <span className="size-1.5 rounded-full lp-pulse-dot" style={{ background: "#0E8F6A" }} />
+            <span className="font-mono text-xs" style={{ color: "#6B8078" }}>
+              <span className="font-semibold" style={{ color: "#0F1F19" }}>1.200+</span> usuários organizando finanças
+            </span>
           </div>
         </div>
       </div>
