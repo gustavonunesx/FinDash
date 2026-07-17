@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { motion } from "framer-motion";
-import { IconPencil, IconSettings } from "@tabler/icons-react";
+import { IconPencil, IconSettings, IconArrowRight, IconRefresh } from "@tabler/icons-react";
 import { confirmarAporte } from "@/app/(app)/fundos/actions";
+import { salvarAjustesLimite } from "@/app/(app)/calculadora/actions";
 import { formatCurrency } from "@/lib/utils";
 import { totalPorCategoria } from "@/lib/score";
 import type { Configuracao, Fundo, Gasto } from "@/lib/types";
@@ -23,7 +24,7 @@ const CORES = {
   necessidade:  { bar: "#C4820A", iconBg: "#FCE8C9" },
   objetivo:     { bar: "#0E8F6A", iconBg: "#CDEFE3" },
   qualidade:    { bar: "#2563EB", iconBg: "#D9E6FE" },
-  investimento: { bar: "#4F46E5", iconBg: "#E0E7FF" },
+  investimento: { bar: "#7C3AED", iconBg: "#EDE9FE" },
   reserva:      { bar: "#C4820A", iconBg: "#FCE8C9" },
 } as const;
 
@@ -61,6 +62,11 @@ export function CalculadoraClient({ config, gastos, fundos }: CalculadoraClientP
   const [modalAporte, setModalAporte] = useState(false);
   const [fatiaAporte, setFatiaAporte] = useState<FatiaAporte | null>(null);
   const [pendingAporte, startAporte] = useTransition();
+  const [ajustes, setAjustes] = useState<Record<string, number>>(config.ajustes_limite ?? {});
+  const [realocarAberto, setRealocarAberto] = useState(false);
+  const [realocarOrigem, setRealocarOrigem] = useState<string | null>(null);
+  const [realocarDestino, setRealocarDestino] = useState<string | null>(null);
+  const [realocarValor, setRealocarValor] = useState("");
 
   const [pesos502030, setPesos502030] = useState<Peso[]>([
     { key: "necessidade", label: "Necessidades",      cor: CORES.necessidade.bar,  valor: 50 },
@@ -85,8 +91,33 @@ export function CalculadoraClient({ config, gastos, fundos }: CalculadoraClientP
   ].map((c) => ({
     ...c,
     peso: pesos502030.find((p) => p.key === c.key)?.valor ?? 0,
-    limite: salario * ((pesos502030.find((p) => p.key === c.key)?.valor ?? 0) / 100),
+    limite: salario * ((pesos502030.find((p) => p.key === c.key)?.valor ?? 0) / 100) + (ajustes[c.key] ?? 0),
   }));
+
+  const temAjustes = Object.values(ajustes).some((v) => v !== 0);
+
+  function aplicarRealocacao() {
+    const val = parseFloat(realocarValor);
+    if (!realocarOrigem || !realocarDestino || !val || val <= 0) return;
+    const novos = {
+      ...ajustes,
+      [realocarOrigem]: (ajustes[realocarOrigem] ?? 0) - val,
+      [realocarDestino]: (ajustes[realocarDestino] ?? 0) + val,
+    };
+    setAjustes(novos);
+    salvarAjustesLimite(novos);
+    setRealocarValor("");
+    setRealocarOrigem(null);
+    setRealocarDestino(null);
+  }
+
+  function resetarAjustes() {
+    setAjustes({});
+    salvarAjustesLimite({});
+    setRealocarOrigem(null);
+    setRealocarDestino(null);
+    setRealocarValor("");
+  }
 
   const totalGastos = totais.necessidade + totais.objetivo + totais.qualidade;
   const saldoLivre = salario - totalGastos;
@@ -98,9 +129,11 @@ export function CalculadoraClient({ config, gastos, fundos }: CalculadoraClientP
 
   const fundosSemCustodia = fundos.filter((f) => !f.custodia);
   const fundosComCustodia = fundos.filter((f) => f.custodia);
+  const fundoReserva = fundos.find((f) => f.reserva_emergencia) ?? null;
 
   function getFundoParaFatia(key: string): Fundo | null {
     if (key === "qualidade") return null;
+    if (key === "reserva") return fundoReserva;
     if (key === "investimento") return fundosComCustodia[0] ?? fundosSemCustodia[0] ?? null;
     return fundosSemCustodia[0] ?? null;
   }
@@ -241,18 +274,6 @@ export function CalculadoraClient({ config, gastos, fundos }: CalculadoraClientP
                 gap: 20,
               }}
             >
-              {/* Barra ilustrativa */}
-              <BarraProporcional
-                segmentos={categorias502030.map((c) => ({
-                  key: c.key,
-                  label: c.nome,
-                  peso: c.peso,
-                  cor: c.cor,
-                }))}
-              />
-
-              <div style={{ borderTop: "1px solid #F0F2F4" }} />
-
               {/* Linhas de status */}
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {categorias502030.map((c, i) => (
@@ -268,6 +289,223 @@ export function CalculadoraClient({ config, gastos, fundos }: CalculadoraClientP
                     )}
                   </div>
                 ))}
+              </div>
+
+              {/* Realocar limites */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setRealocarAberto((v) => !v)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "7px 14px",
+                    borderRadius: 8,
+                    border: `1px solid ${realocarAberto ? "#0E8F6A" : "#E6E8EC"}`,
+                    background: realocarAberto ? "#E3F6EF" : "#F7F8FA",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: realocarAberto ? "#0E8F6A" : "#7C8896",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  <IconArrowRight style={{ width: 13, height: 13 }} />
+                  Realocar limites entre categorias
+                  {temAjustes && (
+                    <span style={{
+                      background: "#0E8F6A",
+                      color: "#fff",
+                      borderRadius: 999,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: "1px 6px",
+                      marginLeft: 2,
+                    }}>ativo</span>
+                  )}
+                </button>
+
+                {realocarAberto && (
+                  <div style={{
+                    marginTop: 12,
+                    padding: "16px",
+                    background: "#F7F8FA",
+                    border: "1px solid #E6E8EC",
+                    borderRadius: 10,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 12,
+                  }}>
+                    <p style={{ fontSize: 12, color: "#7C8896", margin: 0 }}>
+                      Mova valor do limite de uma categoria para outra
+                    </p>
+
+                    {/* Seletor de origem e destino */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      {/* Origem */}
+                      <div style={{ display: "flex", gap: 4 }}>
+                        {categorias502030.map((c) => (
+                          <button
+                            key={`orig-${c.key}`}
+                            type="button"
+                            onClick={() => {
+                              setRealocarOrigem(c.key);
+                              if (realocarDestino === c.key) setRealocarDestino(null);
+                            }}
+                            style={{
+                              padding: "5px 10px",
+                              borderRadius: 6,
+                              border: `1.5px solid ${realocarOrigem === c.key ? c.cor : "#E6E8EC"}`,
+                              background: realocarOrigem === c.key ? c.cor + "18" : "#fff",
+                              fontSize: 11,
+                              fontWeight: 600,
+                              color: realocarOrigem === c.key ? c.cor : "#7C8896",
+                              cursor: "pointer",
+                              transition: "all 0.12s",
+                              opacity: realocarDestino === c.key ? 0.4 : 1,
+                            }}
+                            disabled={realocarDestino === c.key}
+                          >
+                            {c.nome.split(" ")[0]}
+                          </button>
+                        ))}
+                      </div>
+
+                      <IconArrowRight style={{ width: 16, height: 16, color: "#D1D5DB", flexShrink: 0 }} />
+
+                      {/* Destino */}
+                      <div style={{ display: "flex", gap: 4 }}>
+                        {categorias502030.map((c) => (
+                          <button
+                            key={`dest-${c.key}`}
+                            type="button"
+                            onClick={() => {
+                              setRealocarDestino(c.key);
+                              if (realocarOrigem === c.key) setRealocarOrigem(null);
+                            }}
+                            style={{
+                              padding: "5px 10px",
+                              borderRadius: 6,
+                              border: `1.5px solid ${realocarDestino === c.key ? c.cor : "#E6E8EC"}`,
+                              background: realocarDestino === c.key ? c.cor + "18" : "#fff",
+                              fontSize: 11,
+                              fontWeight: 600,
+                              color: realocarDestino === c.key ? c.cor : "#7C8896",
+                              cursor: "pointer",
+                              transition: "all 0.12s",
+                              opacity: realocarOrigem === c.key ? 0.4 : 1,
+                            }}
+                            disabled={realocarOrigem === c.key}
+                          >
+                            {c.nome.split(" ")[0]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Input valor + aplicar */}
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <span style={{
+                          padding: "7px 10px",
+                          background: "#fff",
+                          border: "1px solid #E1E5EA",
+                          borderRight: "none",
+                          borderRadius: "7px 0 0 7px",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "#7C8896",
+                        }}>R$</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={realocarValor}
+                          onChange={(e) => setRealocarValor(e.target.value)}
+                          placeholder="0,00"
+                          style={{
+                            width: 100,
+                            padding: "7px 10px",
+                            border: "1px solid #E1E5EA",
+                            borderRadius: "0 7px 7px 0",
+                            background: "#fff",
+                            fontSize: 13,
+                            fontFamily: "var(--font-mono)",
+                            fontWeight: 600,
+                            color: "#0F1729",
+                            outline: "none",
+                          }}
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={aplicarRealocacao}
+                        disabled={!realocarOrigem || !realocarDestino || !realocarValor || realocarOrigem === realocarDestino}
+                        style={{
+                          padding: "7px 14px",
+                          borderRadius: 7,
+                          border: "none",
+                          background: (realocarOrigem && realocarDestino && realocarValor && realocarOrigem !== realocarDestino) ? "#0E8F6A" : "#E6E8EC",
+                          color: (realocarOrigem && realocarDestino && realocarValor && realocarOrigem !== realocarDestino) ? "#fff" : "#9AA3AE",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: (realocarOrigem && realocarDestino && realocarValor && realocarOrigem !== realocarDestino) ? "pointer" : "not-allowed",
+                          transition: "all 0.15s",
+                        }}
+                      >
+                        Aplicar
+                      </button>
+
+                      {temAjustes && (
+                        <button
+                          type="button"
+                          onClick={resetarAjustes}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                            padding: "7px 12px",
+                            borderRadius: 7,
+                            border: "1px solid #FECACA",
+                            background: "#FEF2F2",
+                            color: "#DC2626",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <IconRefresh style={{ width: 12, height: 12 }} />
+                          Resetar
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Resumo dos ajustes ativos */}
+                    {temAjustes && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        {categorias502030.filter((c) => ajustes[c.key] && ajustes[c.key] !== 0).map((c) => {
+                          const delta = ajustes[c.key] ?? 0;
+                          return (
+                            <div key={c.key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                              <div style={{ width: 8, height: 8, borderRadius: "50%", background: c.cor, flexShrink: 0 }} />
+                              <span style={{ fontSize: 11, color: "#7C8896" }}>{c.nome}</span>
+                              <span style={{
+                                fontSize: 11,
+                                fontFamily: "var(--font-mono)",
+                                fontWeight: 700,
+                                color: delta > 0 ? "#0E8F6A" : "#EF4444",
+                              }}>
+                                {delta > 0 ? "+" : ""}{formatCurrency(delta)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Saldo livre */}
@@ -424,6 +662,8 @@ export function CalculadoraClient({ config, gastos, fundos }: CalculadoraClientP
                       label={f.label}
                       valor={f.valor}
                       fundo={f.fundo}
+                      isReserva={f.key === "reserva"}
+                      todosFundos={f.key === "reserva" ? fundos : undefined}
                       onAportar={f.fundo ? () => abrirAporte(f) : undefined}
                     />
                     {i < fatiasExtra.length - 1 && (

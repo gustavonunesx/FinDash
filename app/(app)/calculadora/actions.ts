@@ -29,3 +29,26 @@ export async function salvarSalario(salario: number) {
   revalidatePath("/dashboard");
   return { success: true };
 }
+
+export async function salvarAjustesLimite(ajustes: Record<string, number>) {
+  if (isDemoMode()) {
+    setDemoConfig({ ajustes_limite: ajustes });
+    revalidatePath("/calculadora");
+    return { success: true };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Não autenticado" };
+
+  const { error } = await supabase
+    .from("configuracoes")
+    .upsert({ user_id: user.id, ajustes_limite: ajustes });
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/calculadora");
+  return { success: true };
+}

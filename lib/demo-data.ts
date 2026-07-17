@@ -44,6 +44,7 @@ export const DEMO_FUNDOS: Fundo[] = [
     cor: "#1D9E75",
     ordem: 0,
     custodia: { instituicao: "Nubank", tipo: "cdi", taxa: 100, data_inicio: "2025-06-01", aporte_inicial: 2000 },
+    reserva_emergencia: true,
   },
   {
     id: "f2",
@@ -56,6 +57,7 @@ export const DEMO_FUNDOS: Fundo[] = [
     cor: "#378ADD",
     ordem: 1,
     custodia: { instituicao: "XP", tipo: "cdi", taxa: 110, data_inicio: "2025-09-01", aporte_inicial: 1000 },
+    reserva_emergencia: false,
   },
   {
     id: "f3",
@@ -68,6 +70,7 @@ export const DEMO_FUNDOS: Fundo[] = [
     cor: "#7C5CBF",
     ordem: 2,
     custodia: { instituicao: "Inter", tipo: "ipca", taxa: 6.5, data_inicio: "2024-01-01", aporte_inicial: 5000 },
+    reserva_emergencia: false,
   },
 ];
 
