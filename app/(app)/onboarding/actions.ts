@@ -52,6 +52,7 @@ export async function onboardingPrimeiroFundo(data: {
       cor: "#1D9E75",
       ordem: 0,
       custodia: null,
+      reserva_emergencia: false,
     });
     return { success: true };
   }

@@ -65,13 +65,13 @@ export function BarraProporcional({ segmentos }: BarraProporcionalProps) {
                 fontWeight: 700,
                 color: "#fff",
                 whiteSpace: "nowrap",
-                opacity: pct > 12 ? 1 : 0,
+                opacity: pct > 6 ? 1 : 0,
                 transition: "opacity 0.3s",
                 textShadow: "0 1px 2px rgba(0,0,0,0.2)",
                 userSelect: "none",
               }}
             >
-              {seg.label} · {seg.peso}%
+              {pct >= 15 ? `${seg.label} · ${seg.peso}%` : `${seg.peso}%`}
             </span>
           </div>
         );

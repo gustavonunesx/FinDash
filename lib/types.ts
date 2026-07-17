@@ -49,6 +49,7 @@ export interface Configuracao {
   fase: FaseFinanceira;
   custo_vida: number;
   meta_economia_mensal: number | null;
+  ajustes_limite?: Record<string, number>;
 }
 
 export interface Gasto {
@@ -82,6 +83,7 @@ export interface Fundo {
   cor: string;
   ordem: number;
   custodia: Custodia | null;
+  reserva_emergencia: boolean;
   meta_atingida_notificada?: boolean;
 }
 

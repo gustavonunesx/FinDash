@@ -21,6 +21,7 @@ export type FundoFormData = {
   aporte_mensal: number;
   cor: string;
   custodia?: Custodia;
+  reserva_emergencia?: boolean;
 };
 
 async function checkFundoLimit(): Promise<{ ok: boolean; error?: string }> {
@@ -52,6 +53,9 @@ export async function criarFundo(data: FundoFormData) {
   if (isDemoMode()) {
     const fundos = getDemoFundos();
     const id = crypto.randomUUID();
+    if (data.reserva_emergencia) {
+      fundos.forEach((f) => updateDemoFundo(f.id, { reserva_emergencia: false }));
+    }
     addDemoFundo({
       id,
       user_id: "demo-user",
@@ -63,6 +67,7 @@ export async function criarFundo(data: FundoFormData) {
       cor: data.cor,
       ordem: fundos.length,
       custodia: data.custodia ?? null,
+      reserva_emergencia: data.reserva_emergencia ?? false,
     });
     revalidatePath("/fundos");
     revalidatePath("/dashboard");
@@ -83,6 +88,10 @@ export async function criarFundo(data: FundoFormData) {
     .select("*", { count: "exact", head: true })
     .eq("user_id", user.id);
 
+  if (data.reserva_emergencia) {
+    await supabase.from("fundos").update({ reserva_emergencia: false }).eq("user_id", user.id);
+  }
+
   const { data: inserted, error } = await supabase
     .from("fundos")
     .insert({
@@ -95,6 +104,7 @@ export async function criarFundo(data: FundoFormData) {
       cor: data.cor,
       ordem: count ?? 0,
       custodia: data.custodia ?? null,
+      reserva_emergencia: data.reserva_emergencia ?? false,
     })
     .select("id")
     .single();
@@ -112,6 +122,9 @@ export async function criarFundo(data: FundoFormData) {
 
 export async function editarFundo(id: string, data: FundoFormData) {
   if (isDemoMode()) {
+    if (data.reserva_emergencia) {
+      getDemoFundos().forEach((f) => updateDemoFundo(f.id, { reserva_emergencia: false }));
+    }
     updateDemoFundo(id, {
       nome: data.nome,
       saldo_atual: data.saldo_atual,
@@ -120,6 +133,7 @@ export async function editarFundo(id: string, data: FundoFormData) {
       aporte_mensal: data.aporte_mensal,
       cor: data.cor,
       custodia: data.custodia ?? null,
+      reserva_emergencia: data.reserva_emergencia ?? false,
     });
     revalidatePath("/fundos");
     revalidatePath("/dashboard");
@@ -131,6 +145,11 @@ export async function editarFundo(id: string, data: FundoFormData) {
   }
 
   const supabase = await createClient();
+
+  if (data.reserva_emergencia) {
+    await supabase.from("fundos").update({ reserva_emergencia: false }).neq("id", id);
+  }
+
   const { error } = await supabase
     .from("fundos")
     .update({
@@ -141,6 +160,7 @@ export async function editarFundo(id: string, data: FundoFormData) {
       aporte_mensal: data.aporte_mensal,
       cor: data.cor,
       custodia: data.custodia ?? null,
+      reserva_emergencia: data.reserva_emergencia ?? false,
     })
     .eq("id", id);
 
@@ -169,6 +189,30 @@ export async function deletarFundo(id: string) {
   if (error) return { error: error.message };
   revalidatePath("/fundos");
   revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function marcarFundoReserva(fundoId: string) {
+  if (isDemoMode()) {
+    getDemoFundos().forEach((f) => updateDemoFundo(f.id, { reserva_emergencia: f.id === fundoId }));
+    revalidatePath("/fundos");
+    revalidatePath("/calculadora");
+    return { success: true };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Não autenticado" };
+
+  await supabase.from("fundos").update({ reserva_emergencia: false }).eq("user_id", user.id);
+  const { error } = await supabase.from("fundos").update({ reserva_emergencia: true }).eq("id", fundoId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/fundos");
+  revalidatePath("/calculadora");
   return { success: true };
 }
 

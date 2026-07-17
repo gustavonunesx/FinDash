@@ -13,9 +13,10 @@ const emptyForm: FundoFormData = {
   saldo_atual: 0,
   meta: 0,
   aporte_mensal: 0,
-  cor: COR_OPCOES[2], // verde por padrão
+  cor: COR_OPCOES[2],
   meta_data: undefined,
   custodia: undefined,
+  reserva_emergencia: false,
 };
 
 interface ModalNovoFundoProps {
@@ -40,6 +41,7 @@ export function ModalNovoFundo({ open, onClose, editing, onSubmit, pending }: Mo
         cor: editing.cor,
         meta_data: editing.meta_data ?? undefined,
         custodia: editing.custodia ?? undefined,
+        reserva_emergencia: editing.reserva_emergencia ?? false,
       });
       setSemData(!editing.meta_data);
     } else {
@@ -75,15 +77,18 @@ export function ModalNovoFundo({ open, onClose, editing, onSubmit, pending }: Mo
       <div
         style={{
           position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
+          inset: 0,
+          margin: "auto",
           background: "#FFFFFF",
           borderRadius: 18,
           width: 460,
           maxWidth: "calc(100vw - 32px)",
+          maxHeight: "calc(100vh - 32px)",
+          height: "fit-content",
           zIndex: 101,
           boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+          display: "flex",
+          flexDirection: "column",
           overflow: "hidden",
         }}
         onClick={(e) => e.stopPropagation()}
@@ -125,8 +130,8 @@ export function ModalNovoFundo({ open, onClose, editing, onSubmit, pending }: Mo
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit}>
-          <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+          <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16, overflowY: "auto", flex: 1 }}>
 
             {/* Nome */}
             <div>
@@ -231,6 +236,36 @@ export function ModalNovoFundo({ open, onClose, editing, onSubmit, pending }: Mo
               />
             </div>
 
+            {/* Reserva de emergência */}
+            <label
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 10,
+                padding: "12px 14px",
+                borderRadius: 10,
+                border: `1.5px solid ${form.reserva_emergencia ? "#C4820A" : "#E6E8EC"}`,
+                background: form.reserva_emergencia ? "#FBF3E2" : "#F7F8FA",
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={form.reserva_emergencia ?? false}
+                onChange={(e) => setForm({ ...form, reserva_emergencia: e.target.checked })}
+                style={{ accentColor: "#C4820A", marginTop: 2, flexShrink: 0 }}
+              />
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "#0F1729", margin: 0 }}>
+                  Reserva de emergência
+                </p>
+                <p style={{ fontSize: 12, color: "#7C8896", marginTop: 2 }}>
+                  Marca este fundo como sua reserva. A calculadora vai aportar aqui automaticamente.
+                </p>
+              </div>
+            </label>
+
             {/* Seletor de cor */}
             <div>
               <label style={labelStyle}>Cor do fundo</label>
@@ -262,7 +297,9 @@ export function ModalNovoFundo({ open, onClose, editing, onSubmit, pending }: Mo
             style={{
               display: "flex",
               gap: 10,
-              padding: "0 24px 22px",
+              padding: "14px 24px 22px",
+              borderTop: "1px solid #F0F2F4",
+              flexShrink: 0,
             }}
           >
             <button
