@@ -1,0 +1,213 @@
+
+<style>
+  .calc-wrap { padding: 1.5rem 0; font-family: var(--font-sans); }
+  .section-label { font-size: 12px; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; font-weight: 500; }
+  .input-row { display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; }
+  .prefix { font-size: 15px; color: var(--color-text-secondary); }
+  .extra-input { font-size: 22px; font-weight: 500; border: none; border-bottom: 2px solid var(--color-border-primary); background: transparent; color: var(--color-text-primary); width: 160px; outline: none; padding: 4px 0; }
+  .extra-input:focus { border-bottom-color: #3266ad; }
+  .mode-toggle { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+  .mode-btn { font-size: 12px; padding: 5px 14px; border-radius: 20px; border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-secondary); cursor: pointer; transition: all 0.15s; }
+  .mode-btn.active { background: var(--color-background-secondary); color: var(--color-text-primary); border-color: var(--color-border-primary); font-weight: 500; }
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .fund-card { background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 14px 16px; border-left: 3px solid transparent; }
+  .fund-card .fund-icon { font-size: 18px; margin-bottom: 6px; }
+  .fund-card .fund-name { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 4px; }
+  .fund-card .fund-value { font-size: 20px; font-weight: 500; color: var(--color-text-primary); }
+  .fund-card .fund-pct { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; }
+  .card-reserva { border-left-color: #e24b4a; }
+  .card-metas { border-left-color: #ba7517; }
+  .card-invest { border-left-color: #1d9e75; }
+  .card-voce { border-left-color: #378add; }
+  .bar-section { margin-bottom: 1.5rem; }
+  .bar-track { height: 10px; border-radius: 5px; background: var(--color-background-secondary); overflow: hidden; display: flex; }
+  .bar-seg { height: 100%; transition: width 0.4s ease; }
+  .bar-reserva { background: #e24b4a; }
+  .bar-metas { background: #ba7517; }
+  .bar-invest { background: #1d9e75; }
+  .bar-voce { background: #378add; }
+  .bar-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+  .leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--color-text-secondary); }
+  .leg-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+  .notice-box { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 14px; font-size: 13px; color: var(--color-text-secondary); margin-bottom: 1.5rem; border-left: 3px solid #378add; }
+  .projection-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 0.5rem; }
+  .proj-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 12px 14px; }
+  .proj-label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 4px; }
+  .proj-value { font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
+  .proj-sub { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; }
+  .divider { border: none; border-top: 0.5px solid var(--color-border-tertiary); margin: 1.25rem 0; }
+  .fase-tag { display: inline-block; font-size: 11px; padding: 2px 10px; border-radius: 20px; font-weight: 500; margin-bottom: 1rem; }
+  .fase-construindo { background: #faeeda; color: #633806; }
+  .fase-investindo { background: #e1f5ee; color: #085041; }
+</style>
+
+<div class="calc-wrap">
+  <h2 class="sr-only">Calculadora de distribuição de renda extra</h2>
+
+  <p class="section-label">renda extra mensal</p>
+  <div class="input-row">
+    <span class="prefix">R$</span>
+    <input class="extra-input" type="number" id="extraInput" value="400" min="0" max="99999" step="50" />
+  </div>
+
+  <p class="section-label">fase atual</p>
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="btnConstruindo" onclick="setMode('construindo')">Construindo reserva</button>
+    <button class="mode-btn" id="btnInvestindo" onclick="setMode('investindo')">Reserva completa</button>
+  </div>
+
+  <div id="faseTag" class="fase-tag fase-construindo">Fase: construindo a base</div>
+
+  <div class="cards-grid" id="cardsGrid">
+    <div class="fund-card card-reserva">
+      <div class="fund-icon" aria-hidden="true"><i class="ti ti-shield"></i></div>
+      <div class="fund-name">Reserva de emergência</div>
+      <div class="fund-value" id="valReserva">R$ 160</div>
+      <div class="fund-pct" id="pctReserva">40%</div>
+    </div>
+    <div class="fund-card card-metas">
+      <div class="fund-icon" aria-hidden="true"><i class="ti ti-target"></i></div>
+      <div class="fund-name">Metas (PC / alianças)</div>
+      <div class="fund-value" id="valMetas">R$ 120</div>
+      <div class="fund-pct" id="pctMetas">30%</div>
+    </div>
+    <div class="fund-card card-invest">
+      <div class="fund-icon" aria-hidden="true"><i class="ti ti-trending-up"></i></div>
+      <div class="fund-name">Investimento longo prazo</div>
+      <div class="fund-value" id="valInvest">R$ 80</div>
+      <div class="fund-pct" id="pctInvest">20%</div>
+    </div>
+    <div class="fund-card card-voce">
+      <div class="fund-icon" aria-hidden="true"><i class="ti ti-mood-smile"></i></div>
+      <div class="fund-name">Você agora</div>
+      <div class="fund-value" id="valVoce">R$ 40</div>
+      <div class="fund-pct" id="pctVoce">10%</div>
+    </div>
+  </div>
+
+  <div class="bar-section">
+    <div class="bar-track">
+      <div class="bar-seg bar-reserva" id="barReserva" style="width:40%"></div>
+      <div class="bar-seg bar-metas" id="barMetas" style="width:30%"></div>
+      <div class="bar-seg bar-invest" id="barInvest" style="width:20%"></div>
+      <div class="bar-seg bar-voce" id="barVoce" style="width:10%"></div>
+    </div>
+    <div class="bar-legend">
+      <span class="leg-item"><span class="leg-dot" style="background:#e24b4a"></span>Reserva</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#ba7517"></span>Metas</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#1d9e75"></span>Investimento</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#378add"></span>Você</span>
+    </div>
+  </div>
+
+  <div class="notice-box" id="noticeBox">
+    Quando a reserva atingir R$ 3.600, mude para "Reserva completa" — os 40% migram para investimento.
+  </div>
+
+  <hr class="divider" />
+
+  <p class="section-label">projeções com esse extra</p>
+  <div class="projection-grid" id="projGrid">
+    <div class="proj-card">
+      <div class="proj-label"><i class="ti ti-shield" aria-hidden="true"></i> Reserva em 6 meses</div>
+      <div class="proj-value" id="projReserva6">—</div>
+      <div class="proj-sub">incluindo R$ 300/mês do salário</div>
+    </div>
+    <div class="proj-card">
+      <div class="proj-label"><i class="ti ti-ring" aria-hidden="true"></i> Alianças em 6 meses</div>
+      <div class="proj-value" id="projAlianças6">—</div>
+      <div class="proj-sub">a partir de R$ 493 atuais</div>
+    </div>
+    <div class="proj-card">
+      <div class="proj-label"><i class="ti ti-device-desktop" aria-hidden="true"></i> PC em 6 meses</div>
+      <div class="proj-value" id="projPC6">—</div>
+      <div class="proj-sub">a partir de R$ 50 atuais</div>
+    </div>
+    <div class="proj-card">
+      <div class="proj-label"><i class="ti ti-calendar" aria-hidden="true"></i> Meta reserva em</div>
+      <div class="proj-value" id="projMeses">—</div>
+      <div class="proj-sub">para atingir R$ 3.600</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let mode = 'construindo';
+
+  const ALLOC = {
+    construindo: { reserva: 0.40, metas: 0.30, invest: 0.20, voce: 0.10 },
+    investindo:  { reserva: 0,    metas: 0.35, invest: 0.45, voce: 0.20 }
+  };
+
+  function fmt(val) {
+    return 'R$ ' + Math.round(val).toLocaleString('pt-BR');
+  }
+
+  function setMode(m) {
+    mode = m;
+    document.getElementById('btnConstruindo').classList.toggle('active', m === 'construindo');
+    document.getElementById('btnInvestindo').classList.toggle('active', m === 'investindo');
+    const tag = document.getElementById('faseTag');
+    if (m === 'construindo') {
+      tag.textContent = 'Fase: construindo a base';
+      tag.className = 'fase-tag fase-construindo';
+      document.getElementById('noticeBox').textContent = 'Quando a reserva atingir R$ 3.600, mude para "Reserva completa" — os 40% migram para investimento.';
+    } else {
+      tag.textContent = 'Fase: investindo e crescendo';
+      tag.className = 'fase-tag fase-investindo';
+      document.getElementById('noticeBox').textContent = 'Reserva completa! Agora 45% do extra vai para patrimônio de longo prazo. Tesouro Selic ou ações.';
+    }
+    calc();
+  }
+
+  function calc() {
+    const extra = parseFloat(document.getElementById('extraInput').value) || 0;
+    const a = ALLOC[mode];
+
+    const vReserva = extra * a.reserva;
+    const vMetas   = extra * a.metas;
+    const vInvest  = extra * a.invest;
+    const vVoce    = extra * a.voce;
+
+    document.getElementById('valReserva').textContent = fmt(vReserva);
+    document.getElementById('valMetas').textContent   = fmt(vMetas);
+    document.getElementById('valInvest').textContent  = fmt(vInvest);
+    document.getElementById('valVoce').textContent    = fmt(vVoce);
+
+    document.getElementById('pctReserva').textContent = Math.round(a.reserva * 100) + '%';
+    document.getElementById('pctMetas').textContent   = Math.round(a.metas   * 100) + '%';
+    document.getElementById('pctInvest').textContent  = Math.round(a.invest  * 100) + '%';
+    document.getElementById('pctVoce').textContent    = Math.round(a.voce    * 100) + '%';
+
+    document.getElementById('barReserva').style.width = (a.reserva * 100) + '%';
+    document.getElementById('barMetas').style.width   = (a.metas   * 100) + '%';
+    document.getElementById('barInvest').style.width  = (a.invest  * 100) + '%';
+    document.getElementById('barVoce').style.width    = (a.voce    * 100) + '%';
+
+    const reservaSalario = 300;
+    const reservaMensalTotal = reservaSalario + vReserva;
+    const reservaAtual = 298;
+    const metaReserva = 3600;
+
+    const reservaEm6 = reservaAtual + reservaMensalTotal * 6;
+    document.getElementById('projReserva6').textContent = fmt(Math.min(reservaEm6, metaReserva));
+
+    const metas6mes = extra * a.metas;
+    const metasPart6 = metas6mes * 6;
+    const aliancasPart  = Math.round(200 + (metasPart6 * 0.5));
+    const pcPart        = Math.round(50  + (metasPart6 * 0.5));
+    document.getElementById('projAlianças6').textContent = fmt(aliancasPart);
+    document.getElementById('projPC6').textContent       = fmt(pcPart);
+
+    if (mode === 'construindo') {
+      const falta = metaReserva - reservaAtual;
+      const meses = falta > 0 ? Math.ceil(falta / reservaMensalTotal) : 0;
+      document.getElementById('projMeses').textContent = meses > 0 ? meses + ' meses' : 'já atingiu!';
+    } else {
+      document.getElementById('projMeses').textContent = 'Reserva completa!';
+    }
+  }
+
+  document.getElementById('extraInput').addEventListener('input', calc);
+  calc();
+</script>
