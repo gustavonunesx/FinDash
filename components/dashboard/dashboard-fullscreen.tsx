@@ -21,6 +21,7 @@ import type {
   Gasto,
   HistoricoMensal,
   Profile,
+  RendaExtraItem,
 } from "@/lib/types";
 import type { Score502030Result } from "@/lib/score";
 import { CATEGORIA_LABELS } from "@/lib/types";
@@ -373,6 +374,7 @@ interface DashboardProps {
   gastos: Gasto[];
   historico: HistoricoMensal[];
   metaEconomia: number | null;
+  rendaExtraHistorico: RendaExtraItem[];
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -382,6 +384,7 @@ export function DashboardFullscreen({
   fundos,
   gastos,
   historico,
+  rendaExtraHistorico,
 }: DashboardProps) {
   const [privacy, setPrivacy] = useState(false);
 
@@ -464,6 +467,14 @@ export function DashboardFullscreen({
   // Investimentos (agregado dos fundos com custódia)
   const investidos = fundos.filter((f) => f.custodia);
   const totalAplicado = investidos.reduce((a, f) => a + f.saldo_atual, 0);
+
+  // Renda extra do mês atual
+  const mesAtual = currentKey;
+  const rendaExtraMes = useMemo(
+    () => rendaExtraHistorico.filter((r) => r.created_at.slice(0, 7) === mesAtual),
+    [rendaExtraHistorico, mesAtual]
+  );
+  const totalRendaExtraMes = rendaExtraMes.reduce((s, r) => s + r.valor, 0);
 
   // ── Transações reais ────────────────────────────────────────────────────────
   const transacoes = gastos.slice(0, 5);
@@ -1079,6 +1090,81 @@ export function DashboardFullscreen({
                 >
                   {investidos.length} {investidos.length === 1 ? "fundo aplicado" : "fundos aplicados"} com custódia
                 </span>
+              </div>
+            </div>
+          )}
+
+          {/* Renda Extra do mês */}
+          {rendaExtraMes.length > 0 && (
+            <div style={cardStyle}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 10,
+                }}
+              >
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: T.text, margin: 0 }}>
+                  Renda Extra
+                </h3>
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: T.greenMid,
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {privacy ? "R$ ••••" : fmtBRL(totalRendaExtraMes)}
+                </span>
+              </div>
+
+              <div style={{ fontSize: 12, color: T.textMut, marginBottom: 12 }}>
+                {rendaExtraMes.length} {rendaExtraMes.length === 1 ? "registro" : "registros"} este mês
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {rendaExtraMes.slice(0, 4).map((item) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 8,
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 500,
+                          color: T.text,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {item.descricao ?? "Renda extra"}
+                      </div>
+                      <div style={{ fontSize: 11, color: T.textMut }}>
+                        {new Date(item.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: T.greenMid,
+                        fontVariantNumeric: "tabular-nums",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {privacy ? "+R$ ••••" : `+${fmtBRL(item.valor)}`}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           )}
