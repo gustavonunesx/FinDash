@@ -1,19 +1,10 @@
 "use client";
 
-import {
-  IconTrendingUp,
-  IconArrowsExchange,
-  IconWallet,
-  IconPigMoney,
-  IconChartLine,
-  IconChartBar,
-  IconStack2,
-  IconTable,
-} from "@tabler/icons-react";
+import { useEffect, useRef } from "react";
 import type { HistoricoMensal } from "@/lib/types";
-import { formatCurrency, handleCardGlow } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { TrendIndicators } from "@/components/historico/trend-indicators";
-import { AreaLineChart, BarChart, type LineSeries } from "@/components/historico/svg-charts";
+import { LineChartMin, BarChartMin, type LineSeries } from "@/components/historico/svg-charts-min";
 
 interface HistoricoChartsProps {
   historico: HistoricoMensal[];
@@ -24,6 +15,12 @@ function formatMes(mes: string) {
   return d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }).replace(".", "");
 }
 
+/** Label curta p/ eixo dos gráficos — só o mês, evita corte do último tick. */
+function formatMesCurto(mes: string) {
+  const d = new Date(mes);
+  return d.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "");
+}
+
 const GREEN = "var(--color-fd-green)";
 const RED = "var(--color-fd-red)";
 const BLUE = "var(--color-fd-blue)";
@@ -31,76 +28,99 @@ const PURPLE = "var(--color-fd-purple)";
 const AMBER = "var(--color-fd-amber)";
 const FUND_COLORS = [GREEN, BLUE, PURPLE, AMBER];
 
-interface ChartCardProps {
-  icon: React.ReactNode;
-  iconColor: "green" | "blue" | "purple" | "amber";
-  title: string;
-  subtitle: string;
-  legend?: { name: string; color: string }[];
-  children: React.ReactNode;
+/** Reveal on-scroll: fade + translateY, stagger via --index. IntersectionObserver. */
+function useReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    const items = Array.from(root.querySelectorAll<HTMLElement>("[data-reveal]"));
+    if (typeof IntersectionObserver === "undefined") {
+      items.forEach((el) => el.classList.add("is-in"));
+      return;
+    }
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add("is-in");
+            obs.unobserve(e.target);
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+    items.forEach((el) => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+  return ref;
 }
 
-const iconChip: Record<string, string> = {
-  green: "bg-fd-green/10 text-fd-green",
-  blue: "bg-fd-blue/10 text-fd-blue",
-  purple: "bg-fd-purple/10 text-fd-purple",
-  amber: "bg-fd-amber/10 text-fd-amber",
-};
-
-function ChartCard({ icon, iconColor, title, subtitle, legend, children }: ChartCardProps) {
+function Panel({
+  index,
+  eyebrow,
+  title,
+  meta,
+  legend,
+  children,
+}: {
+  index: number;
+  eyebrow: string;
+  title: string;
+  meta?: string;
+  legend?: { name: string; color: string }[];
+  children: React.ReactNode;
+}) {
   return (
-    <div
-      className="card-glow group rounded-xl border border-border bg-card p-5 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md md:p-6"
-      onMouseMove={handleCardGlow}
+    <section
+      data-reveal
+      style={{ "--index": index } as React.CSSProperties}
+      className="reveal group rounded-xl border border-border bg-card p-6 transition-shadow duration-200 hover:shadow-[0_2px_12px_rgba(0,0,0,0.04)] md:p-8"
     >
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${iconChip[iconColor]}`}>
-            {icon}
-          </div>
-          <div>
-            <h2 className="text-base font-semibold leading-tight">{title}</h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
-          </div>
+      <header className="mb-7 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">{eyebrow}</p>
+          <h2 className="mt-1.5 text-xl font-bold tracking-tight text-foreground">{title}</h2>
         </div>
-        {legend && (
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        {legend ? (
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
             {legend.map((l) => (
-              <span key={l.name} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span className="h-2 w-2 rounded-full" style={{ background: l.color }} />
+              <span key={l.name} className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: l.color }} />
                 {l.name}
               </span>
             ))}
           </div>
-        )}
-      </div>
+        ) : meta ? (
+          <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">{meta}</span>
+        ) : null}
+      </header>
       {children}
-    </div>
+    </section>
   );
 }
 
-interface KpiTileProps {
-  icon: React.ReactNode;
-  color: "green" | "blue" | "amber" | "purple";
+function Stat({
+  label,
+  value,
+  accent,
+}: {
   label: string;
   value: string;
-}
-
-function KpiTile({ icon, color, label, value }: KpiTileProps) {
+  accent: string;
+}) {
   return (
-    <div
-      className="card-glow rounded-xl border border-border bg-card p-4 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
-      onMouseMove={handleCardGlow}
-    >
-      <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${iconChip[color]}`}>{icon}</div>
-      <p className="mt-3 text-xs font-medium text-muted-foreground">{label}</p>
-      <p className="mt-1 font-mono text-xl font-bold tracking-tight text-foreground md:text-2xl">{value}</p>
+    <div className="border-l border-border pl-4 first:border-l-0 first:pl-0 md:border-l md:first:border-l md:first:pl-4">
+      <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
+      <p className="mt-2 font-mono text-xl font-medium tracking-tight text-foreground md:text-[1.75rem]">{value}</p>
+      <div className="mt-3 h-px w-8" style={{ background: accent }} />
     </div>
   );
 }
 
 export function HistoricoCharts({ historico }: HistoricoChartsProps) {
-  const meses = historico.map((h) => formatMes(h.mes));
+  const revealRef = useReveal();
+  const meses = historico.map((h) => formatMesCurto(h.mes));
   const n = historico.length;
 
   const rendaSeries: LineSeries = {
@@ -115,11 +135,7 @@ export function HistoricoCharts({ historico }: HistoricoChartsProps) {
     color: RED,
     points: historico.map((h, i) => ({ label: meses[i], value: h.total_gastos })),
   };
-
-  const saldoPoints = historico.map((h, i) => ({
-    label: meses[i],
-    value: h.salario - h.total_gastos,
-  }));
+  const saldoPoints = historico.map((h, i) => ({ label: meses[i], value: h.salario - h.total_gastos }));
 
   const fundoKeys = Object.keys(historico[0]?.snapshot_fundos ?? {});
   const fundoSeries: LineSeries[] = fundoKeys.map((k, i) => ({
@@ -129,7 +145,6 @@ export function HistoricoCharts({ historico }: HistoricoChartsProps) {
     points: historico.map((h, idx) => ({ label: meses[idx], value: h.snapshot_fundos[k] ?? 0 })),
   }));
 
-  // KPIs — médias reais dos meses
   const avg = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
   const rendaMedia = avg(historico.map((h) => h.salario));
   const gastosMedia = avg(historico.map((h) => h.total_gastos));
@@ -137,81 +152,83 @@ export function HistoricoCharts({ historico }: HistoricoChartsProps) {
   const taxaPoupanca = rendaMedia > 0 ? Math.round((saldoMedio / rendaMedia) * 100) : 0;
 
   return (
-    <div className="space-y-6">
-      {/* KPI row */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiTile icon={<IconWallet className="h-5 w-5" />} color="green" label="Renda média" value={formatCurrency(rendaMedia)} />
-        <KpiTile icon={<IconArrowsExchange className="h-5 w-5" />} color="amber" label="Gastos médios" value={formatCurrency(gastosMedia)} />
-        <KpiTile icon={<IconPigMoney className="h-5 w-5" />} color="blue" label="Saldo médio" value={formatCurrency(saldoMedio)} />
-        <KpiTile icon={<IconTrendingUp className="h-5 w-5" />} color="purple" label="Taxa de poupança" value={`${taxaPoupanca}%`} />
-      </div>
+    <div ref={revealRef} className="space-y-6">
+      {/* Resumo — números em régua editorial, sem cards por KPI */}
+      <section
+        data-reveal
+        style={{ "--index": 0 } as React.CSSProperties}
+        className="reveal rounded-xl border border-border bg-card p-6 md:p-8"
+      >
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Médias do período</p>
+        <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-7 md:grid-cols-4 md:gap-x-8">
+          <Stat label="Renda média" value={formatCurrency(rendaMedia)} accent={GREEN} />
+          <Stat label="Gastos médios" value={formatCurrency(gastosMedia)} accent={AMBER} />
+          <Stat label="Saldo médio" value={formatCurrency(saldoMedio)} accent={BLUE} />
+          <Stat label="Taxa de poupança" value={`${taxaPoupanca}%`} accent={PURPLE} />
+        </div>
+      </section>
 
       <TrendIndicators historico={historico} />
 
-      {/* Renda vs Gastos */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <ChartCard
-          icon={<IconChartLine className="h-5 w-5" />}
-          iconColor="green"
-          title="Renda vs. Gastos"
-          subtitle={`Últimos ${n} meses`}
+        <Panel
+          index={2}
+          eyebrow="Fluxo"
+          title="Renda e gastos"
           legend={[
             { name: "Renda", color: GREEN },
             { name: "Gastos", color: RED },
           ]}
         >
-          <AreaLineChart series={[rendaSeries, gastosSeries]} />
-        </ChartCard>
+          <LineChartMin series={[rendaSeries, gastosSeries]} />
+        </Panel>
 
-        <ChartCard
-          icon={<IconChartBar className="h-5 w-5" />}
-          iconColor="blue"
-          title="Saldo livre mensal"
-          subtitle="Renda menos gastos por mês"
-        >
-          <BarChart points={saldoPoints} color={BLUE} negativeColor={RED} />
-        </ChartCard>
+        <Panel index={3} eyebrow="Sobra" title="Saldo livre" meta={`${n} meses`}>
+          <BarChartMin points={saldoPoints} color={BLUE} negativeColor={RED} />
+        </Panel>
       </div>
 
-      {/* Fundos */}
       {fundoSeries.length > 0 && (
-        <ChartCard
-          icon={<IconStack2 className="h-5 w-5" />}
-          iconColor="purple"
+        <Panel
+          index={4}
+          eyebrow="Patrimônio"
           title="Evolução dos fundos"
-          subtitle="Saldo acumulado por fundo"
           legend={fundoSeries.map((s) => ({ name: s.name, color: s.color }))}
         >
-          <AreaLineChart series={fundoSeries} height={260} />
-        </ChartCard>
+          <LineChartMin series={fundoSeries} height={250} />
+        </Panel>
       )}
 
-      {/* Resumo mensal */}
-      <ChartCard
-        icon={<IconTable className="h-5 w-5" />}
-        iconColor="green"
-        title="Resumo mensal"
-        subtitle="Detalhamento mês a mês"
+      {/* Resumo mensal — tabela editorial, só linhas divisoras */}
+      <section
+        data-reveal
+        style={{ "--index": 5 } as React.CSSProperties}
+        className="reveal rounded-xl border border-border bg-card p-6 md:p-8"
       >
-        <div className="-mx-1 overflow-x-auto px-1">
+        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Detalhamento</p>
+        <h2 className="mt-1.5 text-xl font-bold tracking-tight text-foreground">Mês a mês</h2>
+        <div className="-mx-1 mt-6 overflow-x-auto px-1">
           <table className="w-full min-w-[440px] text-sm">
             <thead>
-              <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="pb-3 pr-4 font-medium">Mês</th>
-                <th className="pb-3 pr-4 text-right font-medium">Renda</th>
-                <th className="pb-3 pr-4 text-right font-medium">Gastos</th>
-                <th className="pb-3 text-right font-medium">Saldo</th>
+              <tr className="border-b border-border text-left font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
+                <th className="pb-3 pr-4 font-normal">Mês</th>
+                <th className="pb-3 pr-4 text-right font-normal">Renda</th>
+                <th className="pb-3 pr-4 text-right font-normal">Gastos</th>
+                <th className="pb-3 text-right font-normal">Saldo</th>
               </tr>
             </thead>
             <tbody>
               {[...historico].reverse().map((h) => {
                 const saldo = h.salario - h.total_gastos;
                 return (
-                  <tr key={h.id} className="border-b border-border/50 last:border-0 transition-colors hover:bg-secondary/40">
-                    <td className="whitespace-nowrap py-3 pr-4 font-medium capitalize">{formatMes(h.mes)}</td>
-                    <td className="whitespace-nowrap py-3 pr-4 text-right font-mono">{formatCurrency(h.salario)}</td>
-                    <td className="whitespace-nowrap py-3 pr-4 text-right font-mono text-fd-red">{formatCurrency(h.total_gastos)}</td>
-                    <td className={`whitespace-nowrap py-3 text-right font-mono font-semibold ${saldo >= 0 ? "text-fd-green" : "text-fd-red"}`}>
+                  <tr key={h.id} className="border-b border-border/70 last:border-0 transition-colors hover:bg-secondary/30">
+                    <td className="whitespace-nowrap py-3.5 pr-4 font-medium capitalize">{formatMes(h.mes)}</td>
+                    <td className="whitespace-nowrap py-3.5 pr-4 text-right font-mono text-foreground">{formatCurrency(h.salario)}</td>
+                    <td className="whitespace-nowrap py-3.5 pr-4 text-right font-mono text-muted-foreground">{formatCurrency(h.total_gastos)}</td>
+                    <td
+                      className="whitespace-nowrap py-3.5 text-right font-mono font-medium"
+                      style={{ color: saldo >= 0 ? GREEN : RED }}
+                    >
                       {formatCurrency(saldo)}
                     </td>
                   </tr>
@@ -220,7 +237,7 @@ export function HistoricoCharts({ historico }: HistoricoChartsProps) {
             </tbody>
           </table>
         </div>
-      </ChartCard>
+      </section>
     </div>
   );
 }

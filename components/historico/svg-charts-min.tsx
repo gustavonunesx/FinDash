@@ -3,9 +3,9 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { formatCurrency } from "@/lib/utils";
 
-const PAD = { top: 16, right: 16, bottom: 28, left: 44 };
+const PAD = { top: 14, right: 20, bottom: 26, left: 40 };
 const VW = 640;
-const VH = 240;
+const VH = 220;
 
 function niceMax(v: number) {
   if (v <= 0) return 1000;
@@ -20,10 +20,6 @@ function fmtK(v: number) {
   return `${v}`;
 }
 
-/**
- * IntersectionObserver — anima somente quando visível na viewport (regra do projeto).
- * Retorna [ref, visible].
- */
 function useInView<T extends Element>() {
   const ref = useRef<T>(null);
   const [visible, setVisible] = useState(false);
@@ -35,13 +31,13 @@ function useInView<T extends Element>() {
       return;
     }
     const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
+      ([e]) => {
+        if (e.isIntersecting) {
           setVisible(true);
           obs.disconnect();
         }
       },
-      { threshold: 0.25 }
+      { threshold: 0.2 }
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -61,13 +57,8 @@ export interface LineSeries {
   points: SeriesPoint[];
 }
 
-interface AreaLineChartProps {
-  series: LineSeries[];
-  height?: number;
-}
-
-/** Line/Area chart em SVG puro, theme-aware, com hover crosshair. */
-export function AreaLineChart({ series, height = 240 }: AreaLineChartProps) {
+/** Line chart editorial: traços finos, grid quase invisível, sem preenchimento pesado. */
+export function LineChartMin({ series, height = 220 }: { series: LineSeries[]; height?: number }) {
   const uid = useId().replace(/:/g, "");
   const [wrapRef, visible] = useInView<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
@@ -75,14 +66,11 @@ export function AreaLineChart({ series, height = 240 }: AreaLineChartProps) {
   const labels = series[0]?.points.map((p) => p.label) ?? [];
   const n = labels.length;
   const allVals = series.flatMap((s) => s.points.map((p) => p.value));
-  const max = niceMax(Math.max(...allVals, 0) * 1.1);
+  const max = niceMax(Math.max(...allVals, 0) * 1.08);
   const chartW = VW - PAD.left - PAD.right;
   const chartH = VH - PAD.top - PAD.bottom;
-
   const x = (i: number) => PAD.left + (n <= 1 ? chartW / 2 : (i / (n - 1)) * chartW);
   const y = (v: number) => PAD.top + chartH - (v / max) * chartH;
-
-  const gridLines = [0, 0.25, 0.5, 0.75, 1];
 
   return (
     <div ref={wrapRef} className="w-full">
@@ -92,20 +80,18 @@ export function AreaLineChart({ series, height = 240 }: AreaLineChartProps) {
         height={height}
         preserveAspectRatio="none"
         role="img"
-        className="overflow-visible"
         onMouseLeave={() => setHover(null)}
       >
         <defs>
           {series.map((s) => (
-            <linearGradient key={s.key} id={`grad-${uid}-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={s.color} stopOpacity="0.22" />
+            <linearGradient key={s.key} id={`gmin-${uid}-${s.key}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={s.color} stopOpacity="0.10" />
               <stop offset="100%" stopColor={s.color} stopOpacity="0" />
             </linearGradient>
           ))}
         </defs>
 
-        {/* Grid + Y labels */}
-        {gridLines.map((g) => {
+        {[0, 0.5, 1].map((g) => {
           const gy = PAD.top + chartH - g * chartH;
           return (
             <g key={g}>
@@ -116,15 +102,14 @@ export function AreaLineChart({ series, height = 240 }: AreaLineChartProps) {
                 y2={gy}
                 stroke="var(--color-border)"
                 strokeWidth={1}
-                strokeDasharray={g === 0 ? "0" : "3 4"}
-                opacity={g === 0 ? 1 : 0.6}
+                opacity={g === 0 ? 0.8 : 0.4}
               />
               <text
                 x={PAD.left - 8}
                 y={gy + 3}
                 textAnchor="end"
                 className="fill-[var(--color-muted-foreground)] font-mono"
-                fontSize={10}
+                fontSize={9.5}
               >
                 {fmtK(Math.round(g * max))}
               </text>
@@ -132,50 +117,53 @@ export function AreaLineChart({ series, height = 240 }: AreaLineChartProps) {
           );
         })}
 
-        {/* X labels */}
         {labels.map((l, i) => (
           <text
             key={l + i}
             x={x(i)}
             y={VH - 8}
             textAnchor="middle"
-            className="fill-[var(--color-muted-foreground)]"
-            fontSize={10}
+            className="fill-[var(--color-muted-foreground)] font-mono uppercase"
+            fontSize={9}
+            letterSpacing="0.04em"
           >
             {l}
           </text>
         ))}
 
-        {/* Áreas + linhas */}
         {series.map((s) => {
           const pts = s.points.map((p, i) => [x(i), y(p.value)] as const);
           const line = pts.map(([px, py], i) => `${i === 0 ? "M" : "L"}${px},${py}`).join(" ");
           const area =
-            n > 1
-              ? `${line} L${x(n - 1)},${PAD.top + chartH} L${x(0)},${PAD.top + chartH} Z`
-              : "";
+            n > 1 ? `${line} L${x(n - 1)},${PAD.top + chartH} L${x(0)},${PAD.top + chartH} Z` : "";
           return (
             <g key={s.key}>
-              {n > 1 && <path d={area} fill={`url(#grad-${uid}-${s.key})`} opacity={visible ? 1 : 0} style={{ transition: "opacity 0.6s ease 0.3s" }} />}
+              {n > 1 && (
+                <path
+                  d={area}
+                  fill={`url(#gmin-${uid}-${s.key})`}
+                  opacity={visible ? 1 : 0}
+                  style={{ transition: "opacity 0.6s ease 0.3s" }}
+                />
+              )}
               <path
                 d={line}
                 fill="none"
                 stroke={s.color}
-                strokeWidth={2.5}
+                strokeWidth={1.75}
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 pathLength={1}
                 style={{
                   strokeDasharray: 1,
                   strokeDashoffset: visible ? 0 : 1,
-                  transition: "stroke-dashoffset 1s cubic-bezier(0.22,1,0.36,1)",
+                  transition: "stroke-dashoffset 0.9s cubic-bezier(0.16,1,0.3,1)",
                 }}
               />
             </g>
           );
         })}
 
-        {/* Crosshair + pontos no hover */}
         {hover !== null && (
           <line
             x1={x(hover)}
@@ -192,16 +180,14 @@ export function AreaLineChart({ series, height = 240 }: AreaLineChartProps) {
               key={s.key + i}
               cx={x(i)}
               cy={y(p.value)}
-              r={hover === i ? 4 : 0}
+              r={hover === i ? 3.5 : 0}
               fill="var(--color-card)"
               stroke={s.color}
-              strokeWidth={2.5}
+              strokeWidth={1.75}
               style={{ transition: "r 0.15s ease" }}
             />
           ))
         )}
-
-        {/* Zonas de hover invisíveis */}
         {labels.map((_, i) => (
           <rect
             key={i}
@@ -215,15 +201,14 @@ export function AreaLineChart({ series, height = 240 }: AreaLineChartProps) {
         ))}
       </svg>
 
-      {/* Tooltip */}
       {hover !== null && (
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-secondary/60 px-3 py-2 text-xs">
-          <span className="font-medium text-muted-foreground">{labels[hover]}</span>
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-border pt-3 text-xs">
+          <span className="font-mono uppercase tracking-wide text-muted-foreground">{labels[hover]}</span>
           {series.map((s) => (
             <span key={s.key} className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full" style={{ background: s.color }} />
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: s.color }} />
               <span className="text-muted-foreground">{s.name}</span>
-              <span className="font-mono font-semibold text-foreground">
+              <span className="font-mono font-medium text-foreground">
                 {formatCurrency(s.points[hover]?.value ?? 0)}
               </span>
             </span>
@@ -234,15 +219,18 @@ export function AreaLineChart({ series, height = 240 }: AreaLineChartProps) {
   );
 }
 
-interface BarChartProps {
+/** Bar chart editorial: barras finas, cantos 2px, grid discreto, suporta negativo. */
+export function BarChartMin({
+  points,
+  color,
+  negativeColor,
+  height = 200,
+}: {
   points: SeriesPoint[];
   color: string;
-  height?: number;
   negativeColor?: string;
-}
-
-/** Bar chart em SVG puro, theme-aware, suporta valores negativos. */
-export function BarChart({ points, color, negativeColor, height = 220 }: BarChartProps) {
+  height?: number;
+}) {
   const [wrapRef, visible] = useInView<HTMLDivElement>();
   const [hover, setHover] = useState<number | null>(null);
 
@@ -250,15 +238,14 @@ export function BarChart({ points, color, negativeColor, height = 220 }: BarChar
   const vals = points.map((p) => p.value);
   const rawMax = Math.max(...vals, 0);
   const rawMin = Math.min(...vals, 0);
-  const max = niceMax(rawMax * 1.1 || 1);
-  const min = rawMin < 0 ? -niceMax(Math.abs(rawMin) * 1.1) : 0;
+  const max = niceMax(rawMax * 1.08 || 1);
+  const min = rawMin < 0 ? -niceMax(Math.abs(rawMin) * 1.08) : 0;
   const range = max - min || 1;
 
   const chartW = VW - PAD.left - PAD.right;
   const chartH = VH - PAD.top - PAD.bottom;
   const slot = chartW / Math.max(n, 1);
-  const bw = Math.min(slot * 0.55, 48);
-
+  const bw = Math.min(slot * 0.4, 34);
   const y = (v: number) => PAD.top + chartH - ((v - min) / range) * chartH;
   const zeroY = y(0);
 
@@ -270,11 +257,9 @@ export function BarChart({ points, color, negativeColor, height = 220 }: BarChar
         height={height}
         preserveAspectRatio="none"
         role="img"
-        className="overflow-visible"
         onMouseLeave={() => setHover(null)}
       >
-        {/* Grid */}
-        {[0, 0.25, 0.5, 0.75, 1].map((g) => {
+        {[0, 0.5, 1].map((g) => {
           const gy = PAD.top + g * chartH;
           const val = max - g * range;
           return (
@@ -286,26 +271,22 @@ export function BarChart({ points, color, negativeColor, height = 220 }: BarChar
                 y2={gy}
                 stroke="var(--color-border)"
                 strokeWidth={1}
-                strokeDasharray="3 4"
-                opacity={0.6}
+                opacity={0.4}
               />
               <text
                 x={PAD.left - 8}
                 y={gy + 3}
                 textAnchor="end"
                 className="fill-[var(--color-muted-foreground)] font-mono"
-                fontSize={10}
+                fontSize={9.5}
               >
                 {fmtK(Math.round(val))}
               </text>
             </g>
           );
         })}
+        <line x1={PAD.left} x2={VW - PAD.right} y1={zeroY} y2={zeroY} stroke="var(--color-border)" strokeWidth={1} opacity={0.8} />
 
-        {/* Linha do zero */}
-        <line x1={PAD.left} x2={VW - PAD.right} y1={zeroY} y2={zeroY} stroke="var(--color-border)" strokeWidth={1} />
-
-        {/* Barras */}
         {points.map((p, i) => {
           const cx = PAD.left + slot * i + slot / 2;
           const barColor = p.value < 0 ? negativeColor ?? color : color;
@@ -318,11 +299,11 @@ export function BarChart({ points, color, negativeColor, height = 220 }: BarChar
                 y={visible ? top : zeroY}
                 width={bw}
                 height={visible ? full : 0}
-                rx={4}
+                rx={2}
                 fill={barColor}
-                opacity={hover === null || hover === i ? 1 : 0.45}
+                opacity={hover === null || hover === i ? 0.9 : 0.35}
                 style={{
-                  transition: `y 0.9s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.06}s, height 0.9s cubic-bezier(0.34,1.56,0.64,1) ${i * 0.06}s, opacity 0.2s ease`,
+                  transition: `y 0.7s cubic-bezier(0.16,1,0.3,1) ${i * 0.06}s, height 0.7s cubic-bezier(0.16,1,0.3,1) ${i * 0.06}s, opacity 0.2s ease`,
                 }}
               >
                 <title>{`${p.label}: ${formatCurrency(p.value)}`}</title>
@@ -331,18 +312,19 @@ export function BarChart({ points, color, negativeColor, height = 220 }: BarChar
                 x={cx}
                 y={VH - 8}
                 textAnchor="middle"
-                className="fill-[var(--color-muted-foreground)]"
-                fontSize={10}
+                className="fill-[var(--color-muted-foreground)] font-mono uppercase"
+                fontSize={9}
+                letterSpacing="0.04em"
               >
                 {p.label}
               </text>
               {hover === i && (
                 <text
                   x={cx}
-                  y={(p.value >= 0 ? top : zeroY + full) - (p.value >= 0 ? 6 : -14)}
+                  y={(p.value >= 0 ? top : zeroY + full) - (p.value >= 0 ? 6 : -13)}
                   textAnchor="middle"
-                  className="fill-[var(--color-foreground)] font-mono font-semibold"
-                  fontSize={11}
+                  className="fill-[var(--color-foreground)] font-mono"
+                  fontSize={10}
                 >
                   {fmtK(Math.round(p.value))}
                 </text>
