@@ -1,15 +1,8 @@
 "use client";
 
-import { useRef } from "react";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react";
+import { useEffect, useRef } from "react";
 import type { HistoricoMensal } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
-import { cn } from "@/lib/utils";
-
-gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 interface TrendIndicatorsProps {
   historico: HistoricoMensal[];
@@ -31,11 +24,12 @@ export function TrendIndicators({ historico }: TrendIndicatorsProps) {
   const trends =
     hasTrend && current && previous
       ? [
-          { label: "Renda", ...calcTrend(current.salario, previous.salario), invertColor: false },
+          { label: "Renda", ...calcTrend(current.salario, previous.salario), invertColor: false, value: current.salario },
           {
             label: "Gastos",
             ...calcTrend(current.total_gastos, previous.total_gastos),
             invertColor: true,
+            value: current.total_gastos,
           },
           {
             label: "Saldo livre",
@@ -44,74 +38,67 @@ export function TrendIndicators({ historico }: TrendIndicatorsProps) {
               previous.salario - previous.total_gastos
             ),
             invertColor: false,
+            value: current.salario - current.total_gastos,
           },
         ]
       : [];
 
-  useGSAP(
-    () => {
-      if (!hasTrend) return;
-      const items = ref.current?.querySelectorAll("[data-trend]");
-      if (!items?.length) return;
-      gsap.fromTo(
-        items,
-        { opacity: 0, scale: 0.9, y: 12 },
-        {
-          opacity: 1,
-          scale: 1,
-          y: 0,
-          duration: 0.5,
-          stagger: 0.1,
-          ease: "back.out(1.4)",
-          scrollTrigger: { trigger: ref.current, start: "top 88%" },
-        }
-      );
-    },
-    { scope: ref, dependencies: [historico, hasTrend] }
-  );
+  useEffect(() => {
+    const root = ref.current;
+    if (!root || !hasTrend) return;
+    const items = Array.from(root.querySelectorAll<HTMLElement>("[data-reveal]"));
+    if (typeof IntersectionObserver === "undefined") {
+      items.forEach((el) => el.classList.add("is-in"));
+      return;
+    }
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            e.target.classList.add("is-in");
+            obs.unobserve(e.target);
+          }
+        });
+      },
+      { threshold: 0.2 }
+    );
+    items.forEach((el) => obs.observe(el));
+    return () => obs.disconnect();
+  }, [hasTrend, historico]);
 
   if (!hasTrend || !current) return null;
 
   return (
-    <div ref={ref} className="grid gap-3 sm:grid-cols-3">
-      {trends.map((t) => {
+    <div ref={ref} className="grid gap-6 sm:grid-cols-3">
+      {trends.map((t, i) => {
         const positive = t.invertColor ? !t.up : t.up;
+        const color = positive ? "var(--color-fd-green)" : "var(--color-fd-red)";
         return (
           <div
             key={t.label}
-            data-trend
-            className="rounded-xl border border-border bg-card p-4 shadow-card"
+            data-reveal
+            style={{ "--index": i + 1 } as React.CSSProperties}
+            className="reveal rounded-xl border border-border bg-card p-6"
           >
-            <p className="text-xs font-medium text-muted-foreground">{t.label}</p>
-            <div className="mt-2 flex items-center gap-2">
-              <span
-                className={cn(
-                  "flex h-7 w-7 items-center justify-center rounded-lg",
-                  positive ? "bg-fd-green/10 text-fd-green" : "bg-fd-red/10 text-fd-red"
-                )}
-              >
-                {t.up ? (
-                  <IconTrendingUp className="h-4 w-4" />
-                ) : (
-                  <IconTrendingDown className="h-4 w-4" />
-                )}
-              </span>
-              <span
-                className={cn(
-                  "font-mono text-lg font-bold",
-                  positive ? "text-fd-green" : "text-fd-red"
-                )}
-              >
+            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">{t.label}</p>
+            <div className="mt-3 flex items-baseline gap-2">
+              <span className="font-mono text-3xl font-bold tracking-tight" style={{ color }}>
                 {t.pct > 0 ? "+" : ""}
                 {t.pct}%
               </span>
-              <span className="text-xs text-muted-foreground">vs. mês anterior</span>
+              {/* seta como primitivo SVG, sem lib de ícones */}
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ color }} aria-hidden>
+                {t.up ? (
+                  <path d="M3 9L7 5L11 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                ) : (
+                  <path d="M3 5L7 9L11 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                )}
+              </svg>
             </div>
-            {t.label === "Saldo livre" && (
-              <p className="mt-1 font-mono text-sm text-foreground">
-                {formatCurrency(current.salario - current.total_gastos)}
-              </p>
-            )}
+            <p className="mt-2 font-mono text-sm text-muted-foreground">
+              {formatCurrency(t.value)}
+              <span className="ml-1.5 text-[11px]">vs. mês anterior</span>
+            </p>
           </div>
         );
       })}
