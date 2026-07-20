@@ -14,6 +14,7 @@ interface LinhaFatiaExtraProps {
   isReserva?: boolean;
   todosFundos?: Fundo[];
   onAportar?: () => void;
+  onTrocarFundo?: (fundoId: string) => void;
 }
 
 export function LinhaFatiaExtra({
@@ -25,16 +26,20 @@ export function LinhaFatiaExtra({
   isReserva,
   todosFundos,
   onAportar,
+  onTrocarFundo,
 }: LinhaFatiaExtraProps) {
   const [selecionando, setSelecionando] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
-  const useLivre = !fundo && !isReserva;
+  const useLivre = !fundo && !isReserva && !todosFundos;
   const semReservaConfigurada = isReserva && !fundo;
 
-  async function handleSelecionarReserva(fundoId: string) {
+  async function handleSelecionarFundo(fundoId: string) {
     setSalvando(true);
-    await marcarFundoReserva(fundoId);
+    if (isReserva) {
+      await marcarFundoReserva(fundoId);
+    }
+    onTrocarFundo?.(fundoId);
     setSelecionando(false);
     setSalvando(false);
   }
@@ -86,7 +91,7 @@ export function LinhaFatiaExtra({
               <span>
                 →{" "}
                 <span style={{ color: "#0F1729", fontWeight: 600 }}>{fundo!.nome}</span>
-                {isReserva && (
+                {todosFundos && (
                   <button
                     type="button"
                     onClick={() => setSelecionando((v) => !v)}
@@ -154,61 +159,67 @@ export function LinhaFatiaExtra({
         )}
       </div>
 
-      {/* Seletor de fundo de reserva */}
+      {/* Seletor de fundo */}
       {selecionando && todosFundos && todosFundos.length > 0 && (
         <div
           style={{
             marginTop: 10,
             padding: "12px 14px",
-            background: "#FBF3E2",
-            border: "1.5px solid #F3D68A",
+            background: "#F7F8FA",
+            border: "1.5px solid #E6E8EC",
             borderRadius: 10,
             display: "flex",
             flexDirection: "column",
             gap: 8,
           }}
         >
-          <p style={{ fontSize: 12, fontWeight: 600, color: "#7C5B0A", margin: 0 }}>
-            Selecione o fundo de reserva de emergência:
+          <p style={{ fontSize: 12, fontWeight: 600, color: "#7C8896", margin: 0 }}>
+            {isReserva ? "Selecione o fundo de reserva de emergência:" : "Selecione o fundo de destino:"}
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {todosFundos.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                disabled={salvando}
-                onClick={() => handleSelecionarReserva(f.id)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "8px 10px",
-                  borderRadius: 8,
-                  border: `1.5px solid ${f.reserva_emergencia ? "#C4820A" : "#E6E8EC"}`,
-                  background: f.reserva_emergencia ? "#FEF3D7" : "#fff",
-                  cursor: salvando ? "wait" : "pointer",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: "#0F1729",
-                  textAlign: "left",
-                  transition: "border-color 0.12s",
-                }}
-              >
-                <div
+            {todosFundos.map((f) => {
+              const isAtual = fundo?.id === f.id;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  disabled={salvando}
+                  onClick={() => handleSelecionarFundo(f.id)}
                   style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    background: f.cor,
-                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "8px 10px",
+                    borderRadius: 8,
+                    border: `1.5px solid ${isAtual ? cor : "#E6E8EC"}`,
+                    background: isAtual ? cor + "14" : "#fff",
+                    cursor: salvando ? "wait" : "pointer",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "#0F1729",
+                    textAlign: "left",
+                    transition: "border-color 0.12s",
                   }}
-                />
-                {f.nome}
-                {f.reserva_emergencia && (
-                  <span style={{ fontSize: 11, color: "#C4820A", marginLeft: "auto" }}>atual</span>
-                )}
-              </button>
-            ))}
+                >
+                  <div
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: f.cor,
+                      flexShrink: 0,
+                    }}
+                  />
+                  {f.nome}
+                  {isAtual && (
+                    <span style={{ fontSize: 11, color: cor, marginLeft: "auto" }}>atual</span>
+                  )}
+                  {isReserva && f.reserva_emergencia && !isAtual && (
+                    <span style={{ fontSize: 11, color: "#C4820A", marginLeft: "auto" }}>reserva</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

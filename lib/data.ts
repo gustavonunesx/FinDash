@@ -4,7 +4,7 @@ import {
   isDemoMode,
 } from "./demo-data";
 import { createClient } from "./supabase/server";
-import type { Configuracao, Fundo, Gasto, HistoricoMensal, Profile } from "./types";
+import type { Configuracao, Fundo, Gasto, HistoricoMensal, Profile, RendaExtraItem } from "./types";
 
 export async function getCurrentUserId(): Promise<string | null> {
   if (isDemoMode()) return "demo-user";
@@ -94,6 +94,21 @@ export async function getHistorico(): Promise<HistoricoMensal[]> {
     .select("*")
     .eq("user_id", user.id)
     .order("mes", { ascending: true });
+  return data ?? [];
+}
+
+export async function getRendaExtraHistorico(): Promise<RendaExtraItem[]> {
+  if (isDemoMode()) return [];
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data } = await supabase
+    .from("renda_extra_historico")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
   return data ?? [];
 }
 

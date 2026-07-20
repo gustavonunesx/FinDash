@@ -1,13 +1,21 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { CalculadoraClient } from "@/components/calculadora/calculadora-client";
-import { getAppData } from "@/lib/data";
+import { getAppData, getRendaExtraHistorico } from "@/lib/data";
 
 export default async function CalculadoraPage() {
-  const { config, gastos, fundos } = await getAppData();
+  const [{ config, gastos, fundos }, rendaExtraHistorico] = await Promise.all([
+    getAppData(),
+    getRendaExtraHistorico(),
+  ]);
 
   return (
     <AppShell>
-      <CalculadoraClient config={config!} gastos={gastos} fundos={fundos} />
+      <CalculadoraClient
+        config={config!}
+        gastos={gastos}
+        fundos={fundos}
+        rendaExtraHistorico={rendaExtraHistorico}
+      />
     </AppShell>
   );
 }

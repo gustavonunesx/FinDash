@@ -96,6 +96,14 @@ export interface HistoricoMensal {
   snapshot_fundos: Record<string, number>;
 }
 
+export interface RendaExtraItem {
+  id: string;
+  user_id: string;
+  valor: number;
+  descricao: string | null;
+  created_at: string;
+}
+
 export interface DashboardData {
   profile: Profile;
   config: Configuracao | null;

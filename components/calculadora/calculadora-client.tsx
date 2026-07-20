@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useMemo } from "react";
 import { motion } from "framer-motion";
-import { IconPencil, IconSettings, IconArrowRight, IconRefresh } from "@tabler/icons-react";
+import { IconPencil, IconSettings, IconArrowRight, IconRefresh, IconPlus } from "@tabler/icons-react";
 import { confirmarAporte } from "@/app/(app)/fundos/actions";
-import { salvarAjustesLimite } from "@/app/(app)/calculadora/actions";
+import { salvarAjustesLimite, registrarRendaExtra } from "@/app/(app)/calculadora/actions";
 import { formatCurrency } from "@/lib/utils";
 import { totalPorCategoria } from "@/lib/score";
-import type { Configuracao, Fundo, Gasto } from "@/lib/types";
+import type { Configuracao, Fundo, Gasto, RendaExtraItem } from "@/lib/types";
 
 import { BarraProporcional } from "./barra-proporcional";
 import { LinhaStatusCategoria } from "./linha-status-categoria";
@@ -33,6 +33,7 @@ interface CalculadoraClientProps {
   config: Configuracao;
   gastos: Gasto[];
   fundos: Fundo[];
+  rendaExtraHistorico: RendaExtraItem[];
 }
 
 // ── Card wrapper ──────────────────────────────────────────────────────────────
@@ -52,7 +53,7 @@ function Card({ children }: { children: React.ReactNode }) {
 }
 
 // ── Componente principal ──────────────────────────────────────────────────────
-export function CalculadoraClient({ config, gastos, fundos }: CalculadoraClientProps) {
+export function CalculadoraClient({ config, gastos, fundos, rendaExtraHistorico: initialHistorico }: CalculadoraClientProps) {
   // ── State ──────────────────────────────────────────────────────────────────
   const [salario, setSalario] = useState(config.salario);
   const [modalSalario, setModalSalario] = useState(false);
@@ -63,10 +64,14 @@ export function CalculadoraClient({ config, gastos, fundos }: CalculadoraClientP
   const [fatiaAporte, setFatiaAporte] = useState<FatiaAporte | null>(null);
   const [pendingAporte, startAporte] = useTransition();
   const [ajustes, setAjustes] = useState<Record<string, number>>(config.ajustes_limite ?? {});
+  const [descricaoExtra, setDescricaoExtra] = useState("");
+  const [historicoLocal, setHistoricoLocal] = useState<RendaExtraItem[]>(initialHistorico);
+  const [pendingRegistrar, startRegistrar] = useTransition();
   const [realocarAberto, setRealocarAberto] = useState(false);
   const [realocarOrigem, setRealocarOrigem] = useState<string | null>(null);
   const [realocarDestino, setRealocarDestino] = useState<string | null>(null);
   const [realocarValor, setRealocarValor] = useState("");
+  const [fundosPorFatia, setFundosPorFatia] = useState<Record<string, string | null>>({});
 
   const [pesos502030, setPesos502030] = useState<Peso[]>([
     { key: "necessidade", label: "Necessidades",      cor: CORES.necessidade.bar,  valor: 50 },
@@ -127,11 +132,22 @@ export function CalculadoraClient({ config, gastos, fundos }: CalculadoraClientP
   const totalPesosExtra = pesosExtra.reduce((s, p) => s + p.valor, 0);
   const extraValido = Math.abs(totalPesosExtra - 100) < 0.01;
 
+  const mesAtual = new Date().toISOString().slice(0, 7);
+  const historicoMes = useMemo(
+    () => historicoLocal.filter((r) => r.created_at.slice(0, 7) === mesAtual),
+    [historicoLocal, mesAtual]
+  );
+  const totalExtraMes = historicoMes.reduce((s, r) => s + r.valor, 0);
+
   const fundosSemCustodia = fundos.filter((f) => !f.custodia);
   const fundosComCustodia = fundos.filter((f) => f.custodia);
   const fundoReserva = fundos.find((f) => f.reserva_emergencia) ?? null;
 
   function getFundoParaFatia(key: string): Fundo | null {
+    const override = fundosPorFatia[key];
+    if (override !== undefined) {
+      return fundos.find((f) => f.id === override) ?? null;
+    }
     if (key === "qualidade") return null;
     if (key === "reserva") return fundoReserva;
     if (key === "investimento") return fundosComCustodia[0] ?? fundosSemCustodia[0] ?? null;
@@ -164,6 +180,18 @@ export function CalculadoraClient({ config, gastos, fundos }: CalculadoraClientP
       await confirmarAporte(fundoId, valor);
       setModalAporte(false);
       setFatiaAporte(null);
+    });
+  }
+
+  function handleRegistrarRendaExtra() {
+    if (!extraNum || extraNum <= 0) return;
+    startRegistrar(async () => {
+      const result = await registrarRendaExtra(extraNum, descricaoExtra.trim() || null);
+      if (result.data) {
+        setHistoricoLocal((prev) => [result.data!, ...prev]);
+        setValorExtra("");
+        setDescricaoExtra("");
+      }
     });
   }
 
@@ -637,6 +665,69 @@ export function CalculadoraClient({ config, gastos, fundos }: CalculadoraClientP
                 gap: 20,
               }}
             >
+              {/* Campo de descrição + botão registrar */}
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <input
+                  type="text"
+                  value={descricaoExtra}
+                  onChange={(e) => setDescricaoExtra(e.target.value)}
+                  placeholder="Descrição (opcional)"
+                  style={{
+                    flex: 1,
+                    minWidth: 140,
+                    padding: "7px 12px",
+                    border: "1px solid #E1E5EA",
+                    borderRadius: 8,
+                    background: "#F7F8FA",
+                    fontSize: 13,
+                    color: "#0F1729",
+                    outline: "none",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleRegistrarRendaExtra}
+                  disabled={!extraNum || extraNum <= 0 || pendingRegistrar}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "7px 16px",
+                    borderRadius: 8,
+                    border: "none",
+                    background: extraNum > 0 ? "#0E8F6A" : "#E6E8EC",
+                    color: extraNum > 0 ? "#fff" : "#9AA3AE",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: extraNum > 0 ? "pointer" : "not-allowed",
+                    transition: "all 0.15s",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <IconPlus style={{ width: 14, height: 14 }} />
+                  {pendingRegistrar ? "Registrando..." : "Registrar"}
+                </button>
+              </div>
+
+              {/* Aviso de pesos inválidos */}
+              {!extraValido && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "8px 14px",
+                    borderRadius: 8,
+                    background: "#FEF2F2",
+                    border: "1px solid #FECACA",
+                  }}
+                >
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#DC2626" }}>
+                    ⚠ Pesos somam {totalPesosExtra}% — ajuste para 100%
+                  </span>
+                </div>
+              )}
+
               {/* Barra das fatias */}
               <BarraProporcional
                 segmentos={pesosExtra.map((p) => {
@@ -663,8 +754,11 @@ export function CalculadoraClient({ config, gastos, fundos }: CalculadoraClientP
                       valor={f.valor}
                       fundo={f.fundo}
                       isReserva={f.key === "reserva"}
-                      todosFundos={f.key === "reserva" ? fundos : undefined}
+                      todosFundos={f.key === "qualidade" ? undefined : fundos}
                       onAportar={f.fundo ? () => abrirAporte(f) : undefined}
+                      onTrocarFundo={f.key !== "qualidade" ? (fundoId) => {
+                        setFundosPorFatia((prev) => ({ ...prev, [f.key]: fundoId }));
+                      } : undefined}
                     />
                     {i < fatiasExtra.length - 1 && (
                       <div style={{ borderTop: "1px solid #F0F2F4" }} />
@@ -673,30 +767,60 @@ export function CalculadoraClient({ config, gastos, fundos }: CalculadoraClientP
                 ))}
               </div>
 
-              {/* Validação de pesos */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "8px 14px",
-                  borderRadius: 8,
-                  background: extraValido ? "#E3F6EF" : "#FEF2F2",
-                  border: `1px solid ${extraValido ? "#CDEFE3" : "#FECACA"}`,
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: extraValido ? "#0D7A5E" : "#DC2626",
-                  }}
-                >
-                  {extraValido
-                    ? `✓ ${totalPesosExtra}% da renda extra alocado`
-                    : `⚠ Pesos somam ${totalPesosExtra}% — ajuste para 100%`}
-                </span>
-              </div>
+              {/* Histórico do mês */}
+              {historicoMes.length > 0 && (
+                <>
+                  <div style={{ borderTop: "1px solid #F0F2F4" }} />
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#0F1729" }}>
+                        Registrado este mês
+                      </span>
+                      <span style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: "#0E8F6A",
+                      }}>
+                        {formatCurrency(totalExtraMes)}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {historicoMes.map((item) => (
+                        <div
+                          key={item.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "8px 12px",
+                            borderRadius: 8,
+                            background: "#F7F8FA",
+                            border: "1px solid #E6E8EC",
+                          }}
+                        >
+                          <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "#0F1729" }}>
+                              {item.descricao ?? "Renda extra"}
+                            </span>
+                            <span style={{ fontSize: 11, color: "#9AA3AE" }}>
+                              {new Date(item.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+                            </span>
+                          </div>
+                          <span style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: "#0E8F6A",
+                          }}>
+                            +{formatCurrency(item.valor)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </Card>
         </motion.div>
