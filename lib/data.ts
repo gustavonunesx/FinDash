@@ -98,7 +98,10 @@ export async function getHistorico(): Promise<HistoricoMensal[]> {
 }
 
 export async function getRendaExtraHistorico(): Promise<RendaExtraItem[]> {
-  if (isDemoMode()) return [];
+  if (isDemoMode()) {
+    const { getDemoRendaExtraHistorico } = await import("./demo-store");
+    return getDemoRendaExtraHistorico();
+  }
   const supabase = await createClient();
   const {
     data: { user },

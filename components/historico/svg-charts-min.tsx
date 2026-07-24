@@ -336,3 +336,25 @@ export function BarChartMin({
     </div>
   );
 }
+
+/** Sparkline compacta pra uso inline em tabela — sem eixos, sem grid, só a linha. */
+export function Sparkline({ points, color, width = 96, height = 28 }: { points: number[]; color: string; width?: number; height?: number }) {
+  if (points.length < 2) return <div style={{ width, height }} />;
+  const max = Math.max(...points);
+  const min = Math.min(...points);
+  const range = max - min || 1;
+  const pad = 3;
+  const w = width - pad * 2;
+  const h = height - pad * 2;
+  const x = (i: number) => pad + (i / (points.length - 1)) * w;
+  const y = (v: number) => pad + h - ((v - min) / range) * h;
+  const line = points.map((v, i) => `${i === 0 ? "M" : "L"}${x(i)},${y(v)}`).join(" ");
+  const last = points[points.length - 1];
+
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+      <path d={line} fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" opacity={0.85} />
+      <circle cx={x(points.length - 1)} cy={y(last)} r={2} fill={color} />
+    </svg>
+  );
+}
