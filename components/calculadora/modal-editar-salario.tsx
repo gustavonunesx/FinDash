@@ -10,14 +10,12 @@ interface ModalEditarSalarioProps {
   open: boolean;
   salarioAtual: number;
   onClose: () => void;
-  onSalvo: (novoSalario: number) => void;
 }
 
 export function ModalEditarSalario({
   open,
   salarioAtual,
   onClose,
-  onSalvo,
 }: ModalEditarSalarioProps) {
   const [valor, setValor] = useState(String(salarioAtual || ""));
   const [pending, startTransition] = useTransition();
@@ -42,7 +40,7 @@ export function ModalEditarSalario({
         setErro(res.error);
         return;
       }
-      onSalvo(num);
+      // A action revalida /calculadora, então o novo salário chega pelas props.
       onClose();
     });
   }

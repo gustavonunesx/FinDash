@@ -1,16 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidarEntidade } from "@/lib/revalidate";
 import { isDemoMode } from "@/lib/demo-data";
-import { setDemoConfig } from "@/lib/demo-store";
+import { addDemoRendaExtra, setDemoConfig } from "@/lib/demo-store";
 import { createClient } from "@/lib/supabase/server";
 import type { RendaExtraItem } from "@/lib/types";
 
 export async function salvarSalario(salario: number) {
   if (isDemoMode()) {
     setDemoConfig({ salario });
-    revalidatePath("/calculadora");
-    revalidatePath("/dashboard");
+    revalidarEntidade("config");
     return { success: true };
   }
 
@@ -26,8 +26,7 @@ export async function salvarSalario(salario: number) {
 
   if (error) return { error: error.message };
 
-  revalidatePath("/calculadora");
-  revalidatePath("/dashboard");
+  revalidarEntidade("config");
   return { success: true };
 }
 
@@ -36,16 +35,16 @@ export async function registrarRendaExtra(
   descricao: string | null
 ): Promise<{ success?: boolean; data?: RendaExtraItem; error?: string }> {
   if (isDemoMode()) {
-    return {
-      success: true,
-      data: {
-        id: crypto.randomUUID(),
-        user_id: "demo-user",
-        valor,
-        descricao,
-        created_at: new Date().toISOString(),
-      },
+    const item: RendaExtraItem = {
+      id: crypto.randomUUID(),
+      user_id: "demo-user",
+      valor,
+      descricao,
+      created_at: new Date().toISOString(),
     };
+    addDemoRendaExtra(item);
+    revalidarEntidade("rendaExtra");
+    return { success: true, data: item };
   }
 
   const supabase = await createClient();
@@ -62,11 +61,11 @@ export async function registrarRendaExtra(
 
   if (error) return { error: error.message };
 
-  revalidatePath("/calculadora");
-  revalidatePath("/dashboard");
+  revalidarEntidade("rendaExtra");
   return { success: true, data };
 }
 
+// `ajustes_limite` só é lido pela /calculadora, então não passa por revalidarEntidade.
 export async function salvarAjustesLimite(ajustes: Record<string, number>) {
   if (isDemoMode()) {
     setDemoConfig({ ajustes_limite: ajustes });

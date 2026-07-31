@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidarEntidade } from "@/lib/revalidate";
 import { isDemoMode } from "@/lib/demo-data";
 import { setDemoConfig, setDemoProfile } from "@/lib/demo-store";
 import { createClient } from "@/lib/supabase/server";
@@ -22,8 +22,7 @@ export async function salvarConfiguracoes(data: {
       ...(data.salario !== undefined && { salario: data.salario }),
       ...(data.renda_extra !== undefined && { renda_extra: data.renda_extra }),
     });
-    revalidatePath("/configuracoes");
-    revalidatePath("/dashboard");
+    revalidarEntidade("config", "perfil");
     return { success: true };
   }
 
@@ -51,7 +50,6 @@ export async function salvarConfiguracoes(data: {
     if (error) return { error: error.message };
   }
 
-  revalidatePath("/configuracoes");
-  revalidatePath("/dashboard");
+  revalidarEntidade("config", "perfil");
   return { success: true };
 }

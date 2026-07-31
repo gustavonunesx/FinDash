@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidarEntidade } from "@/lib/revalidate";
 import { isDemoMode } from "@/lib/demo-data";
 import { getDemoGastos } from "@/lib/demo-store";
 import { getProfile } from "@/lib/data";
@@ -53,8 +53,7 @@ export async function importarGastosCsv(rows: CsvGastoRow[]) {
     if (!result.error) imported++;
   }
 
-  revalidatePath("/gastos");
-  revalidatePath("/dashboard");
+  revalidarEntidade("gastos");
 
   return {
     success: true,
@@ -65,8 +64,7 @@ export async function importarGastosCsv(rows: CsvGastoRow[]) {
 
 export async function confirmarRecorrente(gastoId: string) {
   if (isDemoMode()) {
-    revalidatePath("/dashboard");
-    revalidatePath("/gastos");
+    revalidarEntidade("gastos");
     return { success: true };
   }
 
@@ -86,7 +84,6 @@ export async function confirmarRecorrente(gastoId: string) {
     parcela_inicio: gasto.parcela_inicio,
   });
 
-  revalidatePath("/dashboard");
-  revalidatePath("/gastos");
+  revalidarEntidade("gastos");
   return { success: true };
 }

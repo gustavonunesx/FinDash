@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidarEntidade } from "@/lib/revalidate";
 import { isDemoMode } from "@/lib/demo-data";
 import { getAppData } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
@@ -45,6 +45,6 @@ export async function registrarSnapshotMensal() {
 
   if (error) return { error: error.message };
 
-  revalidatePath("/historico");
+  revalidarEntidade("historico");
   return { success: true, skipped: false };
 }

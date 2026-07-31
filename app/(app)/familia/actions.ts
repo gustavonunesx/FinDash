@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidarEntidade } from "@/lib/revalidate";
 import { isDemoMode } from "@/lib/demo-data";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/data";
@@ -16,7 +16,7 @@ export async function criarFamilia(nome: string) {
   }
 
   if (isDemoMode()) {
-    revalidatePath("/familia");
+    revalidarEntidade("familia");
     return { success: true };
   }
 
@@ -49,7 +49,7 @@ export async function criarFamilia(nome: string) {
 
   await supabase.from("profiles").update({ familia_id: familia.id }).eq("id", user.id);
 
-  revalidatePath("/familia");
+  revalidarEntidade("familia");
   return { success: true };
 }
 
@@ -129,6 +129,6 @@ export async function aceitarConvite(token: string) {
     .update({ familia_id: convite.familia_id })
     .eq("id", user.id);
 
-  revalidatePath("/familia");
+  revalidarEntidade("familia");
   return { success: true };
 }
