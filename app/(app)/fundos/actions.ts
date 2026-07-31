@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidarEntidade } from "@/lib/revalidate";
 import { isDemoMode } from "@/lib/demo-data";
 import {
   addDemoFundo,
@@ -69,8 +69,7 @@ export async function criarFundo(data: FundoFormData) {
       custodia: data.custodia ?? null,
       reserva_emergencia: data.reserva_emergencia ?? false,
     });
-    revalidatePath("/fundos");
-    revalidatePath("/dashboard");
+    revalidarEntidade("fundos");
     if (data.meta > 0 && data.saldo_atual >= data.meta) {
       await checkAndNotifyMetaAtingida(id, data.saldo_atual, data.meta, data.nome);
     }
@@ -115,8 +114,7 @@ export async function criarFundo(data: FundoFormData) {
     await checkAndNotifyMetaAtingida(inserted.id, data.saldo_atual, data.meta, data.nome);
   }
 
-  revalidatePath("/fundos");
-  revalidatePath("/dashboard");
+  revalidarEntidade("fundos");
   return { success: true };
 }
 
@@ -135,8 +133,7 @@ export async function editarFundo(id: string, data: FundoFormData) {
       custodia: data.custodia ?? null,
       reserva_emergencia: data.reserva_emergencia ?? false,
     });
-    revalidatePath("/fundos");
-    revalidatePath("/dashboard");
+    revalidarEntidade("fundos");
     let metaResult = null;
     if (data.meta > 0 && data.saldo_atual >= data.meta) {
       metaResult = await checkAndNotifyMetaAtingida(id, data.saldo_atual, data.meta, data.nome);
@@ -171,32 +168,28 @@ export async function editarFundo(id: string, data: FundoFormData) {
     metaResult = await checkAndNotifyMetaAtingida(id, data.saldo_atual, data.meta, data.nome);
   }
 
-  revalidatePath("/fundos");
-  revalidatePath("/dashboard");
+  revalidarEntidade("fundos");
   return { success: true, metaAtingida: metaResult?.atingida, metaNotificada: metaResult?.notificada };
 }
 
 export async function deletarFundo(id: string) {
   if (isDemoMode()) {
     deleteDemoFundo(id);
-    revalidatePath("/fundos");
-    revalidatePath("/dashboard");
+    revalidarEntidade("fundos");
     return { success: true };
   }
 
   const supabase = await createClient();
   const { error } = await supabase.from("fundos").delete().eq("id", id);
   if (error) return { error: error.message };
-  revalidatePath("/fundos");
-  revalidatePath("/dashboard");
+  revalidarEntidade("fundos");
   return { success: true };
 }
 
 export async function marcarFundoReserva(fundoId: string) {
   if (isDemoMode()) {
     getDemoFundos().forEach((f) => updateDemoFundo(f.id, { reserva_emergencia: f.id === fundoId }));
-    revalidatePath("/fundos");
-    revalidatePath("/calculadora");
+    revalidarEntidade("fundos");
     return { success: true };
   }
 
@@ -211,8 +204,7 @@ export async function marcarFundoReserva(fundoId: string) {
 
   if (error) return { error: error.message };
 
-  revalidatePath("/fundos");
-  revalidatePath("/calculadora");
+  revalidarEntidade("fundos");
   return { success: true };
 }
 
@@ -223,9 +215,7 @@ export async function confirmarAporte(fundoId: string, valor: number) {
     if (!fundo) return { error: "Fundo não encontrado" };
     const novoSaldo = fundo.saldo_atual + valor;
     updateDemoFundo(fundoId, { saldo_atual: novoSaldo });
-    revalidatePath("/fundos");
-    revalidatePath("/calculadora");
-    revalidatePath("/dashboard");
+    revalidarEntidade("fundos");
     const metaResult = await checkAndNotifyMetaAtingida(
       fundoId,
       novoSaldo,
@@ -263,9 +253,7 @@ export async function confirmarAporte(fundoId: string, valor: number) {
     fundo.nome
   );
 
-  revalidatePath("/fundos");
-  revalidatePath("/calculadora");
-  revalidatePath("/dashboard");
+  revalidarEntidade("fundos");
   return {
     success: true,
     metaAtingida: metaResult.atingida,

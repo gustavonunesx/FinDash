@@ -18,6 +18,9 @@ export function CheckoutToast() {
 
     if (checkout) {
       router.replace("/dashboard", { scroll: false });
+      // O webhook do Stripe muda o plano fora do ciclo de request, então nenhum
+      // revalidatePath alcança o Router Cache deste browser — só o refresh limpa.
+      if (checkout === "success") router.refresh();
     }
   }, [searchParams, router]);
 

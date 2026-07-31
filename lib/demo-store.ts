@@ -40,7 +40,7 @@ export function getDemoHistorico() {
   return historico;
 }
 
-const rendaExtraHistorico: RendaExtraItem[] = [
+let rendaExtraHistorico: RendaExtraItem[] = [
   { id: "re1", user_id: "demo-user", valor: 600, descricao: "Freelance", created_at: "2026-03-14T00:00:00.000Z" },
   { id: "re2", user_id: "demo-user", valor: 240, descricao: "Cashback", created_at: "2026-04-02T00:00:00.000Z" },
   { id: "re3", user_id: "demo-user", valor: 400, descricao: "Venda usados", created_at: "2026-05-20T00:00:00.000Z" },
@@ -48,6 +48,10 @@ const rendaExtraHistorico: RendaExtraItem[] = [
 
 export function getDemoRendaExtraHistorico() {
   return rendaExtraHistorico;
+}
+
+export function addDemoRendaExtra(item: RendaExtraItem) {
+  rendaExtraHistorico = [item, ...rendaExtraHistorico];
 }
 
 export function setDemoProfile(p: Partial<Profile>) {

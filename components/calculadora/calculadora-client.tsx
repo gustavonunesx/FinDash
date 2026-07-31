@@ -53,9 +53,14 @@ function Card({ children }: { children: React.ReactNode }) {
 }
 
 // ── Componente principal ──────────────────────────────────────────────────────
-export function CalculadoraClient({ config, gastos, fundos, rendaExtraHistorico: initialHistorico }: CalculadoraClientProps) {
+export function CalculadoraClient({ config, gastos, fundos, rendaExtraHistorico }: CalculadoraClientProps) {
+  // Salário, ajustes de limite e histórico de renda extra vêm direto das props:
+  // as server actions revalidam /calculadora, então espelhar em useState só
+  // congelaria valores alterados em outra rota.
+  const salario = config.salario;
+  const ajustes = config.ajustes_limite ?? {};
+
   // ── State ──────────────────────────────────────────────────────────────────
-  const [salario, setSalario] = useState(config.salario);
   const [modalSalario, setModalSalario] = useState(false);
   const [modalPesos502030, setModalPesos502030] = useState(false);
   const [modalPesosExtra, setModalPesosExtra] = useState(false);
@@ -63,9 +68,8 @@ export function CalculadoraClient({ config, gastos, fundos, rendaExtraHistorico:
   const [modalAporte, setModalAporte] = useState(false);
   const [fatiaAporte, setFatiaAporte] = useState<FatiaAporte | null>(null);
   const [pendingAporte, startAporte] = useTransition();
-  const [ajustes, setAjustes] = useState<Record<string, number>>(config.ajustes_limite ?? {});
   const [descricaoExtra, setDescricaoExtra] = useState("");
-  const [historicoLocal, setHistoricoLocal] = useState<RendaExtraItem[]>(initialHistorico);
+  const [, startAjustes] = useTransition();
   const [pendingRegistrar, startRegistrar] = useTransition();
   const [realocarAberto, setRealocarAberto] = useState(false);
   const [realocarOrigem, setRealocarOrigem] = useState<string | null>(null);
@@ -109,16 +113,18 @@ export function CalculadoraClient({ config, gastos, fundos, rendaExtraHistorico:
       [realocarOrigem]: (ajustes[realocarOrigem] ?? 0) - val,
       [realocarDestino]: (ajustes[realocarDestino] ?? 0) + val,
     };
-    setAjustes(novos);
-    salvarAjustesLimite(novos);
+    startAjustes(async () => {
+      await salvarAjustesLimite(novos);
+    });
     setRealocarValor("");
     setRealocarOrigem(null);
     setRealocarDestino(null);
   }
 
   function resetarAjustes() {
-    setAjustes({});
-    salvarAjustesLimite({});
+    startAjustes(async () => {
+      await salvarAjustesLimite({});
+    });
     setRealocarOrigem(null);
     setRealocarDestino(null);
     setRealocarValor("");
@@ -134,8 +140,8 @@ export function CalculadoraClient({ config, gastos, fundos, rendaExtraHistorico:
 
   const mesAtual = new Date().toISOString().slice(0, 7);
   const historicoMes = useMemo(
-    () => historicoLocal.filter((r) => r.created_at.slice(0, 7) === mesAtual),
-    [historicoLocal, mesAtual]
+    () => rendaExtraHistorico.filter((r) => r.created_at.slice(0, 7) === mesAtual),
+    [rendaExtraHistorico, mesAtual]
   );
   const totalExtraMes = historicoMes.reduce((s, r) => s + r.valor, 0);
 
@@ -188,7 +194,6 @@ export function CalculadoraClient({ config, gastos, fundos, rendaExtraHistorico:
     startRegistrar(async () => {
       const result = await registrarRendaExtra(extraNum, descricaoExtra.trim() || null);
       if (result.data) {
-        setHistoricoLocal((prev) => [result.data!, ...prev]);
         setValorExtra("");
         setDescricaoExtra("");
       }
@@ -832,7 +837,6 @@ export function CalculadoraClient({ config, gastos, fundos, rendaExtraHistorico:
         open={modalSalario}
         salarioAtual={salario}
         onClose={() => setModalSalario(false)}
-        onSalvo={(novoSalario) => setSalario(novoSalario)}
       />
 
       <ModalPersonalizarPesos

@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidarEntidade } from "@/lib/revalidate";
 import { isDemoMode } from "@/lib/demo-data";
 import {
   addDemoGasto,
@@ -72,8 +72,7 @@ export async function criarGasto(data: GastoFormData) {
       ...parcelamentoFields(data),
       created_at: new Date().toISOString(),
     });
-    revalidatePath("/gastos");
-    revalidatePath("/dashboard");
+    revalidarEntidade("gastos");
     return { success: true };
   }
 
@@ -95,8 +94,7 @@ export async function criarGasto(data: GastoFormData) {
   });
 
   if (error) return { error: error.message };
-  revalidatePath("/gastos");
-  revalidatePath("/dashboard");
+  revalidarEntidade("gastos");
   return { success: true };
 }
 
@@ -111,8 +109,7 @@ export async function editarGasto(id: string, data: GastoFormData) {
       dia_recorrencia: data.dia_recorrencia ?? null,
       ...parcelamentoFields(data),
     });
-    revalidatePath("/gastos");
-    revalidatePath("/dashboard");
+    revalidarEntidade("gastos");
     return { success: true };
   }
 
@@ -131,23 +128,20 @@ export async function editarGasto(id: string, data: GastoFormData) {
     .eq("id", id);
 
   if (error) return { error: error.message };
-  revalidatePath("/gastos");
-  revalidatePath("/dashboard");
+  revalidarEntidade("gastos");
   return { success: true };
 }
 
 export async function deletarGasto(id: string) {
   if (isDemoMode()) {
     deleteDemoGasto(id);
-    revalidatePath("/gastos");
-    revalidatePath("/dashboard");
+    revalidarEntidade("gastos");
     return { success: true };
   }
 
   const supabase = await createClient();
   const { error } = await supabase.from("gastos").delete().eq("id", id);
   if (error) return { error: error.message };
-  revalidatePath("/gastos");
-  revalidatePath("/dashboard");
+  revalidarEntidade("gastos");
   return { success: true };
 }

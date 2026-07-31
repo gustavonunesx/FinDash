@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidarEntidade } from "@/lib/revalidate";
 import { isDemoMode } from "@/lib/demo-data";
 import { DEMO_FUNDOS, DEMO_GASTOS } from "@/lib/demo-data";
 import {
@@ -83,7 +84,8 @@ export async function onboardingCompletar(nome: string, custoVida: number) {
     setDemoProfile({ nome, onboarding_completed: true });
     setDemoConfig({ custo_vida: custoVida });
     seedDemoData();
-    revalidatePath("/dashboard");
+    // Onboarding semeia gastos, fundos e configuração de uma vez.
+    revalidarEntidade("gastos", "fundos", "config", "perfil");
     revalidatePath("/onboarding");
     return { success: true };
   }
@@ -124,7 +126,8 @@ export async function onboardingCompletar(nome: string, custoVida: number) {
     });
   }
 
-  revalidatePath("/dashboard");
+  // Onboarding semeia gastos, fundos e configuração de uma vez.
+  revalidarEntidade("gastos", "fundos", "config", "perfil");
   revalidatePath("/onboarding");
   return { success: true };
 }
