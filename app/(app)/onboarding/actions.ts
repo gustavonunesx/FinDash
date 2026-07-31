@@ -97,7 +97,8 @@ export async function onboardingCompletar(nome: string, custoVida: number) {
   await supabase.from("profiles").update({ nome, onboarding_completed: true }).eq("id", user.id);
   await supabase.from("configuracoes").upsert({ user_id: user.id, custo_vida: custoVida });
 
-  for (const g of DEMO_GASTOS) {
+  // Seed só os gastos simples — os parcelados do demo estourariam o limite do plano Free.
+  for (const g of DEMO_GASTOS.filter((g) => !g.parcelas_total)) {
     await supabase.from("gastos").insert({
       user_id: user.id,
       nome: g.nome,

@@ -61,6 +61,8 @@ export interface Gasto {
   subcategoria: string | null;
   recorrente: boolean;
   dia_recorrencia: number | null;
+  parcelas_total: number | null;
+  parcela_inicio: string | null;
   created_at: string;
 }
 

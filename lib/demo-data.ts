@@ -21,15 +21,27 @@ export const DEMO_CONFIG: Configuracao = {
   meta_economia_mensal: 900,
 };
 
+const semParcelas = { parcelas_total: null, parcela_inicio: null } as const;
+
+/** Mês relativo ao atual, no formato date — mantém o demo com parcelas sempre em andamento. */
+function mesRelativo(delta: number): string {
+  const hoje = new Date();
+  const d = new Date(hoje.getFullYear(), hoje.getMonth() + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
 export const DEMO_GASTOS: Gasto[] = [
-  { id: "1", user_id: "demo-user", nome: "Aluguel", valor: 1200, categoria: "necessidade", subcategoria: "Moradia", recorrente: true, dia_recorrencia: 5, created_at: new Date().toISOString() },
-  { id: "2", user_id: "demo-user", nome: "Mercado", valor: 650, categoria: "necessidade", subcategoria: "Alimentação", recorrente: true, dia_recorrencia: 10, created_at: new Date().toISOString() },
-  { id: "3", user_id: "demo-user", nome: "Transporte", valor: 280, categoria: "necessidade", subcategoria: null, recorrente: true, dia_recorrencia: 1, created_at: new Date().toISOString() },
-  { id: "4", user_id: "demo-user", nome: "Reserva emergência", valor: 500, categoria: "objetivo", subcategoria: "Reserva", recorrente: true, dia_recorrencia: 15, created_at: new Date().toISOString() },
-  { id: "5", user_id: "demo-user", nome: "Curso online", valor: 199, categoria: "objetivo", subcategoria: "Educação", recorrente: false, dia_recorrencia: null, created_at: new Date().toISOString() },
-  { id: "6", user_id: "demo-user", nome: "Netflix", valor: 55.9, categoria: "qualidade", subcategoria: "Streaming", recorrente: true, dia_recorrencia: 20, created_at: new Date().toISOString() },
-  { id: "7", user_id: "demo-user", nome: "Restaurante", valor: 120, categoria: "qualidade", subcategoria: "Lazer", recorrente: false, dia_recorrencia: null, created_at: new Date().toISOString() },
-  { id: "8", user_id: "demo-user", nome: "Academia", valor: 99.9, categoria: "qualidade", subcategoria: "Saúde", recorrente: true, dia_recorrencia: 3, created_at: new Date().toISOString() },
+  { id: "1", user_id: "demo-user", nome: "Aluguel", valor: 1200, categoria: "necessidade", subcategoria: "Moradia", recorrente: true, dia_recorrencia: 5, ...semParcelas, created_at: new Date().toISOString() },
+  { id: "2", user_id: "demo-user", nome: "Mercado", valor: 650, categoria: "necessidade", subcategoria: "Alimentação", recorrente: true, dia_recorrencia: 10, ...semParcelas, created_at: new Date().toISOString() },
+  { id: "3", user_id: "demo-user", nome: "Transporte", valor: 280, categoria: "necessidade", subcategoria: null, recorrente: true, dia_recorrencia: 1, ...semParcelas, created_at: new Date().toISOString() },
+  { id: "4", user_id: "demo-user", nome: "Reserva emergência", valor: 500, categoria: "objetivo", subcategoria: "Reserva", recorrente: true, dia_recorrencia: 15, ...semParcelas, created_at: new Date().toISOString() },
+  { id: "5", user_id: "demo-user", nome: "Curso online", valor: 199, categoria: "objetivo", subcategoria: "Educação", recorrente: false, dia_recorrencia: null, ...semParcelas, created_at: new Date().toISOString() },
+  { id: "6", user_id: "demo-user", nome: "Netflix", valor: 55.9, categoria: "qualidade", subcategoria: "Streaming", recorrente: true, dia_recorrencia: 20, ...semParcelas, created_at: new Date().toISOString() },
+  { id: "7", user_id: "demo-user", nome: "Restaurante", valor: 120, categoria: "qualidade", subcategoria: "Lazer", recorrente: false, dia_recorrencia: null, ...semParcelas, created_at: new Date().toISOString() },
+  { id: "8", user_id: "demo-user", nome: "Academia", valor: 99.9, categoria: "qualidade", subcategoria: "Saúde", recorrente: true, dia_recorrencia: 3, ...semParcelas, created_at: new Date().toISOString() },
+  { id: "9", user_id: "demo-user", nome: "Notebook", valor: 416.5, categoria: "objetivo", subcategoria: "Trabalho", recorrente: false, dia_recorrencia: null, parcelas_total: 12, parcela_inicio: mesRelativo(-4), created_at: new Date().toISOString() },
+  { id: "10", user_id: "demo-user", nome: "Passagem aérea", valor: 310, categoria: "qualidade", subcategoria: "Viagem", recorrente: false, dia_recorrencia: null, parcelas_total: 6, parcela_inicio: mesRelativo(-1), created_at: new Date().toISOString() },
+  { id: "11", user_id: "demo-user", nome: "Geladeira", valor: 289.9, categoria: "necessidade", subcategoria: "Casa", recorrente: false, dia_recorrencia: null, parcelas_total: 10, parcela_inicio: mesRelativo(-13), created_at: new Date().toISOString() },
 ];
 
 export const DEMO_FUNDOS: Fundo[] = [

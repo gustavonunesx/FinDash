@@ -3,8 +3,25 @@
 import { useState, useEffect, useRef } from "react";
 import { IconX, IconCheck } from "@tabler/icons-react";
 import { type GastoFormData } from "@/app/(app)/gastos/actions";
+import {
+  formatMesCurto,
+  mesAtualInput,
+  mesInputValue,
+  mesParaDate,
+  parcelaInfo,
+} from "@/lib/parcelamento";
 import { CATEGORIA_LABELS, type CategoriaGasto, type Gasto } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
+
+type TipoGasto = "unico" | "recorrente" | "parcelado";
+
+const TIPO_LABEL: Record<TipoGasto, string> = {
+  unico: "Único",
+  recorrente: "Recorrente",
+  parcelado: "Parcelado",
+};
+
+const PARCELAS_RAPIDAS = [2, 3, 6, 10, 12, 18, 24];
 
 interface GastoModalProps {
   open: boolean;
@@ -48,11 +65,13 @@ const CATEGORIA_BADGE_TEXT: Record<CategoriaGasto, string> = {
 
 export function GastoModal({ open, onClose, editing, onSubmit, pending }: GastoModalProps) {
   const [form, setForm] = useState<GastoFormData>(emptyForm);
+  const [tipo, setTipo] = useState<TipoGasto>("unico");
   const overlayRef = useRef<HTMLDivElement>(null);
 
   // Sync form when editing changes
   useEffect(() => {
     if (editing) {
+      const parcelado = (editing.parcelas_total ?? 0) > 1;
       setForm({
         nome: editing.nome,
         valor: editing.valor,
@@ -60,11 +79,29 @@ export function GastoModal({ open, onClose, editing, onSubmit, pending }: GastoM
         subcategoria: editing.subcategoria ?? "",
         recorrente: editing.recorrente,
         dia_recorrencia: editing.dia_recorrencia ?? undefined,
+        parcelas_total: parcelado ? editing.parcelas_total! : undefined,
+        parcela_inicio: editing.parcela_inicio ?? undefined,
       });
+      setTipo(parcelado ? "parcelado" : editing.recorrente ? "recorrente" : "unico");
     } else {
       setForm(emptyForm);
+      setTipo("unico");
     }
   }, [editing, open]);
+
+  function selecionarTipo(next: TipoGasto) {
+    setTipo(next);
+    setForm((f) => ({
+      ...f,
+      recorrente: next === "recorrente",
+      dia_recorrencia: next === "recorrente" ? f.dia_recorrencia : undefined,
+      parcelas_total: next === "parcelado" ? (f.parcelas_total ?? 12) : undefined,
+      parcela_inicio:
+        next === "parcelado"
+          ? (f.parcela_inicio ?? mesParaDate(mesAtualInput()))
+          : undefined,
+    }));
+  }
 
   // Close on Escape
   useEffect(() => {
@@ -99,6 +136,17 @@ export function GastoModal({ open, onClose, editing, onSubmit, pending }: GastoM
 
   if (!open) return null;
 
+  const parcelasTotal = form.parcelas_total ?? 0;
+  const preview =
+    tipo === "parcelado" && parcelasTotal > 1
+      ? parcelaInfo({
+          valor: form.valor,
+          parcelas_total: parcelasTotal,
+          parcela_inicio: form.parcela_inicio ?? null,
+          created_at: new Date().toISOString(),
+        } as Gasto)
+      : null;
+
   return (
     <div
       ref={overlayRef}
@@ -122,6 +170,9 @@ export function GastoModal({ open, onClose, editing, onSubmit, pending }: GastoM
         style={{
           width: "100%",
           maxWidth: 460,
+          maxHeight: "calc(100dvh - 32px)",
+          display: "flex",
+          flexDirection: "column",
           background: "#FFFFFF",
           borderRadius: 18,
           boxShadow: "0 24px 64px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.12)",
@@ -137,6 +188,7 @@ export function GastoModal({ open, onClose, editing, onSubmit, pending }: GastoM
             justifyContent: "space-between",
             padding: "20px 24px 16px",
             borderBottom: "1px solid #F0F1F3",
+            flexShrink: 0,
           }}
         >
           <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0F1729", margin: 0 }}>
@@ -172,6 +224,7 @@ export function GastoModal({ open, onClose, editing, onSubmit, pending }: GastoM
             display: "flex",
             alignItems: "center",
             gap: 12,
+            flexShrink: 0,
           }}
         >
           <div
@@ -217,6 +270,24 @@ export function GastoModal({ open, onClose, editing, onSubmit, pending }: GastoM
             >
               {CATEGORIA_LABELS[form.categoria]}
             </span>
+            {preview && (
+              <span
+                style={{
+                  display: "inline-block",
+                  marginTop: 3,
+                  marginLeft: 5,
+                  padding: "1px 8px",
+                  borderRadius: 999,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  fontFamily: "var(--font-mono)",
+                  background: "#EEF0F3",
+                  color: "#5A6673",
+                }}
+              >
+                {preview.total}x
+              </span>
+            )}
           </div>
           <span
             style={{
@@ -232,8 +303,22 @@ export function GastoModal({ open, onClose, editing, onSubmit, pending }: GastoM
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit}>
-          <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+        <form
+          onSubmit={handleSubmit}
+          style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}
+        >
+          <div
+            style={{
+              padding: "20px 24px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 16,
+              flex: 1,
+              minHeight: 0,
+              overflowY: "auto",
+              overscrollBehavior: "contain",
+            }}
+          >
             {/* Nome */}
             <div>
               <label style={labelStyle}>Nome</label>
@@ -248,7 +333,9 @@ export function GastoModal({ open, onClose, editing, onSubmit, pending }: GastoM
 
             {/* Valor */}
             <div>
-              <label style={labelStyle}>Valor em R$</label>
+              <label style={labelStyle}>
+                {tipo === "parcelado" ? "Valor da parcela em R$" : "Valor em R$"}
+              </label>
               <input
                 style={{ ...inputStyle, fontFamily: "var(--font-mono)" }}
                 type="number"
@@ -289,60 +376,50 @@ export function GastoModal({ open, onClose, editing, onSubmit, pending }: GastoM
               />
             </div>
 
-            {/* Recorrente toggle */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "12px 14px",
-                borderRadius: 10,
-                border: "1px solid #E6E8EC",
-                background: "#FAFAFA",
-              }}
-            >
-              <div>
-                <p style={{ fontSize: 13, fontWeight: 600, color: "#0F1729", margin: 0 }}>
-                  Recorrente
-                </p>
-                <p style={{ fontSize: 11, color: "#9AA3AE", margin: "2px 0 0" }}>
-                  Repete mensalmente
-                </p>
-              </div>
-              {/* Custom toggle */}
-              <button
-                type="button"
-                onClick={() => setForm({ ...form, recorrente: !form.recorrente })}
+            {/* Tipo: único / recorrente / parcelado */}
+            <div>
+              <label style={labelStyle}>Tipo de cobrança</label>
+              <div
                 style={{
-                  width: 42,
-                  height: 24,
-                  borderRadius: 999,
-                  border: "none",
-                  cursor: "pointer",
-                  background: form.recorrente ? "#0E8F6A" : "#D1D5DB",
-                  position: "relative",
-                  transition: "background 0.2s",
-                  flexShrink: 0,
+                  display: "flex",
+                  gap: 2,
+                  padding: 3,
+                  borderRadius: 10,
+                  background: "#F0F1F3",
                 }}
               >
-                <span
-                  style={{
-                    position: "absolute",
-                    top: 3,
-                    left: form.recorrente ? 21 : 3,
-                    width: 18,
-                    height: 18,
-                    borderRadius: "50%",
-                    background: "#fff",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-                    transition: "left 0.2s",
-                  }}
-                />
-              </button>
+                {(["unico", "recorrente", "parcelado"] as TipoGasto[]).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => selecionarTipo(t)}
+                    style={{
+                      flex: 1,
+                      padding: "7px 0",
+                      borderRadius: 8,
+                      border: "none",
+                      cursor: "pointer",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      transition: "all 0.15s",
+                      background: tipo === t ? "#FFFFFF" : "transparent",
+                      color: tipo === t ? "#0F1729" : "#7C8896",
+                      boxShadow: tipo === t ? "0 1px 3px rgba(0,0,0,0.10)" : "none",
+                    }}
+                  >
+                    {TIPO_LABEL[t]}
+                  </button>
+                ))}
+              </div>
+              <p style={{ fontSize: 11, color: "#9AA3AE", margin: "6px 0 0" }}>
+                {tipo === "unico" && "Cobrado uma vez neste mês."}
+                {tipo === "recorrente" && "Repete todo mês, sem data de fim."}
+                {tipo === "parcelado" && "Compra no cartão dividida em parcelas fixas."}
+              </p>
             </div>
 
-            {/* Dia do mês (condicional) */}
-            {form.recorrente && (
+            {/* Dia do mês (recorrente) */}
+            {tipo === "recorrente" && (
               <div>
                 <label style={labelStyle}>Dia do mês</label>
                 <input
@@ -361,6 +438,142 @@ export function GastoModal({ open, onClose, editing, onSubmit, pending }: GastoM
                 />
               </div>
             )}
+
+            {/* Parcelamento */}
+            {tipo === "parcelado" && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 14,
+                  padding: 14,
+                  borderRadius: 12,
+                  border: "1px solid #E6E8EC",
+                  background: "#FAFAFA",
+                }}
+              >
+                <div>
+                  <label style={labelStyle}>Número de parcelas</label>
+                  <input
+                    style={{ ...inputStyle, fontFamily: "var(--font-mono)" }}
+                    type="number"
+                    min="2"
+                    max="72"
+                    placeholder="Ex: 12"
+                    value={form.parcelas_total ?? ""}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        parcelas_total: parseInt(e.target.value) || undefined,
+                      })
+                    }
+                    required
+                  />
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                    {PARCELAS_RAPIDAS.map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setForm({ ...form, parcelas_total: n })}
+                        style={{
+                          padding: "4px 10px",
+                          borderRadius: 999,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          fontFamily: "var(--font-mono)",
+                          cursor: "pointer",
+                          transition: "all 0.15s",
+                          border:
+                            parcelasTotal === n ? "1.5px solid #0E8F6A" : "1.5px solid #E6E8EC",
+                          background: parcelasTotal === n ? "#E3F6EF" : "#fff",
+                          color: parcelasTotal === n ? "#0D7A5E" : "#7C8896",
+                        }}
+                      >
+                        {n}x
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Mês da 1ª parcela</label>
+                  <input
+                    style={{ ...inputStyle, fontFamily: "var(--font-mono)" }}
+                    type="month"
+                    value={mesInputValue(form.parcela_inicio)}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        parcela_inicio: e.target.value
+                          ? mesParaDate(e.target.value)
+                          : undefined,
+                      })
+                    }
+                    required
+                  />
+                </div>
+
+                {preview && (
+                  <div
+                    style={{
+                      borderTop: "1px solid #E6E8EC",
+                      paddingTop: 12,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 6,
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 12, color: "#7C8896" }}>Total da compra</span>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 13,
+                          fontWeight: 700,
+                          color: "#0F1729",
+                        }}
+                      >
+                        {formatCurrency(preview.valorTotal)}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 12, color: "#7C8896" }}>Situação hoje</span>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: preview.quitado ? "#9AA3AE" : "#0D7A5E",
+                        }}
+                      >
+                        {preview.futuro
+                          ? `inicia em ${formatMesCurto(preview.inicio!)}`
+                          : preview.quitado
+                            ? "quitado"
+                            : `parcela ${preview.atual}/${preview.total} · faltam ${preview.restantes}`}
+                      </span>
+                    </div>
+                    {!preview.quitado && !preview.futuro && (
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span style={{ fontSize: 12, color: "#7C8896" }}>
+                          Termina em {formatMesCurto(preview.fim!)}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: "#7C8896",
+                          }}
+                        >
+                          restam {formatCurrency(preview.valorRestante)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Footer */}
@@ -368,7 +581,10 @@ export function GastoModal({ open, onClose, editing, onSubmit, pending }: GastoM
             style={{
               display: "flex",
               gap: 10,
-              padding: "0 24px 24px",
+              padding: "14px 24px 20px",
+              borderTop: "1px solid #F0F1F3",
+              background: "#FFFFFF",
+              flexShrink: 0,
             }}
           >
             <button

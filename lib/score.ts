@@ -1,3 +1,4 @@
+import { gastoAtivo } from "./parcelamento";
 import type { CategoriaGasto, Configuracao, Gasto } from "./types";
 import { REGRA_502030 } from "./types";
 
@@ -25,7 +26,8 @@ export function calcularRendaTotal(config: Configuracao | null): number {
 export function totalPorCategoria(gastos: Gasto[]): Record<CategoriaGasto, number> {
   return gastos.reduce(
     (acc, g) => {
-      acc[g.categoria] += g.valor;
+      // Parcelamento quitado (ou que ainda não começou) não pesa no mês corrente.
+      if (gastoAtivo(g)) acc[g.categoria] += g.valor;
       return acc;
     },
     { necessidade: 0, objetivo: 0, qualidade: 0 } as Record<CategoriaGasto, number>
