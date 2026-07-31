@@ -23,6 +23,7 @@ import {
   type Plano,
 } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
+import { formatMesCurto, gastoAtivo, parcelaInfo } from "@/lib/parcelamento";
 import { totalPorCategoria } from "@/lib/score";
 
 interface GastosClientProps {
@@ -86,9 +87,21 @@ export function GastosClient({ gastos, plano }: GastosClientProps) {
   const categorias: CategoriaGasto[] = ["necessidade", "objetivo", "qualidade"];
 
   // Maiores gastos (top 3)
-  const maioresGastos = [...gastos]
+  const maioresGastos = gastos
+    .filter((g) => gastoAtivo(g))
     .sort((a, b) => b.valor - a.valor)
     .slice(0, 3);
+
+  // Parcelamentos em aberto, ordenados por quantas parcelas ainda faltam
+  const parcelamentos = gastos
+    .map((g) => ({ gasto: g, info: parcelaInfo(g) }))
+    .filter((p) => p.info.parcelado && !p.info.quitado)
+    .sort((a, b) => a.info.restantes - b.info.restantes);
+
+  const comprometidoFuturo = parcelamentos.reduce((s, p) => s + p.info.valorRestante, 0);
+  const parcelasDoMes = parcelamentos
+    .filter((p) => !p.info.futuro)
+    .reduce((s, p) => s + p.info.valorParcela, 0);
 
   // Média diária do mês atual
   const hoje = new Date();
@@ -407,6 +420,115 @@ export function GastosClient({ gastos, plano }: GastosClientProps) {
               </p>
             )}
           </div>
+
+          {/* Card: Parcelas do cartão */}
+          {parcelamentos.length > 0 && (
+            <div
+              style={{
+                background: "#FFFFFF",
+                border: "1px solid #E6E8EC",
+                borderRadius: 14,
+                padding: "20px 20px 18px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 4 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "#0F1729" }}>
+                  Parcelas do cartão
+                </p>
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: "#7C3AED",
+                  }}
+                >
+                  {formatCurrency(parcelasDoMes)}
+                </span>
+              </div>
+              <p style={{ fontSize: 11, color: "#9AA3AE", marginBottom: 14 }}>
+                Neste mês &middot; {formatCurrency(comprometidoFuturo)} nos próximos
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {parcelamentos.map(({ gasto, info }) => (
+                  <div key={gasto.id}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "baseline",
+                        justifyContent: "space-between",
+                        gap: 8,
+                        marginBottom: 5,
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 500,
+                          color: "#0F1729",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          minWidth: 0,
+                        }}
+                      >
+                        {gasto.nome}
+                      </p>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: "#0F1729",
+                          flexShrink: 0,
+                        }}
+                      >
+                        {formatCurrency(info.valorParcela)}
+                      </span>
+                    </div>
+
+                    <div
+                      style={{
+                        height: 5,
+                        borderRadius: 999,
+                        background: "#F0F1F3",
+                        overflow: "hidden",
+                        marginBottom: 4,
+                      }}
+                    >
+                      <div
+                        style={{
+                          height: "100%",
+                          borderRadius: 999,
+                          background: "#7C3AED",
+                          width: `${(info.atual / info.total) * 100}%`,
+                          transition: "width 0.5s ease",
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 11,
+                          color: "#7C8896",
+                        }}
+                      >
+                        {info.futuro ? `inicia em ${formatMesCurto(info.inicio!)}` : `${info.atual}/${info.total}`}
+                      </span>
+                      <span style={{ fontSize: 11, color: "#9AA3AE" }}>
+                        {info.futuro
+                          ? `${info.total}x`
+                          : `faltam ${info.restantes} · até ${formatMesCurto(info.fim!)}`}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Card: Maiores gastos */}
           <div

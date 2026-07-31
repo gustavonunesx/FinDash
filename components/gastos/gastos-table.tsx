@@ -25,6 +25,7 @@ import {
   IconSearch,
   IconRepeat,
   IconChevronDown,
+  IconCreditCard,
 } from "@tabler/icons-react";
 import {
   CATEGORIA_EMOJI,
@@ -32,6 +33,7 @@ import {
   type CategoriaGasto,
   type Gasto,
 } from "@/lib/types";
+import { formatMesCurto, gastoAtivo, parcelaInfo } from "@/lib/parcelamento";
 import { formatCurrency, formatRelativeDate } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -53,7 +55,7 @@ const CAT_VALUE: Record<CategoriaGasto, string> = {
   qualidade:   "text-fd-blue",
 };
 
-const VISIBLE_COLS_DEFAULT = ["Nome", "Categoria", "Subcategoria", "Valor", "Data", "Ações"] as const;
+const VISIBLE_COLS_DEFAULT = ["Nome", "Categoria", "Subcategoria", "Parcelas", "Valor", "Data", "Ações"] as const;
 type Col = typeof VISIBLE_COLS_DEFAULT[number];
 
 interface GastosTableProps {
@@ -198,6 +200,9 @@ export function GastosTable({
             {visibleCols.includes("Subcategoria") && (
               <TableHead className="w-[160px]">Subcategoria</TableHead>
             )}
+            {visibleCols.includes("Parcelas") && (
+              <TableHead className="w-[130px]">Parcelas</TableHead>
+            )}
             {visibleCols.includes("Valor") && (
               <TableHead className="w-[120px]">Valor</TableHead>
             )}
@@ -221,8 +226,12 @@ export function GastosTable({
               </TableCell>
             </TableRow>
           ) : (
-            filtrados.map((g) => (
-              <TableRow key={g.id} className="group">
+            filtrados.map((g) => {
+              const info = parcelaInfo(g);
+              const inativo = !gastoAtivo(g);
+
+              return (
+              <TableRow key={g.id} className={cn("group", inativo && "opacity-55")}>
                 {/* Nome */}
                 {visibleCols.includes("Nome") && (
                   <TableCell>
@@ -243,6 +252,21 @@ export function GastosTable({
                           <span className="inline-flex items-center gap-1 text-[10px] text-fd-blue">
                             <IconRepeat className="h-2.5 w-2.5" />
                             Recorrente
+                          </span>
+                        )}
+                        {info.parcelado && (
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1 text-[10px]",
+                              info.quitado ? "text-muted-foreground" : "text-fd-purple",
+                            )}
+                          >
+                            <IconCreditCard className="h-2.5 w-2.5" />
+                            {info.quitado
+                              ? `Quitado em ${formatMesCurto(info.fim!)}`
+                              : info.futuro
+                                ? `Inicia em ${formatMesCurto(info.inicio!)}`
+                                : `${info.total}x de ${formatCurrency(info.valorParcela)}`}
                           </span>
                         )}
                       </div>
@@ -274,13 +298,46 @@ export function GastosTable({
                   </TableCell>
                 )}
 
+                {/* Parcelas */}
+                {visibleCols.includes("Parcelas") && (
+                  <TableCell>
+                    {!info.parcelado ? (
+                      <span className="text-sm text-muted-foreground/40">—</span>
+                    ) : (
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="font-mono text-xs font-semibold tabular-nums text-foreground">
+                            {info.futuro ? `0/${info.total}` : `${info.atual}/${info.total}`}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                            {info.quitado
+                              ? "quitado"
+                              : info.futuro
+                                ? "a iniciar"
+                                : `faltam ${info.restantes}`}
+                          </span>
+                        </div>
+                        <div className="h-1 w-full overflow-hidden rounded-full bg-secondary">
+                          <div
+                            className={cn(
+                              "h-full rounded-full transition-[width] duration-500",
+                              info.quitado ? "bg-muted-foreground/40" : "bg-fd-purple",
+                            )}
+                            style={{ width: `${(info.atual / info.total) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </TableCell>
+                )}
+
                 {/* Valor */}
                 {visibleCols.includes("Valor") && (
                   <TableCell>
                     <span
                       className={cn(
                         "font-mono text-sm font-semibold tabular-nums",
-                        CAT_VALUE[g.categoria],
+                        inativo ? "text-muted-foreground line-through" : CAT_VALUE[g.categoria],
                       )}
                     >
                       -{formatCurrency(g.valor)}
@@ -332,7 +389,8 @@ export function GastosTable({
                   </TableCell>
                 )}
               </TableRow>
-            ))
+              );
+            })
           )}
         </TableBody>
       </Table>
@@ -344,7 +402,10 @@ export function GastosTable({
             {filtrados.length} {filtrados.length === 1 ? "gasto" : "gastos"} encontrado{filtrados.length !== 1 ? "s" : ""}
           </span>
           <span className="font-mono font-medium text-foreground">
-            {formatCurrency(filtrados.reduce((acc, g) => acc + g.valor, 0))}
+            {formatCurrency(
+              filtrados.reduce((acc, g) => (gastoAtivo(g) ? acc + g.valor : acc), 0),
+            )}{" "}
+            <span className="font-sans font-normal text-muted-foreground">no mês</span>
           </span>
         </div>
       )}

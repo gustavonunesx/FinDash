@@ -19,7 +19,19 @@ export type GastoFormData = {
   subcategoria?: string;
   recorrente: boolean;
   dia_recorrencia?: number;
+  /** Nº total de parcelas do cartão. Ausente/1 = gasto não parcelado. */
+  parcelas_total?: number;
+  /** Mês da 1ª parcela no formato date (YYYY-MM-01). */
+  parcela_inicio?: string;
 };
+
+function parcelamentoFields(data: GastoFormData) {
+  const parcelado = (data.parcelas_total ?? 0) > 1;
+  return {
+    parcelas_total: parcelado ? data.parcelas_total! : null,
+    parcela_inicio: parcelado ? (data.parcela_inicio ?? null) : null,
+  };
+}
 
 async function checkGastoLimit(): Promise<{ ok: boolean; error?: string }> {
   const profile = await getProfile();
@@ -57,6 +69,7 @@ export async function criarGasto(data: GastoFormData) {
       subcategoria: data.subcategoria ?? null,
       recorrente: data.recorrente,
       dia_recorrencia: data.dia_recorrencia ?? null,
+      ...parcelamentoFields(data),
       created_at: new Date().toISOString(),
     });
     revalidatePath("/gastos");
@@ -78,6 +91,7 @@ export async function criarGasto(data: GastoFormData) {
     subcategoria: data.subcategoria ?? null,
     recorrente: data.recorrente,
     dia_recorrencia: data.dia_recorrencia ?? null,
+    ...parcelamentoFields(data),
   });
 
   if (error) return { error: error.message };
@@ -95,6 +109,7 @@ export async function editarGasto(id: string, data: GastoFormData) {
       subcategoria: data.subcategoria ?? null,
       recorrente: data.recorrente,
       dia_recorrencia: data.dia_recorrencia ?? null,
+      ...parcelamentoFields(data),
     });
     revalidatePath("/gastos");
     revalidatePath("/dashboard");
@@ -111,6 +126,7 @@ export async function editarGasto(id: string, data: GastoFormData) {
       subcategoria: data.subcategoria ?? null,
       recorrente: data.recorrente,
       dia_recorrencia: data.dia_recorrencia ?? null,
+      ...parcelamentoFields(data),
     })
     .eq("id", id);
 

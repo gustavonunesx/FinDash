@@ -82,6 +82,8 @@ export async function confirmarRecorrente(gastoId: string) {
     subcategoria: gasto.subcategoria,
     recorrente: gasto.recorrente,
     dia_recorrencia: gasto.dia_recorrencia,
+    parcelas_total: gasto.parcelas_total,
+    parcela_inicio: gasto.parcela_inicio,
   });
 
   revalidatePath("/dashboard");
