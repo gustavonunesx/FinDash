@@ -7,6 +7,8 @@ import { CsvImportDialog } from "@/components/gastos/csv-import-dialog";
 import { GastosTable } from "@/components/gastos/gastos-table";
 import { GastoModal } from "@/components/gastos/gasto-modal";
 import { DonutChart } from "@/components/gastos/donut-chart";
+import { BancoModal } from "@/components/bancos/banco-modal";
+import { BancosCard } from "@/components/bancos/bancos-card";
 import { UpgradeModal } from "@/components/shared/upgrade-modal";
 import { EmptyState } from "@/components/shared/empty-state";
 import {
@@ -16,8 +18,16 @@ import {
   type GastoFormData,
 } from "@/app/(app)/gastos/actions";
 import {
+  criarBanco,
+  editarBanco,
+  deletarBanco,
+  atualizarSaldoBanco,
+  type BancoFormData,
+} from "@/app/(app)/bancos/actions";
+import {
   CATEGORIA_LABELS,
   LIMITES_FREE,
+  type Banco,
   type CategoriaGasto,
   type Gasto,
   type Plano,
@@ -28,6 +38,7 @@ import { totalPorCategoria } from "@/lib/score";
 
 interface GastosClientProps {
   gastos: Gasto[];
+  bancos: Banco[];
   plano: Plano;
 }
 
@@ -37,10 +48,10 @@ const emptyForm: GastoFormData = {
   categoria: "necessidade",
   subcategoria: "",
   recorrente: false,
+  banco_id: null,
 };
 
 type FilterTab = CategoriaGasto | "todos";
-type ViewTab = "lista" | "analise";
 
 const CATEGORIA_BAR_COLOR: Record<CategoriaGasto, string> = {
   necessidade: "#C4820A",
@@ -72,14 +83,15 @@ const CATEGORIA_EMOJI: Record<CategoriaGasto, string> = {
   qualidade: "✨",
 };
 
-export function GastosClient({ gastos, plano }: GastosClientProps) {
+export function GastosClient({ gastos, bancos, plano }: GastosClientProps) {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [editing, setEditing] = useState<Gasto | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<GastoFormData>(emptyForm);
+  const [bancoModalOpen, setBancoModalOpen] = useState(false);
+  const [editingBanco, setEditingBanco] = useState<Banco | null>(null);
   const [busca, setBusca] = useState("");
   const [filterTab, setFilterTab] = useState<FilterTab>("todos");
-  const [viewTab, setViewTab] = useState<ViewTab>("lista");
   const [pending, startTransition] = useTransition();
 
   const totais = totalPorCategoria(gastos);
@@ -102,6 +114,15 @@ export function GastosClient({ gastos, plano }: GastosClientProps) {
   const parcelasDoMes = parcelamentos
     .filter((p) => !p.info.futuro)
     .reduce((s, p) => s + p.info.valorParcela, 0);
+
+  // Gastos ativos agrupados por banco, para o card de saldos
+  const gastosPorBanco: Record<string, number> = {};
+  let gastosSemBanco = 0;
+  for (const g of gastos) {
+    if (!gastoAtivo(g)) continue;
+    if (g.banco_id) gastosPorBanco[g.banco_id] = (gastosPorBanco[g.banco_id] ?? 0) + g.valor;
+    else gastosSemBanco += g.valor;
+  }
 
   // Média diária do mês atual
   const hoje = new Date();
@@ -129,8 +150,51 @@ export function GastosClient({ gastos, plano }: GastosClientProps) {
       subcategoria: gasto.subcategoria ?? "",
       recorrente: gasto.recorrente,
       dia_recorrencia: gasto.dia_recorrencia ?? undefined,
+      banco_id: gasto.banco_id,
     });
     setModalOpen(true);
+  }
+
+  function openNovoBanco() {
+    setEditingBanco(null);
+    setBancoModalOpen(true);
+  }
+
+  function openEditBanco(banco: Banco) {
+    setEditingBanco(banco);
+    setBancoModalOpen(true);
+  }
+
+  function handleBancoSubmit(formData: BancoFormData) {
+    startTransition(async () => {
+      const result = editingBanco
+        ? await editarBanco(editingBanco.id, formData)
+        : await criarBanco(formData);
+
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(editingBanco ? "Banco atualizado" : "Banco cadastrado");
+      setBancoModalOpen(false);
+      setEditingBanco(null);
+    });
+  }
+
+  function handleSalvarSaldo(id: string, saldo: number) {
+    startTransition(async () => {
+      const result = await atualizarSaldoBanco(id, saldo);
+      if (result.error) toast.error(result.error);
+      else toast.success("Saldo atualizado");
+    });
+  }
+
+  function handleDeleteBanco(id: string) {
+    startTransition(async () => {
+      const result = await deletarBanco(id);
+      if (result.error) toast.error(result.error);
+      else toast.success("Banco removido");
+    });
   }
 
   function closeModal() {
@@ -181,37 +245,6 @@ export function GastosClient({ gastos, plano }: GastosClientProps) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {/* Toggle Lista / Análise */}
-          <div
-            style={{
-              display: "flex",
-              background: "#E6E8EC",
-              borderRadius: 8,
-              padding: 3,
-              gap: 2,
-            }}
-          >
-            {(["lista", "analise"] as ViewTab[]).map((v) => (
-              <button
-                key={v}
-                onClick={() => setViewTab(v)}
-                style={{
-                  padding: "5px 14px",
-                  borderRadius: 6,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  border: "none",
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                  background: viewTab === v ? "#0F1729" : "transparent",
-                  color: viewTab === v ? "#fff" : "#7C8896",
-                }}
-              >
-                {v === "lista" ? "Lista" : "Análise"}
-              </button>
-            ))}
-          </div>
-
           {/* Importar CSV */}
           <CsvImportDialog />
 
@@ -341,6 +374,7 @@ export function GastosClient({ gastos, plano }: GastosClientProps) {
           ) : (
             <GastosTable
               gastos={gastos}
+              bancos={bancos}
               onEdit={openEdit}
               onDelete={handleDelete}
               busca={busca}
@@ -353,6 +387,17 @@ export function GastosClient({ gastos, plano }: GastosClientProps) {
 
         {/* ── Right column: 300px ── */}
         <div style={{ width: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+
+          {/* Card: Meus bancos */}
+          <BancosCard
+            bancos={bancos}
+            gastosPorBanco={gastosPorBanco}
+            semBanco={gastosSemBanco}
+            onNovo={openNovoBanco}
+            onEditar={openEditBanco}
+            onExcluir={handleDeleteBanco}
+            onSalvarSaldo={handleSalvarSaldo}
+          />
 
           {/* Card: Distribuição por categoria (donut) */}
           <div
@@ -636,6 +681,19 @@ export function GastosClient({ gastos, plano }: GastosClientProps) {
         onClose={closeModal}
         editing={editing}
         onSubmit={handleSubmit}
+        pending={pending}
+        bancos={bancos}
+        onNovoBanco={openNovoBanco}
+      />
+
+      <BancoModal
+        open={bancoModalOpen}
+        onClose={() => {
+          setBancoModalOpen(false);
+          setEditingBanco(null);
+        }}
+        editing={editingBanco}
+        onSubmit={handleBancoSubmit}
         pending={pending}
       />
 

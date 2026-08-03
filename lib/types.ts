@@ -63,8 +63,32 @@ export interface Gasto {
   dia_recorrencia: number | null;
   parcelas_total: number | null;
   parcela_inicio: string | null;
+  banco_id: string | null;
   created_at: string;
 }
+
+/**
+ * Conta bancária do usuário. `saldo` é informado manualmente até a integração
+ * com Open Finance, que passará a preenchê-lo automaticamente.
+ */
+export interface Banco {
+  id: string;
+  user_id: string;
+  nome: string;
+  saldo: number;
+  cor: string;
+  ordem: number;
+  saldo_atualizado_em: string;
+  created_at: string;
+}
+
+export const BANCO_CORES = [
+  "#0E8F6A",
+  "#2563EB",
+  "#7C3AED",
+  "#C4820A",
+  "#0F1729",
+] as const;
 
 export interface Custodia {
   instituicao: string;

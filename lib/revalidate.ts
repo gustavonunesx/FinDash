@@ -12,6 +12,7 @@ const ROTAS_POR_ENTIDADE = {
   fundos: ["/fundos", "/dashboard", "/calculadora", "/historico", "/familia"],
   config: ["/configuracoes", "/dashboard", "/calculadora", "/historico"],
   rendaExtra: ["/calculadora", "/dashboard", "/historico"],
+  bancos: ["/gastos", "/dashboard"],
   historico: ["/historico", "/dashboard"],
   perfil: ["/configuracoes", "/dashboard", "/familia"],
   familia: ["/familia", "/dashboard"],

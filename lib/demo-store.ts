@@ -1,15 +1,17 @@
 import {
+  DEMO_BANCOS,
   DEMO_CONFIG,
   DEMO_FUNDOS,
   DEMO_GASTOS,
   DEMO_PROFILE,
 } from "./demo-data";
-import type { Configuracao, Fundo, Gasto, HistoricoMensal, Profile, RendaExtraItem } from "./types";
+import type { Banco, Configuracao, Fundo, Gasto, HistoricoMensal, Profile, RendaExtraItem } from "./types";
 
 let profile: Profile = { ...DEMO_PROFILE };
 let config: Configuracao = { ...DEMO_CONFIG };
 let gastos: Gasto[] = [...DEMO_GASTOS];
 let fundos: Fundo[] = [...DEMO_FUNDOS];
+let bancos: Banco[] = [...DEMO_BANCOS];
 
 const historico: HistoricoMensal[] = [
   { id: "h1", user_id: "demo-user", mes: "2025-12-01", salario: 4500, total_gastos: 3800, snapshot_fundos: { f1: 7500, f2: 2800, f3: 11000 } },
@@ -38,6 +40,23 @@ export function getDemoFundos() {
 
 export function getDemoHistorico() {
   return historico;
+}
+
+export function getDemoBancos() {
+  return bancos;
+}
+
+export function addDemoBanco(banco: Banco) {
+  bancos = [...bancos, banco];
+}
+
+export function updateDemoBanco(id: string, data: Partial<Banco>) {
+  bancos = bancos.map((b) => (b.id === id ? { ...b, ...data } : b));
+}
+
+export function deleteDemoBanco(id: string) {
+  bancos = bancos.filter((b) => b.id !== id);
+  gastos = gastos.map((g) => (g.banco_id === id ? { ...g, banco_id: null } : g));
 }
 
 let rendaExtraHistorico: RendaExtraItem[] = [
@@ -89,6 +108,7 @@ export function deleteDemoFundo(id: string) {
 export function seedDemoData() {
   gastos = [...DEMO_GASTOS];
   fundos = [...DEMO_FUNDOS];
+  bancos = [...DEMO_BANCOS];
 }
 
 export function resetDemoOnboarding() {
@@ -96,4 +116,5 @@ export function resetDemoOnboarding() {
   config = { ...DEMO_CONFIG, salario: 0 };
   gastos = [];
   fundos = [];
+  bancos = [];
 }
