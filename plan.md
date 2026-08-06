@@ -219,7 +219,28 @@
 
 > Adicionar aqui as próximas features conforme forem definidas.
 
-- ⬜ _A definir_
+### ⬜ Integração Open Finance
+
+Sincronizar automaticamente os saldos e as transações das contas bancárias do
+usuário, substituindo a entrada manual.
+
+**Base já entregue** (migration `008_bancos.sql`):
+
+- Tabela `bancos` (`nome`, `saldo`, `cor`, `ordem`, `saldo_atualizado_em`)
+- `gastos.banco_id` → FK para `bancos`, `on delete set null`
+- CRUD de bancos em `app/(app)/bancos/actions.ts`, entidade `bancos` no `lib/revalidate.ts`
+- Colunas **Banco** e **Saldo do banco** na tabela de /gastos + card "Meus bancos"
+
+**O que falta para o Open Finance:**
+
+- ⬜ Escolher o agregador (Pluggy, Belvo ou Open Finance Brasil direto)
+- ⬜ Fluxo de consentimento OAuth + tela de conexão da conta
+- ⬜ Colunas novas em `bancos`: `provider`, `provider_item_id`, `provider_account_id`, `sincronizado_em`
+- ⬜ Distinguir saldo manual de saldo sincronizado (flag `origem: 'manual' | 'open_finance'`) — o campo `saldo` hoje é sempre manual
+- ⬜ Webhook/cron de sincronização de saldo e importação de transações
+- ⬜ Conciliação: casar transação importada com gasto já cadastrado, evitando duplicidade
+- ⬜ Renovação/revogação de consentimento (validade de 12 meses no OFB)
+- ⬜ Gate por plano: sincronização automática provavelmente Premium
 
 ---
 
@@ -227,7 +248,7 @@
 
 | Branch | Feature | Status |
 |--------|---------|--------|
-| — | Nenhuma branch ativa no momento | — |
+| `feat/bancos-saldo-gastos` | Cadastro de bancos, coluna Banco/Saldo em /gastos | 🚧 Em desenvolvimento |
 
 ---
 

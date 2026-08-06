@@ -3,12 +3,13 @@ import { AppShell } from "@/components/layout/app-shell";
 import { DashboardFullscreen } from "@/components/dashboard/dashboard-fullscreen";
 import { DashboardEmpty } from "@/components/dashboard/dashboard-empty";
 import { CheckoutToast } from "@/components/shared/checkout-toast";
-import { getAppData, getHistorico, getRendaExtraHistorico } from "@/lib/data";
+import { getAppData, getBancos, getHistorico, getRendaExtraHistorico } from "@/lib/data";
 import { calcularScore502030, totalPorCategoria } from "@/lib/score";
 
 export default async function DashboardPage() {
-  const [{ profile, config, gastos, fundos }, historico, rendaExtraHistorico] = await Promise.all([
+  const [{ profile, config, gastos, fundos }, bancos, historico, rendaExtraHistorico] = await Promise.all([
     getAppData(),
+    getBancos(),
     getHistorico(),
     getRendaExtraHistorico(),
   ]);
@@ -33,6 +34,7 @@ export default async function DashboardPage() {
         totalGastos={totalGastos}
         fundos={fundos}
         gastos={gastos}
+        bancos={bancos}
         historico={historico}
         metaEconomia={config?.meta_economia_mensal ?? null}
         rendaExtraHistorico={rendaExtraHistorico}

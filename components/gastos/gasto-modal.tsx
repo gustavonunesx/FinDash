@@ -10,7 +10,7 @@ import {
   mesParaDate,
   parcelaInfo,
 } from "@/lib/parcelamento";
-import { CATEGORIA_LABELS, type CategoriaGasto, type Gasto } from "@/lib/types";
+import { CATEGORIA_LABELS, type Banco, type CategoriaGasto, type Gasto } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
 type TipoGasto = "unico" | "recorrente" | "parcelado";
@@ -29,6 +29,8 @@ interface GastoModalProps {
   editing: Gasto | null;
   onSubmit: (form: GastoFormData) => void;
   pending: boolean;
+  bancos: Banco[];
+  onNovoBanco: () => void;
 }
 
 const emptyForm: GastoFormData = {
@@ -37,6 +39,7 @@ const emptyForm: GastoFormData = {
   categoria: "necessidade",
   subcategoria: "",
   recorrente: false,
+  banco_id: null,
 };
 
 const CATEGORIA_EMOJI: Record<CategoriaGasto, string> = {
@@ -63,7 +66,15 @@ const CATEGORIA_BADGE_TEXT: Record<CategoriaGasto, string> = {
   qualidade: "#1D4ED8",
 };
 
-export function GastoModal({ open, onClose, editing, onSubmit, pending }: GastoModalProps) {
+export function GastoModal({
+  open,
+  onClose,
+  editing,
+  onSubmit,
+  pending,
+  bancos,
+  onNovoBanco,
+}: GastoModalProps) {
   const [form, setForm] = useState<GastoFormData>(emptyForm);
   const [tipo, setTipo] = useState<TipoGasto>("unico");
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -81,6 +92,7 @@ export function GastoModal({ open, onClose, editing, onSubmit, pending }: GastoM
         dia_recorrencia: editing.dia_recorrencia ?? undefined,
         parcelas_total: parcelado ? editing.parcelas_total! : undefined,
         parcela_inicio: editing.parcela_inicio ?? undefined,
+        banco_id: editing.banco_id,
       });
       setTipo(parcelado ? "parcelado" : editing.recorrente ? "recorrente" : "unico");
     } else {
@@ -374,6 +386,56 @@ export function GastoModal({ open, onClose, editing, onSubmit, pending }: GastoM
                 value={form.subcategoria}
                 onChange={(e) => setForm({ ...form, subcategoria: e.target.value })}
               />
+            </div>
+
+            {/* Banco */}
+            <div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  justifyContent: "space-between",
+                  gap: 8,
+                }}
+              >
+                <label style={labelStyle}>Banco</label>
+                <button
+                  type="button"
+                  onClick={onNovoBanco}
+                  style={{
+                    border: "none",
+                    background: "none",
+                    padding: 0,
+                    marginBottom: 6,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: "#0E8F6A",
+                    cursor: "pointer",
+                  }}
+                >
+                  + Cadastrar banco
+                </button>
+              </div>
+              {bancos.length === 0 ? (
+                <p style={{ fontSize: 12, color: "#9AA3AE", margin: 0 }}>
+                  Nenhum banco cadastrado ainda.
+                </p>
+              ) : (
+                <select
+                  style={selectStyle}
+                  value={form.banco_id ?? ""}
+                  onChange={(e) =>
+                    setForm({ ...form, banco_id: e.target.value || null })
+                  }
+                >
+                  <option value="">Não informado</option>
+                  {bancos.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.nome}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Tipo: único / recorrente / parcelado */}

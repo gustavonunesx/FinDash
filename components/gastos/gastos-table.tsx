@@ -30,11 +30,12 @@ import {
 import {
   CATEGORIA_EMOJI,
   CATEGORIA_LABELS,
+  type Banco,
   type CategoriaGasto,
   type Gasto,
 } from "@/lib/types";
 import { formatMesCurto, gastoAtivo, parcelaInfo } from "@/lib/parcelamento";
-import { formatCurrency, formatRelativeDate } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 const CAT_BADGE: Record<CategoriaGasto, string> = {
@@ -55,11 +56,12 @@ const CAT_VALUE: Record<CategoriaGasto, string> = {
   qualidade:   "text-fd-blue",
 };
 
-const VISIBLE_COLS_DEFAULT = ["Nome", "Categoria", "Subcategoria", "Parcelas", "Valor", "Data", "Ações"] as const;
+const VISIBLE_COLS_DEFAULT = ["Nome", "Categoria", "Subcategoria", "Parcelas", "Banco", "Saldo do banco", "Valor"] as const;
 type Col = typeof VISIBLE_COLS_DEFAULT[number];
 
 interface GastosTableProps {
   gastos: Gasto[];
+  bancos: Banco[];
   onEdit: (gasto: Gasto) => void;
   onDelete: (id: string) => void;
   busca: string;
@@ -70,6 +72,7 @@ interface GastosTableProps {
 
 export function GastosTable({
   gastos,
+  bancos,
   onEdit,
   onDelete,
   busca,
@@ -77,6 +80,7 @@ export function GastosTable({
   tab,
   onTabChange,
 }: GastosTableProps) {
+  const bancoPorId = new Map(bancos.map((b) => [b.id, b]));
   const [visibleCols, setVisibleCols] = useState<Col[]>([...VISIBLE_COLS_DEFAULT]);
   const [colsOpen, setColsOpen] = useState(false);
 
@@ -87,9 +91,12 @@ export function GastosTable({
   };
 
   const filtrados = gastos.filter((g) => {
+    const termo = busca.toLowerCase();
+    const nomeBanco = g.banco_id ? bancoPorId.get(g.banco_id)?.nome : undefined;
     const matchBusca =
-      g.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      g.subcategoria?.toLowerCase().includes(busca.toLowerCase());
+      g.nome.toLowerCase().includes(termo) ||
+      g.subcategoria?.toLowerCase().includes(termo) ||
+      nomeBanco?.toLowerCase().includes(termo);
     const matchTab = tab === "todos" || g.categoria === tab;
     return matchBusca && matchTab;
   });
@@ -203,14 +210,14 @@ export function GastosTable({
             {visibleCols.includes("Parcelas") && (
               <TableHead className="w-[130px]">Parcelas</TableHead>
             )}
+            {visibleCols.includes("Banco") && (
+              <TableHead className="w-[150px]">Banco</TableHead>
+            )}
+            {visibleCols.includes("Saldo do banco") && (
+              <TableHead className="w-[130px]">Saldo do banco</TableHead>
+            )}
             {visibleCols.includes("Valor") && (
-              <TableHead className="w-[120px]">Valor</TableHead>
-            )}
-            {visibleCols.includes("Data") && (
-              <TableHead className="w-[110px]">Data</TableHead>
-            )}
-            {visibleCols.includes("Ações") && (
-              <TableHead className="w-[80px] text-right">Ações</TableHead>
+              <TableHead className="w-[150px]">Valor</TableHead>
             )}
           </TableRow>
         </TableHeader>
@@ -229,6 +236,7 @@ export function GastosTable({
             filtrados.map((g) => {
               const info = parcelaInfo(g);
               const inativo = !gastoAtivo(g);
+              const banco = g.banco_id ? bancoPorId.get(g.banco_id) : undefined;
 
               return (
               <TableRow key={g.id} className={cn("group", inativo && "opacity-55")}>
@@ -331,61 +339,83 @@ export function GastosTable({
                   </TableCell>
                 )}
 
-                {/* Valor */}
+                {/* Banco */}
+                {visibleCols.includes("Banco") && (
+                  <TableCell>
+                    {banco ? (
+                      <span className="inline-flex items-center gap-2">
+                        <span
+                          className="h-2 w-2 shrink-0 rounded-full"
+                          style={{ background: banco.cor }}
+                        />
+                        <span className="truncate text-sm text-foreground">{banco.nome}</span>
+                      </span>
+                    ) : (
+                      <span className="text-sm text-muted-foreground/40">—</span>
+                    )}
+                  </TableCell>
+                )}
+
+                {/* Saldo do banco */}
+                {visibleCols.includes("Saldo do banco") && (
+                  <TableCell>
+                    {banco ? (
+                      <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
+                        {formatCurrency(banco.saldo)}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-muted-foreground/40">—</span>
+                    )}
+                  </TableCell>
+                )}
+
+                {/* Valor + ações no hover */}
                 {visibleCols.includes("Valor") && (
                   <TableCell>
-                    <span
-                      className={cn(
-                        "font-mono text-sm font-semibold tabular-nums",
-                        inativo ? "text-muted-foreground line-through" : CAT_VALUE[g.categoria],
-                      )}
-                    >
-                      -{formatCurrency(g.valor)}
-                    </span>
-                  </TableCell>
-                )}
+                    <div className="flex items-center gap-1">
+                      <span
+                        className={cn(
+                          "font-mono text-sm font-semibold tabular-nums",
+                          inativo ? "text-muted-foreground line-through" : CAT_VALUE[g.categoria],
+                        )}
+                      >
+                        -{formatCurrency(g.valor)}
+                      </span>
 
-                {/* Data */}
-                {visibleCols.includes("Data") && (
-                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                    {formatRelativeDate(g.created_at)}
-                  </TableCell>
-                )}
+                      <TooltipProvider>
+                        <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                aria-label={`Editar ${g.nome}`}
+                                onClick={() => onEdit(g)}
+                                className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                              >
+                                <IconPencil className="h-3.5 w-3.5" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              <p>Editar</p>
+                            </TooltipContent>
+                          </Tooltip>
 
-                {/* Ações */}
-                {visibleCols.includes("Ações") && (
-                  <TableCell className="text-right">
-                    <TooltipProvider>
-                      <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              onClick={() => onEdit(g)}
-                              className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-                            >
-                              <IconPencil className="h-3.5 w-3.5" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top">
-                            <p>Editar</p>
-                          </TooltipContent>
-                        </Tooltip>
-
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              onClick={() => onDelete(g.id)}
-                              className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-colors"
-                            >
-                              <IconTrash className="h-3.5 w-3.5" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top">
-                            <p>Excluir</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                aria-label={`Excluir ${g.nome}`}
+                                onClick={() => onDelete(g.id)}
+                                className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-colors"
+                              >
+                                <IconTrash className="h-3.5 w-3.5" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              <p>Excluir</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TooltipProvider>
+                    </div>
                   </TableCell>
                 )}
               </TableRow>

@@ -4,7 +4,7 @@ import {
   isDemoMode,
 } from "./demo-data";
 import { createClient } from "./supabase/server";
-import type { Configuracao, Fundo, Gasto, HistoricoMensal, Profile, RendaExtraItem } from "./types";
+import type { Banco, Configuracao, Fundo, Gasto, HistoricoMensal, Profile, RendaExtraItem } from "./types";
 
 export async function getCurrentUserId(): Promise<string | null> {
   if (isDemoMode()) return "demo-user";
@@ -73,6 +73,24 @@ export async function getFundos(): Promise<Fundo[]> {
   if (!user) return [];
   const { data } = await supabase
     .from("fundos")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("ordem");
+  return data ?? [];
+}
+
+export async function getBancos(): Promise<Banco[]> {
+  if (isDemoMode()) {
+    const { getDemoBancos } = await import("./demo-store");
+    return getDemoBancos();
+  }
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data } = await supabase
+    .from("bancos")
     .select("*")
     .eq("user_id", user.id)
     .order("ordem");

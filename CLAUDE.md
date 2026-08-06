@@ -80,7 +80,8 @@ app/
   (marketing)/precos/     — Página de planos
   (app)/                  — Rotas protegidas (auth + onboarding)
     dashboard/            — Dashboard 50/30/20-first (verde claro #F4F7F5): topbar c/ aderência, 3 anéis-bucket (SVG), transações + metas/investimentos; renda real, seletor de mês via histórico, modo privacidade
-    gastos/               — CRUD de gastos + importação CSV; modal centralizado "Novo gasto" com tipo de cobrança (Único/Recorrente/Parcelado), 3 cards de resumo, DonutChart SVG, coluna direita com insights (parcelas do cartão, maiores gastos, média diária)
+    gastos/               — CRUD de gastos + importação CSV; modal centralizado "Novo gasto" com tipo de cobrança (Único/Recorrente/Parcelado) e seletor de banco; tabela com colunas Banco + Saldo do banco (ações de editar/excluir no hover da linha), 3 cards de resumo, DonutChart SVG, coluna direita com card "Meus bancos" (saldo manual editável inline) + insights
+    bancos/               — Server actions do CRUD de bancos (sem página própria; a UI vive em /gastos). Saldo manual até a integração Open Finance
     fundos/               — CRUD de fundos + CDI; lista compacta FundoRow (barra colorida, progresso, badge meta), ModalNovoFundo (responsivo, scroll interno, checkbox reserva_emergencia), ModalConfirmarAporte (atalhos rápidos, celebração), coluna direita com ResumoGeralCard + RendimentoCard (verde sólido, CDI/12) + PlanoStatusCard (âmbar, só Free no limite)
     calculadora/          — Regra 50/30/20 + realocação de limites entre categorias (persistida em `configuracoes.ajustes_limite` jsonb) + distribuição de renda extra com aporte direto em fundo de reserva
     historico/            — Analytics (Premium)
@@ -92,7 +93,7 @@ app/
   page.tsx                — Landing page
 components/               — 55 componentes React (incl. GastoModal, DonutChart, FundoRow, ModalNovoFundo, ModalConfirmarAporte)
 lib/                      — 19 módulos utilitários
-supabase/migrations/      — 7 migrations SQL (incl. 004: ajustes_limite em configuracoes; 005: reserva_emergencia em fundos; 006: renda_extra_historico; 007: parcelas_total/parcela_inicio em gastos)
+supabase/migrations/      — 8 migrations SQL (incl. 004: ajustes_limite em configuracoes; 005: reserva_emergencia em fundos; 006: renda_extra_historico; 007: parcelas_total/parcela_inicio em gastos; 008: tabela bancos + gastos.banco_id)
 ```
 
 ## Variáveis de Ambiente

@@ -23,6 +23,8 @@ export type GastoFormData = {
   parcelas_total?: number;
   /** Mês da 1ª parcela no formato date (YYYY-MM-01). */
   parcela_inicio?: string;
+  /** Banco de onde o gasto sai. Null = não informado. */
+  banco_id?: string | null;
 };
 
 function parcelamentoFields(data: GastoFormData) {
@@ -69,6 +71,7 @@ export async function criarGasto(data: GastoFormData) {
       subcategoria: data.subcategoria ?? null,
       recorrente: data.recorrente,
       dia_recorrencia: data.dia_recorrencia ?? null,
+      banco_id: data.banco_id ?? null,
       ...parcelamentoFields(data),
       created_at: new Date().toISOString(),
     });
@@ -90,6 +93,7 @@ export async function criarGasto(data: GastoFormData) {
     subcategoria: data.subcategoria ?? null,
     recorrente: data.recorrente,
     dia_recorrencia: data.dia_recorrencia ?? null,
+    banco_id: data.banco_id ?? null,
     ...parcelamentoFields(data),
   });
 
@@ -107,6 +111,7 @@ export async function editarGasto(id: string, data: GastoFormData) {
       subcategoria: data.subcategoria ?? null,
       recorrente: data.recorrente,
       dia_recorrencia: data.dia_recorrencia ?? null,
+      banco_id: data.banco_id ?? null,
       ...parcelamentoFields(data),
     });
     revalidarEntidade("gastos");
@@ -123,6 +128,7 @@ export async function editarGasto(id: string, data: GastoFormData) {
       subcategoria: data.subcategoria ?? null,
       recorrente: data.recorrente,
       dia_recorrencia: data.dia_recorrencia ?? null,
+      banco_id: data.banco_id ?? null,
       ...parcelamentoFields(data),
     })
     .eq("id", id);

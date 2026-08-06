@@ -15,6 +15,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import type {
+  Banco,
   CategoriaGasto,
   Configuracao,
   Fundo,
@@ -372,6 +373,7 @@ interface DashboardProps {
   totalGastos: number;
   fundos: Fundo[];
   gastos: Gasto[];
+  bancos: Banco[];
   historico: HistoricoMensal[];
   metaEconomia: number | null;
   rendaExtraHistorico: RendaExtraItem[];
@@ -383,6 +385,7 @@ export function DashboardFullscreen({
   scoreData,
   fundos,
   gastos,
+  bancos,
   historico,
   rendaExtraHistorico,
 }: DashboardProps) {
@@ -463,6 +466,10 @@ export function DashboardFullscreen({
   // ── Fundos / metas reais ────────────────────────────────────────────────────
   const fundosOrdenados = [...fundos].sort((a, b) => a.ordem - b.ordem);
   const fundosTotal = fundos.reduce((a, f) => a + f.saldo_atual, 0);
+
+  // ── Bancos ───────────────────────────────────────────────────────────────────
+  const bancosOrdenados = [...bancos].sort((a, b) => a.ordem - b.ordem);
+  const bancosTotal = bancos.reduce((a, b) => a + b.saldo, 0);
 
   // Investimentos (agregado dos fundos com custódia)
   const investidos = fundos.filter((f) => f.custodia);
@@ -1031,6 +1038,92 @@ export function DashboardFullscreen({
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </div>
+
+          {/* Meus bancos */}
+          <div style={cardStyle}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 14,
+              }}
+            >
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: T.text, margin: 0 }}>
+                Meus bancos
+              </h3>
+              <span
+                style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: T.green,
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {privacy ? "R$ ••••" : fmtBRL(bancosTotal)}
+              </span>
+            </div>
+
+            {bancosOrdenados.length === 0 ? (
+              <p style={{ fontSize: 13, color: T.textMut, padding: "8px 0" }}>
+                Nenhum banco cadastrado ainda.{" "}
+                <Link href="/gastos" style={{ color: T.green, fontWeight: 600 }}>
+                  Cadastrar
+                </Link>
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {bancosOrdenados.map((banco) => (
+                  <div
+                    key={banco.id}
+                    style={{ display: "flex", alignItems: "center", gap: 10 }}
+                  >
+                    <span
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 8,
+                        background: banco.cor,
+                        color: "#fff",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {banco.nome.charAt(0).toUpperCase()}
+                    </span>
+                    <span
+                      style={{
+                        flex: 1,
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: T.text,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {banco.nome}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: T.text,
+                        fontVariantNumeric: "tabular-nums",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {privacy ? "R$ ••••" : fmtBRL(banco.saldo)}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
