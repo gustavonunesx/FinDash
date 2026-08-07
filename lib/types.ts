@@ -52,6 +52,9 @@ export interface Configuracao {
   ajustes_limite?: Record<string, number>;
 }
 
+/** Origem do registro: digitado pelo usuário ou trazido pelo Open Finance. */
+export type OrigemRegistro = "manual" | "open_finance";
+
 export interface Gasto {
   id: string;
   user_id: string;
@@ -64,12 +67,19 @@ export interface Gasto {
   parcelas_total: number | null;
   parcela_inicio: string | null;
   banco_id: string | null;
+  origem: OrigemRegistro;
+  provider_transaction_id: string | null;
+  /** `false` = importado do banco e ainda aguardando o usuário confirmar o bucket 50/30/20. */
+  categoria_confirmada: boolean;
   created_at: string;
 }
 
+/** Estado da última sincronização de um banco conectado via Open Finance. */
+export type SyncStatus = "ok" | "atualizando" | "erro" | "consentimento_expirado";
+
 /**
- * Conta bancária do usuário. `saldo` é informado manualmente até a integração
- * com Open Finance, que passará a preenchê-lo automaticamente.
+ * Conta bancária do usuário. Com `origem: 'manual'` o `saldo` é digitado; com
+ * `origem: 'open_finance'` ele vem da Pluggy e é read-only na UI.
  */
 export interface Banco {
   id: string;
@@ -80,6 +90,13 @@ export interface Banco {
   ordem: number;
   saldo_atualizado_em: string;
   created_at: string;
+  origem: OrigemRegistro;
+  provider: string | null;
+  provider_item_id: string | null;
+  provider_account_id: string | null;
+  sincronizado_em: string | null;
+  sync_status: SyncStatus | null;
+  consentimento_expira_em: string | null;
 }
 
 export const BANCO_CORES = [

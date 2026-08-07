@@ -219,10 +219,16 @@
 
 > Adicionar aqui as próximas features conforme forem definidas.
 
-### ⬜ Integração Open Finance
+### 🔄 Integração Open Finance (via Pluggy)
 
 Sincronizar automaticamente os saldos e as transações das contas bancárias do
 usuário, substituindo a entrada manual.
+
+**Decisão de arquitetura:** agregador **Pluggy** (`pluggy-sdk`).
+Acesso direto ao Open Finance Brasil exigiria ser instituição registrada no
+Banco Central (certificados ICP-Brasil, diretório de participantes, homologação),
+inviável para o FinDash. A Pluggy já é participante autorizada e expõe o widget
+de consentimento pronto.
 
 **Base já entregue** (migration `008_bancos.sql`):
 
@@ -231,16 +237,110 @@ usuário, substituindo a entrada manual.
 - CRUD de bancos em `app/(app)/bancos/actions.ts`, entidade `bancos` no `lib/revalidate.ts`
 - Colunas **Banco** e **Saldo do banco** na tabela de /gastos + card "Meus bancos"
 
-**O que falta para o Open Finance:**
+---
 
-- ⬜ Escolher o agregador (Pluggy, Belvo ou Open Finance Brasil direto)
-- ⬜ Fluxo de consentimento OAuth + tela de conexão da conta
-- ⬜ Colunas novas em `bancos`: `provider`, `provider_item_id`, `provider_account_id`, `sincronizado_em`
-- ⬜ Distinguir saldo manual de saldo sincronizado (flag `origem: 'manual' | 'open_finance'`) — o campo `saldo` hoje é sempre manual
-- ⬜ Webhook/cron de sincronização de saldo e importação de transações
-- ⬜ Conciliação: casar transação importada com gasto já cadastrado, evitando duplicidade
-- ⬜ Renovação/revogação de consentimento (validade de 12 meses no OFB)
-- ⬜ Gate por plano: sincronização automática provavelmente Premium
+#### Contrato da Pluggy (confirmado na doc, ago/2026)
+
+| Item | Detalhe |
+|---|---|
+| SDK | `pluggy-sdk` (npm), `new PluggyClient({ clientId, clientSecret })` |
+| Auth | `POST /auth` com clientId+secret → API Key válida por **2h**. **Server-side apenas.** |
+| Connect Token | `POST /connect_token` → token de **30 min** para o widget no client |
+| Widget | Pluggy Connect — usuário escolhe o banco e autoriza; retorna `itemId` |
+| Item | 1 conexão com 1 instituição; pode conter N accounts |
+| Account | `type: BANK \| CREDIT`, `subtype`, `balance`, `name`, `number`, `currencyCode` |
+| Transaction | `id`, `description`, `descriptionRaw`, `amount`, `date`, `type: CREDIT \| DEBIT`, `category`, `status: POSTED \| PENDING` |
+| Paginação | `fetchTransactionsCursor` / `fetchAllTransactions` (o `fetchTransactions` legado está deprecado) |
+| Webhooks | `item/created`, `item/updated`, `item/error`, `transactions/created`, `transactions/updated`, `transactions/deleted` |
+| Webhook infra | Só HTTPS; IP de origem `52.67.145.81`; responder **2XX em < 5s** e processar async; até 9 retries |
+
+Semântica que guia a importação:
+- `type: DEBIT` = saída de dinheiro → vira **gasto**. `CREDIT` = entrada → **não** vira gasto.
+- `balance` em conta `BANK` = disponível para gastar; em `CREDIT` = fatura aberta do mês.
+- `status: PENDING` não é definitivo — importar apenas `POSTED` para não gerar gasto que some depois.
+
+---
+
+#### ✅ Etapa 1 — Fundação e schema (branch `feat/open-finance-pluggy`)
+
+- [x] `npm install pluggy-sdk react-pluggy-connect` (`pluggy-sdk@0.90.0`, `react-pluggy-connect@2.12.0`)
+- [x] Env vars: `PLUGGY_CLIENT_ID`, `PLUGGY_CLIENT_SECRET`, `PLUGGY_WEBHOOK_URL`
+      (a API Key **não** é env var — expira em 2h e o SDK a renova em runtime)
+- [x] Migration `009_open_finance.sql`:
+  - `bancos`: `origem`, `provider`, `provider_item_id`, `provider_account_id`,
+    `sincronizado_em`, `sync_status`, `consentimento_expira_em`
+  - índice único parcial em `(user_id, provider_account_id)` — reconectar faz upsert, não duplica
+  - `gastos`: `origem`, `provider_transaction_id`, `categoria_confirmada`
+  - índice único parcial em `gastos (user_id, provider_transaction_id)` → **idempotência no schema**
+  - tabela `open_finance_eventos` (dedup de webhook por `eventId`), RLS sem policy = só service role
+- [x] `lib/open-finance.ts`: client singleton, connect token, mapeamento Account→Banco e Transaction→Gasto
+- [x] Tipos em `lib/types.ts`: `OrigemRegistro`, `SyncStatus`, campos novos em `Banco` e `Gasto`
+- [x] `BANCO_MANUAL` / `GASTO_MANUAL` em `lib/demo-data.ts` (demo nunca fala com a Pluggy)
+
+#### ✅ Etapa 2 — Conexão e consentimento (branch `feat/open-finance-pluggy`)
+
+- [x] `POST /api/open-finance/connect-token` — autenticado; valida posse do item na reconexão
+- [x] `components/bancos/conectar-banco.tsx` com o widget Pluggy Connect (`dynamic`, sem SSR)
+- [x] Botão "Conectar banco" (primário) no card **Meus bancos**; cadastro manual vira ação secundária
+- [x] `vincularItemConectado` — busca contas com API Key no servidor e faz upsert em `bancos`
+- [x] `desconectarBanco` — `deleteItem` na Pluggy + volta para `origem='manual'`, preservando os gastos
+- [x] Banco sincronizado: saldo read-only, selo "auto"/"erro", saldo negativo em vermelho (fatura)
+- [x] Gate Premium na conexão (Free cai no `UpgradeModal`)
+
+**Validado:** `tsc --noEmit` limpo, ESLint sem erros nos arquivos novos, `npm run build` OK
+(`/gastos` seguiu em 33.6 kB — o widget é carregado sob demanda).
+
+**Pendente de teste real:** o fluxo ponta a ponta depende de aplicar a migration 009 no
+Supabase e de rodar com credenciais válidas. Nada foi testado contra a API da Pluggy ainda.
+
+#### ✅ Etapa 3 — Sincronização (branch `feat/open-finance-pluggy`)
+
+- [x] `POST /api/open-finance/webhook` — responde 2XX na hora e processa em `after()`
+      (o sync leva mais que os 5s do limite da Pluggy)
+- [x] Dedup por `eventId`: o insert em `open_finance_eventos` falha na PK quando a
+      entrega se repete, e é isso que corta o reprocessamento
+- [x] Handlers: `item/created|updated` e `transactions/created|updated` → sincroniza;
+      `item/error` → `sync_status='erro'` (selo vermelho na UI)
+- [x] `GET /api/cron/open-finance-sync` diário às 9h (`vercel.json`) — rede de segurança
+      para webhook perdido + marca consentimento a ≤15 dias de vencer
+- [x] Sync manual: botão "Atualizar" no card Meus bancos → `sincronizarAgora()`
+
+#### ✅ Etapa 4 — Conciliação (branch `feat/open-finance-pluggy`)
+
+- [x] Importa apenas `DEBIT` + não-`PENDING` (`deveVirarGasto`)
+- [x] Casamento com gasto manual: mesmo `banco_id`, valor ±R$0,01, data ±3 dias →
+      grava o `provider_transaction_id` no gasto existente em vez de duplicar
+- [x] **Recorrentes e parcelados nunca são conciliados** — são modelos de lançamento
+      repetido; casar um deles travaria a importação dos meses seguintes
+- [x] Cada gasto casa com no máximo uma transação (`usados`), e vice-versa
+- [x] Importados entram com `categoria_confirmada=false`; card "Revisar importados"
+      em `/gastos` confirma um a um ou aceita todas as sugestões
+- [x] `category` da Pluggy → bucket 50/30/20 via `mapearCategoria` do `lib/csv-parser.ts`
+- [x] Gastos `origem='open_finance'` não contam no limite Free de 10
+
+#### 🔄 Etapa 5 — Consentimento e plano
+
+- [x] Gate: conectar banco é **Premium** (Free cai no `UpgradeModal`)
+- [x] Revogação: `desconectarBanco` chama `deleteItem` e volta para `origem='manual'`,
+      preservando os gastos já importados
+- [x] Aviso de consentimento a vencer (`sync_status='consentimento_expirado'` pelo cron)
+- [x] Reconexão: o widget aceita `updateItem` e a rota valida que o item é do usuário
+- ⬜ **`consentimento_expira_em` nunca é preenchido** — a coluna existe e o cron já a lê,
+      mas o vínculo não grava a data. Falta extrair a validade do item da Pluggy.
+- ⬜ Excluir conta do usuário → `deleteItem` na Pluggy (hoje o `on delete cascade` apaga
+      a linha em `bancos` e deixa o consentimento órfão no provider)
+- ⬜ UI dedicada para reconectar quando o consentimento expira (a action existe, falta o botão)
+
+**Validado:** `tsc --noEmit` limpo, ESLint sem erros nos arquivos novos, `npm run build` OK
+(rotas `/api/open-finance/webhook` e `/api/cron/open-finance-sync` registradas; `/gastos` em 34.3 kB).
+
+**Ainda não testado contra a API real da Pluggy** — todo o fluxo foi escrito contra a
+documentação e as assinaturas do SDK, sem uma conexão sandbox de ponta a ponta.
+
+**Riscos a vigiar:**
+- Chaves da Pluggy nunca podem chegar ao client — só connect token
+- Importação precisa ser idempotente no schema; webhook reentrega até 9 vezes
+- Categorização automática é sugestão, nunca decisão silenciosa — o 50/30/20 é o núcleo do produto
 
 ---
 

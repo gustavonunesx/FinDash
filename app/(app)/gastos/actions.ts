@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidarEntidade } from "@/lib/revalidate";
-import { isDemoMode } from "@/lib/demo-data";
+import { GASTO_MANUAL, isDemoMode } from "@/lib/demo-data";
 import {
   addDemoGasto,
   deleteDemoGasto,
@@ -39,15 +39,21 @@ async function checkGastoLimit(): Promise<{ ok: boolean; error?: string }> {
   const profile = await getProfile();
   if (profile?.plano === "premium") return { ok: true };
 
+  // Gasto importado do banco não consome a cota: uma conexão traz dezenas de
+  // transações de uma vez e o limite viraria uma parede logo no primeiro sync.
   const gastos = isDemoMode()
-    ? getDemoGastos()
+    ? getDemoGastos().filter((g) => g.origem !== "open_finance")
     : await (async () => {
         const supabase = await createClient();
         const {
           data: { user },
         } = await supabase.auth.getUser();
         if (!user) return [];
-        const { data } = await supabase.from("gastos").select("id").eq("user_id", user.id);
+        const { data } = await supabase
+          .from("gastos")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("origem", "manual");
         return data ?? [];
       })();
 
@@ -73,6 +79,7 @@ export async function criarGasto(data: GastoFormData) {
       dia_recorrencia: data.dia_recorrencia ?? null,
       banco_id: data.banco_id ?? null,
       ...parcelamentoFields(data),
+      ...GASTO_MANUAL,
       created_at: new Date().toISOString(),
     });
     revalidarEntidade("gastos");
