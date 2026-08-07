@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { IconPencil, IconPlus, IconTrash, IconCheck, IconX } from "@tabler/icons-react";
+import {
+  IconPencil,
+  IconPlus,
+  IconTrash,
+  IconCheck,
+  IconX,
+  IconBuildingBank,
+  IconRefresh,
+} from "@tabler/icons-react";
 import type { Banco } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
@@ -14,6 +22,17 @@ interface BancosCardProps {
   onEditar: (banco: Banco) => void;
   onExcluir: (id: string) => void;
   onSalvarSaldo: (id: string, saldo: number) => void;
+  onConectar: () => void;
+  onDesconectar: (banco: Banco) => void;
+  /** Ausente quando não há banco conectado — não há o que sincronizar. */
+  onSincronizar?: () => void;
+  sincronizando?: boolean;
+  /** `false` enquanto a Pluggy está dormente: o botão vira "Em breve". */
+  openFinanceAtivo: boolean;
+}
+
+function ehSincronizado(b: Banco): boolean {
+  return b.origem === "open_finance";
 }
 
 export function BancosCard({
@@ -24,6 +43,11 @@ export function BancosCard({
   onEditar,
   onExcluir,
   onSalvarSaldo,
+  onConectar,
+  onDesconectar,
+  onSincronizar,
+  sincronizando,
+  openFinanceAtivo,
 }: BancosCardProps) {
   const [editandoSaldo, setEditandoSaldo] = useState<string | null>(null);
   const [rascunho, setRascunho] = useState("");
@@ -70,9 +94,46 @@ export function BancosCard({
           {formatCurrency(total)}
         </span>
       </div>
-      <p style={{ fontSize: 11, color: "#9AA3AE", marginBottom: 14 }}>
-        Saldo informado manualmente
-      </p>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+          marginBottom: 14,
+        }}
+      >
+        <p style={{ fontSize: 11, color: "#9AA3AE" }}>
+          {bancos.some(ehSincronizado)
+            ? "Saldo sincronizado pelo Open Finance"
+            : "Saldo informado manualmente"}
+        </p>
+        {onSincronizar && (
+          <button
+            type="button"
+            onClick={onSincronizar}
+            disabled={sincronizando}
+            title="Atualizar agora"
+            style={{
+              border: "none",
+              background: "none",
+              padding: 2,
+              cursor: sincronizando ? "default" : "pointer",
+              color: "#0E8F6A",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 3,
+              fontSize: 11,
+              fontWeight: 600,
+              opacity: sincronizando ? 0.5 : 1,
+              flexShrink: 0,
+            }}
+          >
+            <IconRefresh style={{ width: 11, height: 11 }} />
+            {sincronizando ? "..." : "Atualizar"}
+          </button>
+        )}
+      </div>
 
       {bancos.length === 0 ? (
         <p
@@ -89,7 +150,10 @@ export function BancosCard({
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {bancos.map((b) => {
             const gastoDoBanco = gastosPorBanco[b.id] ?? 0;
-            const editando = editandoSaldo === b.id;
+            const sincronizado = ehSincronizado(b);
+            // Saldo vindo do banco não pode ser sobrescrito à mão: o próximo
+            // sync desfaria a edição e o usuário veria o valor "voltar sozinho".
+            const editando = editandoSaldo === b.id && !sincronizado;
 
             return (
               <div
@@ -128,7 +192,41 @@ export function BancosCard({
                   >
                     {b.nome}
                   </p>
-                  <p style={{ fontSize: 11, color: "#9AA3AE" }}>
+                  <p
+                    style={{
+                      fontSize: 11,
+                      color: "#9AA3AE",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    {sincronizado && (
+                      <span
+                        title={
+                          b.sincronizado_em
+                            ? `Sincronizado em ${new Date(b.sincronizado_em).toLocaleString("pt-BR")}`
+                            : "Conta sincronizada"
+                        }
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 3,
+                          borderRadius: 999,
+                          padding: "1px 6px",
+                          fontSize: 10,
+                          fontWeight: 600,
+                          color: b.sync_status === "erro" ? "#DC2626" : "#0E8F6A",
+                          background:
+                            b.sync_status === "erro"
+                              ? "rgba(220,38,38,0.10)"
+                              : "rgba(14,143,106,0.10)",
+                        }}
+                      >
+                        <IconRefresh style={{ width: 9, height: 9 }} />
+                        {b.sync_status === "erro" ? "erro" : "auto"}
+                      </span>
+                    )}
                     {gastoDoBanco > 0
                       ? `${formatCurrency(gastoDoBanco)} em gastos`
                       : "sem gastos vinculados"}
@@ -176,6 +274,32 @@ export function BancosCard({
                     >
                       <IconX style={{ width: 13, height: 13 }} />
                     </button>
+                  </div>
+                ) : sincronizado ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <span
+                      title="Saldo vindo do banco — atualiza sozinho"
+                      style={{
+                        padding: "2px 4px",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: b.saldo < 0 ? "#DC2626" : "#0F1729",
+                      }}
+                    >
+                      {formatCurrency(b.saldo)}
+                    </span>
+                    <span className="opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        type="button"
+                        onClick={() => onDesconectar(b)}
+                        aria-label={`Desconectar ${b.nome}`}
+                        title="Desconectar do Open Finance"
+                        style={iconBtn("#DC2626")}
+                      >
+                        <IconX style={{ width: 13, height: 13 }} />
+                      </button>
+                    </span>
                   </div>
                 ) : (
                   <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -248,15 +372,58 @@ export function BancosCard({
 
       <button
         type="button"
-        onClick={onNovo}
+        onClick={onConectar}
+        title={
+          openFinanceAtivo
+            ? undefined
+            : "Sincronização automática ainda não disponível — avise que você quer"
+        }
         style={{
           marginTop: 14,
           width: "100%",
+          padding: "9px 0",
+          borderRadius: 9,
+          border: openFinanceAtivo ? "none" : "1.5px solid #D8DCE2",
+          background: openFinanceAtivo ? "#0E8F6A" : "#fff",
+          color: openFinanceAtivo ? "#fff" : "#7C8896",
+          fontSize: 12,
+          fontWeight: 600,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 5,
+        }}
+      >
+        <IconBuildingBank style={{ width: 13, height: 13 }} />
+        Conectar banco
+        {!openFinanceAtivo && (
+          <span
+            style={{
+              borderRadius: 999,
+              padding: "1px 6px",
+              fontSize: 10,
+              fontWeight: 600,
+              color: "#92620A",
+              background: "#FBF3E2",
+            }}
+          >
+            Em breve
+          </span>
+        )}
+      </button>
+
+      <button
+        type="button"
+        onClick={onNovo}
+        style={{
+          marginTop: 8,
+          width: "100%",
           padding: "8px 0",
           borderRadius: 9,
-          border: "1.5px dashed #D8DCE2",
-          background: "#fff",
-          color: "#0E8F6A",
+          border: openFinanceAtivo ? "1.5px dashed #D8DCE2" : "none",
+          background: openFinanceAtivo ? "#fff" : "#0E8F6A",
+          color: openFinanceAtivo ? "#7C8896" : "#fff",
           fontSize: 12,
           fontWeight: 600,
           cursor: "pointer",

@@ -9,6 +9,8 @@ import { GastoModal } from "@/components/gastos/gasto-modal";
 import { DonutChart } from "@/components/gastos/donut-chart";
 import { BancoModal } from "@/components/bancos/banco-modal";
 import { BancosCard } from "@/components/bancos/bancos-card";
+import { ConectarBanco } from "@/components/bancos/conectar-banco";
+import { RevisaoImportados } from "@/components/bancos/revisao-importados";
 import { UpgradeModal } from "@/components/shared/upgrade-modal";
 import { EmptyState } from "@/components/shared/empty-state";
 import {
@@ -24,6 +26,14 @@ import {
   atualizarSaldoBanco,
   type BancoFormData,
 } from "@/app/(app)/bancos/actions";
+import {
+  vincularItemConectado,
+  desconectarBanco,
+  sincronizarAgora,
+  confirmarCategoriaGasto,
+  confirmarTodasCategorias,
+  registrarInteresseOpenFinance,
+} from "@/app/(app)/bancos/open-finance-actions";
 import {
   CATEGORIA_LABELS,
   LIMITES_FREE,
@@ -52,6 +62,14 @@ const emptyForm: GastoFormData = {
 };
 
 type FilterTab = CategoriaGasto | "todos";
+
+/**
+ * A integração com a Pluggy está pronta mas desligada: o plano de Dados custa a
+ * partir de R$ 2.500/mês e só se paga com algumas centenas de assinantes. Ligue
+ * com `NEXT_PUBLIC_OPEN_FINANCE_ATIVO=true` — inclusive para usar o trial de 14
+ * dias sem alterar código.
+ */
+const OPEN_FINANCE_ATIVO = process.env.NEXT_PUBLIC_OPEN_FINANCE_ATIVO === "true";
 
 const CATEGORIA_BAR_COLOR: Record<CategoriaGasto, string> = {
   necessidade: "#C4820A",
@@ -90,6 +108,7 @@ export function GastosClient({ gastos, bancos, plano }: GastosClientProps) {
   const [form, setForm] = useState<GastoFormData>(emptyForm);
   const [bancoModalOpen, setBancoModalOpen] = useState(false);
   const [editingBanco, setEditingBanco] = useState<Banco | null>(null);
+  const [conectarOpen, setConectarOpen] = useState(false);
   const [busca, setBusca] = useState("");
   const [filterTab, setFilterTab] = useState<FilterTab>("todos");
   const [pending, startTransition] = useTransition();
@@ -97,6 +116,10 @@ export function GastosClient({ gastos, bancos, plano }: GastosClientProps) {
   const totais = totalPorCategoria(gastos);
   const totalGeral = totais.necessidade + totais.objetivo + totais.qualidade;
   const categorias: CategoriaGasto[] = ["necessidade", "objetivo", "qualidade"];
+
+  // Importados do banco esperando o usuário confirmar o bucket 50/30/20
+  const pendentesRevisao = gastos.filter((g) => !g.categoria_confirmada);
+  const temBancoConectado = bancos.some((b) => b.origem === "open_finance");
 
   // Maiores gastos (top 3)
   const maioresGastos = gastos
@@ -189,6 +212,82 @@ export function GastosClient({ gastos, bancos, plano }: GastosClientProps) {
     });
   }
 
+  function handleConectar() {
+    // A Pluggy cobra R$ 2.500/mês no mínimo, então a conexão fica dormente até a
+    // base justificar. O clique vira sinal de demanda para decidir quando ligar.
+    if (!OPEN_FINANCE_ATIVO) {
+      startTransition(async () => {
+        await registrarInteresseOpenFinance();
+        toast.success("Avisamos assim que a conexão automática estiver disponível");
+      });
+      return;
+    }
+
+    if (plano !== "premium") {
+      setUpgradeOpen(true);
+      return;
+    }
+    setConectarOpen(true);
+  }
+
+  function handleConectado(itemId: string) {
+    setConectarOpen(false);
+    startTransition(async () => {
+      const result = await vincularItemConectado(itemId);
+      if (result.error) toast.error(result.error);
+      else
+        toast.success(
+          result.contas === 1 ? "Banco conectado" : `${result.contas} contas conectadas`
+        );
+    });
+  }
+
+  function handleSincronizar() {
+    startTransition(async () => {
+      const result = await sincronizarAgora();
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      const novos = result.importados ?? 0;
+      toast.success(
+        novos > 0
+          ? `${novos} ${novos === 1 ? "transação importada" : "transações importadas"}`
+          : "Tudo já estava atualizado"
+      );
+    });
+  }
+
+  function handleConfirmarCategoria(id: string, categoria: CategoriaGasto) {
+    startTransition(async () => {
+      const result = await confirmarCategoriaGasto(id, categoria);
+      if (result.error) toast.error(result.error);
+    });
+  }
+
+  function handleConfirmarTodas() {
+    startTransition(async () => {
+      const result = await confirmarTodasCategorias();
+      if (result.error) toast.error(result.error);
+      else toast.success("Categorias confirmadas");
+    });
+  }
+
+  function handleDesconectar(banco: Banco) {
+    if (
+      !confirm(
+        `Desconectar ${banco.nome}? O saldo volta a ser manual e os gastos já importados são mantidos.`
+      )
+    )
+      return;
+
+    startTransition(async () => {
+      const result = await desconectarBanco(banco.id);
+      if (result.error) toast.error(result.error);
+      else toast.success("Banco desconectado");
+    });
+  }
+
   function handleDeleteBanco(id: string) {
     startTransition(async () => {
       const result = await deletarBanco(id);
@@ -245,8 +344,8 @@ export function GastosClient({ gastos, bancos, plano }: GastosClientProps) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {/* Importar CSV */}
-          <CsvImportDialog />
+          {/* Importar extrato (OFX/CSV) */}
+          <CsvImportDialog bancos={bancos} />
 
           {/* + Novo gasto */}
           <button
@@ -388,6 +487,14 @@ export function GastosClient({ gastos, bancos, plano }: GastosClientProps) {
         {/* ── Right column: 300px ── */}
         <div style={{ width: 300, flexShrink: 0, display: "flex", flexDirection: "column", gap: 14 }}>
 
+          {/* Card: Revisar transações importadas do banco */}
+          <RevisaoImportados
+            pendentes={pendentesRevisao}
+            onConfirmar={handleConfirmarCategoria}
+            onConfirmarTodos={handleConfirmarTodas}
+            pending={pending}
+          />
+
           {/* Card: Meus bancos */}
           <BancosCard
             bancos={bancos}
@@ -397,6 +504,11 @@ export function GastosClient({ gastos, bancos, plano }: GastosClientProps) {
             onEditar={openEditBanco}
             onExcluir={handleDeleteBanco}
             onSalvarSaldo={handleSalvarSaldo}
+            onConectar={handleConectar}
+            onDesconectar={handleDesconectar}
+            onSincronizar={temBancoConectado ? handleSincronizar : undefined}
+            sincronizando={pending}
+            openFinanceAtivo={OPEN_FINANCE_ATIVO}
           />
 
           {/* Card: Distribuição por categoria (donut) */}
@@ -696,6 +808,13 @@ export function GastosClient({ gastos, bancos, plano }: GastosClientProps) {
         onSubmit={handleBancoSubmit}
         pending={pending}
       />
+
+      {conectarOpen && (
+        <ConectarBanco
+          onConectado={handleConectado}
+          onFechar={() => setConectarOpen(false)}
+        />
+      )}
 
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </>

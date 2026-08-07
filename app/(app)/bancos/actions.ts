@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidarEntidade } from "@/lib/revalidate";
-import { isDemoMode } from "@/lib/demo-data";
+import { BANCO_MANUAL, isDemoMode } from "@/lib/demo-data";
 import {
   addDemoBanco,
   deleteDemoBanco,
@@ -32,6 +32,7 @@ export async function criarBanco(data: BancoFormData) {
       ordem: bancos.length,
       saldo_atualizado_em: new Date().toISOString(),
       created_at: new Date().toISOString(),
+      ...BANCO_MANUAL,
     });
     revalidarEntidade("bancos");
     return { success: true };

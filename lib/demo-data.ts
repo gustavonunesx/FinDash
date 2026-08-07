@@ -21,13 +21,30 @@ export const DEMO_CONFIG: Configuracao = {
   meta_economia_mensal: 900,
 };
 
+/** O demo não conversa com a Pluggy, então todo banco/gasto de exemplo é manual. */
+export const BANCO_MANUAL = {
+  origem: "manual",
+  provider: null,
+  provider_item_id: null,
+  provider_account_id: null,
+  sincronizado_em: null,
+  sync_status: null,
+  consentimento_expira_em: null,
+} as const;
+
+export const GASTO_MANUAL = {
+  origem: "manual",
+  provider_transaction_id: null,
+  categoria_confirmada: true,
+} as const;
+
 export const DEMO_BANCOS: Banco[] = [
-  { id: "b1", user_id: "demo-user", nome: "Inter", saldo: 600, cor: "#C4820A", ordem: 0, saldo_atualizado_em: new Date().toISOString(), created_at: new Date().toISOString() },
-  { id: "b2", user_id: "demo-user", nome: "Nubank", saldo: 2340, cor: "#7C3AED", ordem: 1, saldo_atualizado_em: new Date().toISOString(), created_at: new Date().toISOString() },
-  { id: "b3", user_id: "demo-user", nome: "Itaú", saldo: 1180, cor: "#2563EB", ordem: 2, saldo_atualizado_em: new Date().toISOString(), created_at: new Date().toISOString() },
+  { id: "b1", user_id: "demo-user", nome: "Inter", saldo: 600, cor: "#C4820A", ordem: 0, saldo_atualizado_em: new Date().toISOString(), created_at: new Date().toISOString(), ...BANCO_MANUAL },
+  { id: "b2", user_id: "demo-user", nome: "Nubank", saldo: 2340, cor: "#7C3AED", ordem: 1, saldo_atualizado_em: new Date().toISOString(), created_at: new Date().toISOString(), ...BANCO_MANUAL },
+  { id: "b3", user_id: "demo-user", nome: "Itaú", saldo: 1180, cor: "#2563EB", ordem: 2, saldo_atualizado_em: new Date().toISOString(), created_at: new Date().toISOString(), ...BANCO_MANUAL },
 ];
 
-const semParcelas = { parcelas_total: null, parcela_inicio: null } as const;
+const semParcelas = { parcelas_total: null, parcela_inicio: null, ...GASTO_MANUAL } as const;
 
 /** Mês relativo ao atual, no formato date — mantém o demo com parcelas sempre em andamento. */
 function mesRelativo(delta: number): string {
@@ -45,9 +62,9 @@ export const DEMO_GASTOS: Gasto[] = [
   { id: "6", user_id: "demo-user", nome: "Netflix", valor: 55.9, categoria: "qualidade", subcategoria: "Streaming", recorrente: true, dia_recorrencia: 20, ...semParcelas, banco_id: "b2", created_at: new Date().toISOString() },
   { id: "7", user_id: "demo-user", nome: "Restaurante", valor: 120, categoria: "qualidade", subcategoria: "Lazer", recorrente: false, dia_recorrencia: null, ...semParcelas, banco_id: "b1", created_at: new Date().toISOString() },
   { id: "8", user_id: "demo-user", nome: "Academia", valor: 99.9, categoria: "qualidade", subcategoria: "Saúde", recorrente: true, dia_recorrencia: 3, ...semParcelas, banco_id: "b3", created_at: new Date().toISOString() },
-  { id: "9", user_id: "demo-user", nome: "Notebook", valor: 416.5, categoria: "objetivo", subcategoria: "Trabalho", recorrente: false, dia_recorrencia: null, parcelas_total: 12, parcela_inicio: mesRelativo(-4), banco_id: "b2", created_at: new Date().toISOString() },
-  { id: "10", user_id: "demo-user", nome: "Passagem aérea", valor: 310, categoria: "qualidade", subcategoria: "Viagem", recorrente: false, dia_recorrencia: null, parcelas_total: 6, parcela_inicio: mesRelativo(-1), banco_id: "b3", created_at: new Date().toISOString() },
-  { id: "11", user_id: "demo-user", nome: "Geladeira", valor: 289.9, categoria: "necessidade", subcategoria: "Casa", recorrente: false, dia_recorrencia: null, parcelas_total: 10, parcela_inicio: mesRelativo(-13), banco_id: "b1", created_at: new Date().toISOString() },
+  { id: "9", user_id: "demo-user", nome: "Notebook", valor: 416.5, categoria: "objetivo", subcategoria: "Trabalho", recorrente: false, dia_recorrencia: null, parcelas_total: 12, parcela_inicio: mesRelativo(-4), banco_id: "b2", created_at: new Date().toISOString(), ...GASTO_MANUAL },
+  { id: "10", user_id: "demo-user", nome: "Passagem aérea", valor: 310, categoria: "qualidade", subcategoria: "Viagem", recorrente: false, dia_recorrencia: null, parcelas_total: 6, parcela_inicio: mesRelativo(-1), banco_id: "b3", created_at: new Date().toISOString(), ...GASTO_MANUAL },
+  { id: "11", user_id: "demo-user", nome: "Geladeira", valor: 289.9, categoria: "necessidade", subcategoria: "Casa", recorrente: false, dia_recorrencia: null, parcelas_total: 10, parcela_inicio: mesRelativo(-13), banco_id: "b1", created_at: new Date().toISOString(), ...GASTO_MANUAL },
 ];
 
 export const DEMO_FUNDOS: Fundo[] = [

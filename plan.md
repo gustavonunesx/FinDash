@@ -1,6 +1,6 @@
 # FinDash 2.0 — Plano e Checklist do Projeto
 
-> Atualizado em: 2026-06-30
+> Atualizado em: 2026-08-07
 
 ---
 
@@ -9,6 +9,24 @@
 - 🔄 Em progresso / parcial
 - ⬜ Pendente
 - 🔒 Premium gate
+
+---
+
+## Onde paramos (2026-08-07)
+
+Trabalho ativo: integração Open Finance na branch `feat/open-finance-pluggy`
+(2 commits locais, **não pusheados/PR ainda** — ver seção "Integração Open
+Finance (via Pluggy)" no backlog abaixo para o detalhe completo).
+
+**Pendências que dependem do usuário, antes de seguir:**
+1. Aplicar a **migration 010** no Supabase (`open_finance_interesse` + `origem` aceita `'ofx'`) — sem ela a importação de OFX falha na constraint
+2. Testar a importação de OFX pela UI com um extrato real de banco (só foi validada com arquivo sintético)
+3. Dizer **"pode commitar"** quando quiser abrir o PR desta branch para `main`
+
+**Pendências técnicas conhecidas (Etapa 5 do Open Finance, ainda com Pluggy dormente):**
+- `consentimento_expira_em` nunca é preenchido no vínculo (o cron já lê a coluna)
+- Excluir a conta do usuário não chama `deleteItem` na Pluggy — fica consentimento órfão
+- Falta UI de reconexão quando o consentimento expira (a action já existe)
 
 ---
 
@@ -219,10 +237,49 @@
 
 > Adicionar aqui as próximas features conforme forem definidas.
 
-### ⬜ Integração Open Finance
+### 🔄 Integração Open Finance (via Pluggy)
 
 Sincronizar automaticamente os saldos e as transações das contas bancárias do
 usuário, substituindo a entrada manual.
+
+**Decisão de arquitetura:** agregador **Pluggy** (`pluggy-sdk`).
+Acesso direto ao Open Finance Brasil exigiria ser instituição registrada no
+Banco Central (certificados ICP-Brasil, diretório de participantes, homologação,
+capital mínimo em milhões), inviável para o FinDash. A Pluggy já é participante
+autorizada e expõe o widget de consentimento pronto.
+
+> ### ⏸️ Status: implementado e **dormente** (decisão de 2026-08-06)
+>
+> O código está completo e commitado na branch `feat/open-finance-pluggy`
+> (ainda **não** mergeado em `main` — falta push + PR sob o comando "pode
+> commitar"), mas fica **desligado** por economia, não por problema técnico.
+>
+> **O motivo:** o plano de Dados da Pluggy custa **a partir de R$ 2.500/mês fixo**.
+> Com poucos usuários, isso é custo por usuário impagável; o mínimo mensal só se
+> dilui em escala.
+>
+> | Usuários pagantes | Custo/mês | Custo por usuário | Viável? |
+> |---|---|---|---|
+> | 50 | R$ 2.500 | R$ 50,00 | não — acima do próprio preço da assinatura |
+> | 500 | ~R$ 2.500 | ~R$ 5,00 | sim — ~25% da receita a R$ 19,90 |
+> | 5.000 | mínimo + excedente | ~R$ 1–3 | margem saudável |
+>
+> **Gatilho para ligar:** ~300–500 assinantes pagantes, ou quando o custo do
+> agregador cair abaixo de 10% da receita. O botão "Conectar banco" fica com selo
+> **"Em breve"** e registra o interesse de quem clica — assim a decisão de assinar
+> vem de demanda medida, não de palpite.
+>
+> **Validação sem custo:** a Pluggy oferece **14 dias de trial em produção, sem
+> cartão**. Dá para validar o fluxo inteiro com contas reais antes de pagar.
+>
+> **Enquanto isso:** importação de **OFX/CSV** cobre o caso "quero meus dados no
+> FinDash" com custo zero. Reaproveita a conciliação e o mapeamento de categoria
+> já construídos para a Pluggy.
+>
+> Alternativas descartadas: nenhum agregador de dados no Brasil é self-service
+> abaixo de ~R$ 540/mês; scraping (pynubank) está quebrado e viola termos;
+> Plaid/Yodlee não cobrem o Brasil; parsing de notificação Android esbarra nas
+> políticas do Google Play.
 
 **Base já entregue** (migration `008_bancos.sql`):
 
@@ -231,16 +288,166 @@ usuário, substituindo a entrada manual.
 - CRUD de bancos em `app/(app)/bancos/actions.ts`, entidade `bancos` no `lib/revalidate.ts`
 - Colunas **Banco** e **Saldo do banco** na tabela de /gastos + card "Meus bancos"
 
-**O que falta para o Open Finance:**
+---
 
-- ⬜ Escolher o agregador (Pluggy, Belvo ou Open Finance Brasil direto)
-- ⬜ Fluxo de consentimento OAuth + tela de conexão da conta
-- ⬜ Colunas novas em `bancos`: `provider`, `provider_item_id`, `provider_account_id`, `sincronizado_em`
-- ⬜ Distinguir saldo manual de saldo sincronizado (flag `origem: 'manual' | 'open_finance'`) — o campo `saldo` hoje é sempre manual
-- ⬜ Webhook/cron de sincronização de saldo e importação de transações
-- ⬜ Conciliação: casar transação importada com gasto já cadastrado, evitando duplicidade
-- ⬜ Renovação/revogação de consentimento (validade de 12 meses no OFB)
-- ⬜ Gate por plano: sincronização automática provavelmente Premium
+#### Contrato da Pluggy (confirmado na doc, ago/2026)
+
+| Item | Detalhe |
+|---|---|
+| SDK | `pluggy-sdk` (npm), `new PluggyClient({ clientId, clientSecret })` |
+| Auth | `POST /auth` com clientId+secret → API Key válida por **2h**. **Server-side apenas.** |
+| Connect Token | `POST /connect_token` → token de **30 min** para o widget no client |
+| Widget | Pluggy Connect — usuário escolhe o banco e autoriza; retorna `itemId` |
+| Item | 1 conexão com 1 instituição; pode conter N accounts |
+| Account | `type: BANK \| CREDIT`, `subtype`, `balance`, `name`, `number`, `currencyCode` |
+| Transaction | `id`, `description`, `descriptionRaw`, `amount`, `date`, `type: CREDIT \| DEBIT`, `category`, `status: POSTED \| PENDING` |
+| Paginação | `fetchTransactionsCursor` / `fetchAllTransactions` (o `fetchTransactions` legado está deprecado) |
+| Webhooks | `item/created`, `item/updated`, `item/error`, `transactions/created`, `transactions/updated`, `transactions/deleted` |
+| Webhook infra | Só HTTPS; IP de origem `52.67.145.81`; responder **2XX em < 5s** e processar async; até 9 retries |
+
+Semântica que guia a importação:
+- `type: DEBIT` = saída de dinheiro → vira **gasto**. `CREDIT` = entrada → **não** vira gasto.
+- `balance` em conta `BANK` = disponível para gastar; em `CREDIT` = fatura aberta do mês.
+- `status: PENDING` não é definitivo — importar apenas `POSTED` para não gerar gasto que some depois.
+
+---
+
+#### ✅ Etapa 1 — Fundação e schema (branch `feat/open-finance-pluggy`)
+
+- [x] `npm install pluggy-sdk react-pluggy-connect` (`pluggy-sdk@0.90.0`, `react-pluggy-connect@2.12.0`)
+- [x] Env vars: `PLUGGY_CLIENT_ID`, `PLUGGY_CLIENT_SECRET`, `PLUGGY_WEBHOOK_URL`
+      (a API Key **não** é env var — expira em 2h e o SDK a renova em runtime)
+- [x] Migration `009_open_finance.sql`:
+  - `bancos`: `origem`, `provider`, `provider_item_id`, `provider_account_id`,
+    `sincronizado_em`, `sync_status`, `consentimento_expira_em`
+  - índice único parcial em `(user_id, provider_account_id)` — reconectar faz upsert, não duplica
+  - `gastos`: `origem`, `provider_transaction_id`, `categoria_confirmada`
+  - índice único parcial em `gastos (user_id, provider_transaction_id)` → **idempotência no schema**
+  - tabela `open_finance_eventos` (dedup de webhook por `eventId`), RLS sem policy = só service role
+- [x] `lib/open-finance.ts`: client singleton, connect token, mapeamento Account→Banco e Transaction→Gasto
+- [x] Tipos em `lib/types.ts`: `OrigemRegistro`, `SyncStatus`, campos novos em `Banco` e `Gasto`
+- [x] `BANCO_MANUAL` / `GASTO_MANUAL` em `lib/demo-data.ts` (demo nunca fala com a Pluggy)
+
+#### ✅ Etapa 2 — Conexão e consentimento (branch `feat/open-finance-pluggy`)
+
+- [x] `POST /api/open-finance/connect-token` — autenticado; valida posse do item na reconexão
+- [x] `components/bancos/conectar-banco.tsx` com o widget Pluggy Connect (`dynamic`, sem SSR)
+- [x] Botão "Conectar banco" (primário) no card **Meus bancos**; cadastro manual vira ação secundária
+- [x] `vincularItemConectado` — busca contas com API Key no servidor e faz upsert em `bancos`
+- [x] `desconectarBanco` — `deleteItem` na Pluggy + volta para `origem='manual'`, preservando os gastos
+- [x] Banco sincronizado: saldo read-only, selo "auto"/"erro", saldo negativo em vermelho (fatura)
+- [x] Gate Premium na conexão (Free cai no `UpgradeModal`)
+
+**Validado:** `tsc --noEmit` limpo, ESLint sem erros nos arquivos novos, `npm run build` OK
+(`/gastos` seguiu em 33.6 kB — o widget é carregado sob demanda).
+
+**Pendente de teste real:** o fluxo ponta a ponta depende de aplicar a migration 009 no
+Supabase e de rodar com credenciais válidas. Nada foi testado contra a API da Pluggy ainda.
+
+#### ✅ Etapa 3 — Sincronização (branch `feat/open-finance-pluggy`)
+
+- [x] `POST /api/open-finance/webhook` — responde 2XX na hora e processa em `after()`
+      (o sync leva mais que os 5s do limite da Pluggy)
+- [x] Dedup por `eventId`: o insert em `open_finance_eventos` falha na PK quando a
+      entrega se repete, e é isso que corta o reprocessamento
+- [x] Handlers: `item/created|updated` e `transactions/created|updated` → sincroniza;
+      `item/error` → `sync_status='erro'` (selo vermelho na UI)
+- [x] `GET /api/cron/open-finance-sync` diário às 9h (`vercel.json`) — rede de segurança
+      para webhook perdido + marca consentimento a ≤15 dias de vencer
+- [x] Sync manual: botão "Atualizar" no card Meus bancos → `sincronizarAgora()`
+
+#### ✅ Etapa 4 — Conciliação (branch `feat/open-finance-pluggy`)
+
+- [x] Importa apenas `DEBIT` + não-`PENDING` (`deveVirarGasto`)
+- [x] Casamento com gasto manual: mesmo `banco_id`, valor ±R$0,01, data ±3 dias →
+      grava o `provider_transaction_id` no gasto existente em vez de duplicar
+- [x] **Recorrentes e parcelados nunca são conciliados** — são modelos de lançamento
+      repetido; casar um deles travaria a importação dos meses seguintes
+- [x] Cada gasto casa com no máximo uma transação (`usados`), e vice-versa
+- [x] Importados entram com `categoria_confirmada=false`; card "Revisar importados"
+      em `/gastos` confirma um a um ou aceita todas as sugestões
+- [x] `category` da Pluggy → bucket 50/30/20 via `mapearCategoria` do `lib/csv-parser.ts`
+- [x] Gastos `origem='open_finance'` não contam no limite Free de 10
+
+#### 🔄 Etapa 5 — Consentimento e plano
+
+- [x] Gate: conectar banco é **Premium** (Free cai no `UpgradeModal`)
+- [x] Revogação: `desconectarBanco` chama `deleteItem` e volta para `origem='manual'`,
+      preservando os gastos já importados
+- [x] Aviso de consentimento a vencer (`sync_status='consentimento_expirado'` pelo cron)
+- [x] Reconexão: o widget aceita `updateItem` e a rota valida que o item é do usuário
+- ⬜ **`consentimento_expira_em` nunca é preenchido** — a coluna existe e o cron já a lê,
+      mas o vínculo não grava a data. Falta extrair a validade do item da Pluggy.
+- ⬜ Excluir conta do usuário → `deleteItem` na Pluggy (hoje o `on delete cascade` apaga
+      a linha em `bancos` e deixa o consentimento órfão no provider)
+- ⬜ UI dedicada para reconectar quando o consentimento expira (a action existe, falta o botão)
+
+**Validado:** `tsc --noEmit` limpo, ESLint sem erros nos arquivos novos, `npm run build` OK
+(rotas `/api/open-finance/webhook` e `/api/cron/open-finance-sync` registradas; `/gastos` em 34.3 kB).
+
+**Ainda não testado contra a API real da Pluggy** — todo o fluxo foi escrito contra a
+documentação e as assinaturas do SDK, sem uma conexão sandbox de ponta a ponta.
+
+**Riscos a vigiar:**
+- Chaves da Pluggy nunca podem chegar ao client — só connect token
+- Importação precisa ser idempotente no schema; webhook reentrega até 9 vezes
+- Categorização automática é sugestão, nunca decisão silenciosa — o 50/30/20 é o núcleo do produto
+
+---
+
+### ✅ Importação de OFX (branch `feat/open-finance-pluggy`)
+
+Via de custo zero para trazer dados bancários enquanto a Pluggy fica dormente.
+O OFX é o formato de extrato que praticamente todo banco brasileiro exporta —
+estável desde 1997 e legalmente tranquilo, já que o próprio titular baixa e sobe
+o arquivo.
+
+- [x] `lib/ofx-parser.ts` — parser SGML manual (tags OFX podem vir sem fechamento,
+      então parser de XML não serve)
+- [x] **`FITID` → `provider_transaction_id`**: reusa o índice único da migration 009,
+      então reimportar o mesmo extrato não duplica nada
+- [x] Trata vírgula decimal (`-55,90`), fuso `[-3:BRT]`, data sem hora, `MEMO`/`NAME`
+- [x] Descarta FITID repetido no próprio arquivo, transação sem FITID e valor zero
+- [x] `decodificarOfx`: detecta o charset real do arquivo (tag `CHARSET:` do header
+      OFX; sem isso, tenta UTF-8 estrito e só cai para Latin-1 se falhar) — o fixo
+      em ISO-8859-1 quebrava acentos em extratos que vêm em UTF-8 (ex: Nubank)
+- [x] Só `DEBIT` vira gasto; crédito (salário) não pesa no 50/30/20
+- [x] Preview mostra o que **já foi importado antes** e será ignorado
+- [x] Categoria editável linha a linha no preview — a sugestão vem de descrição
+      críptica de extrato e o `mapearCategoria` cai em `necessidade` quando não
+      reconhece; confirmar em silêncio corromperia o score
+- [x] Seletor de banco opcional na importação (alimenta a coluna Banco)
+- [x] `CsvImportDialog` virou importador único: aceita `.ofx` e `.csv`, detectando
+      pelo arquivo. Botão renomeado para "Importar extrato"
+- [x] Migration `010`: tabela `open_finance_interesse` + `origem` aceita `'ofx'`
+
+**Testado:** parser validado contra OFX de exemplo com os casos-limite acima
+(vírgula decimal, fuso, FITID duplicado/ausente, valor zero, crédito).
+**Testado pela UI (2026-08-07):** importação ponta a ponta com extrato real
+(Nubank) funcionou — achado o bug de encoding acima, já corrigido.
+
+---
+
+### 💡 Ideia futura — análise de conformidade do extrato
+
+Discussão de produto em 2026-08-07, ainda **não implementada**: hoje um gasto
+importado (OFX/Pluggy) vira gasto normal após confirmar a categoria em "Revisar
+importados" — mistura no mesmo fluxo do gasto digitado manualmente. A ideia é
+manter uma lista só (sem separar tabelas), mas adicionar:
+
+- Filtro por origem (Todos / Manual / Importado) na tabela de `/gastos` —
+  hoje só existe filtro por categoria
+- Uma visão de conformidade que compara o extrato categorizado contra os
+  limites definidos na calculadora 50/30/20, para responder "estou gastando
+  o quanto realmente deveria?"
+- **Objetivos (30%) continuam vindo dos aportes em `/fundos`, não do extrato**
+  — dinheiro guardado normalmente não aparece como transação de saída no
+  extrato bancário, então tentar inferir "investimento" a partir do OFX não
+  funciona
+- O anel 50/30/20 do dashboard principal já soma manual + importado
+  automaticamente (por `categoria_confirmada`), então nenhum dos dois é
+  "fonte única" — não requer mudança de cálculo, só a visão nova em cima do
+  que já existe
 
 ---
 
@@ -248,7 +455,7 @@ usuário, substituindo a entrada manual.
 
 | Branch | Feature | Status |
 |--------|---------|--------|
-| `feat/bancos-saldo-gastos` | Cadastro de bancos, coluna Banco/Saldo em /gastos | 🚧 Em desenvolvimento |
+| `feat/open-finance-pluggy` | Integração Pluggy (dormente) + importação OFX | 🚧 Commitado localmente, aguardando "pode commitar" para push/PR |
 
 ---
 
@@ -264,3 +471,5 @@ usuário, substituindo a entrada manual.
 | #9 | `fix/auth-inputs-hydration` | Correção de inputs de auth e hydration mismatch | ✅ Mergeado |
 | #11 | `feat/dashboard-502030-redesign` | Dashboard v3 50/30/20-first, anéis SVG, dados reais, seletor de mês | ✅ Mergeado |
 | #12 | `feature/gastos-redesign-modal` | Redesign /gastos: modal centralizado, DonutChart, coluna de insights | ✅ Mergeado |
+| #24 | `fix/revalidacao-entre-rotas` | Revalida todas as rotas que compartilham a entidade alterada | ✅ Mergeado |
+| #25 | `feat/bancos-saldo-gastos` | Cadastro de bancos com saldo manual + integração em gastos e dashboard | ✅ Mergeado |

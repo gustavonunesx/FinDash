@@ -69,9 +69,22 @@ Estas regras valem para qualquer pedido de feature, correção, ajuste etc. **fo
 - **Nunca usar laranja — usar apenas os 4 tokens FinDash**
 
 ### Planos e Gates
-- Free: 10 gastos, 3 fundos, sem histórico, sem PDF export
-- Premium: tudo ilimitado + histórico + PDF + alertas
+- Free: 10 gastos, 3 fundos, sem histórico, sem PDF export, sem Open Finance
+- Premium: tudo ilimitado + histórico + PDF + alertas + conexão Open Finance
 - Família: até 3 membros + view agregada
+- Gastos com `origem='open_finance'` **não** contam no limite Free (uma conexão traz dezenas de transações de uma vez)
+
+### Open Finance (invariantes)
+- **Status: implementado e dormente.** O plano de Dados da Pluggy custa a partir de R$ 2.500/mês fixo — só se paga com ~300-500 assinantes. `NEXT_PUBLIC_OPEN_FINANCE_ATIVO=true` liga (inclusive para o trial de 14 dias); sem isso o botão mostra "Em breve" e grava em `open_finance_interesse`, que é o sinal de demanda para decidir quando assinar
+- A via ativa hoje é **importação de OFX** (`lib/ofx-parser.ts`), custo zero. O `FITID` do OFX ocupa o mesmo `provider_transaction_id` da Pluggy, então a dedup vale para as duas fontes
+- `PLUGGY_CLIENT_SECRET` nunca sai do servidor — `lib/open-finance*.ts` são `server-only`. Só o connect token vai ao browser
+- O `onSuccess` do widget entrega apenas o `itemId`; saldos e transações são buscados no servidor com a API Key (payload do client é forjável)
+- Importação é idempotente pelo índice único `gastos (user_id, provider_transaction_id)` — o webhook reentrega até 9 vezes
+- Webhook responde 2XX imediatamente e processa em `after()`; acima de 5s a Pluggy considera falha
+- Importar só `DEBIT` não-`PENDING`: transação pendente pode ser cancelada e sumir depois
+- Conta `CREDIT` (fatura) é gravada como saldo **negativo** — senão um cartão estourado vira patrimônio
+- Transação importada entra com `categoria_confirmada=false`; categorizar em silêncio corromperia o score 50/30/20
+- Conciliação nunca casa gasto `recorrente` ou parcelado — são modelos de lançamento repetido
 
 ## Estrutura Rápida
 
@@ -80,8 +93,8 @@ app/
   (marketing)/precos/     — Página de planos
   (app)/                  — Rotas protegidas (auth + onboarding)
     dashboard/            — Dashboard 50/30/20-first (verde claro #F4F7F5): topbar c/ aderência, 3 anéis-bucket (SVG), transações + metas/investimentos; renda real, seletor de mês via histórico, modo privacidade
-    gastos/               — CRUD de gastos + importação CSV; modal centralizado "Novo gasto" com tipo de cobrança (Único/Recorrente/Parcelado) e seletor de banco; tabela com colunas Banco + Saldo do banco (ações de editar/excluir no hover da linha), 3 cards de resumo, DonutChart SVG, coluna direita com card "Meus bancos" (saldo manual editável inline) + insights
-    bancos/               — Server actions do CRUD de bancos (sem página própria; a UI vive em /gastos). Saldo manual até a integração Open Finance
+    gastos/               — CRUD de gastos + importação CSV; modal centralizado "Novo gasto" com tipo de cobrança (Único/Recorrente/Parcelado) e seletor de banco; tabela com colunas Banco + Saldo do banco (ações de editar/excluir no hover da linha), 3 cards de resumo, DonutChart SVG, coluna direita com card "Revisar importados" (gastos do Open Finance pendentes de bucket) + "Meus bancos" (saldo manual editável inline; sincronizado é read-only) + insights
+    bancos/               — Server actions do CRUD de bancos (sem página própria; a UI vive em /gastos). `actions.ts` = saldo manual; `open-finance-actions.ts` = vincular/desconectar item da Pluggy (Premium)
     fundos/               — CRUD de fundos + CDI; lista compacta FundoRow (barra colorida, progresso, badge meta), ModalNovoFundo (responsivo, scroll interno, checkbox reserva_emergencia), ModalConfirmarAporte (atalhos rápidos, celebração), coluna direita com ResumoGeralCard + RendimentoCard (verde sólido, CDI/12) + PlanoStatusCard (âmbar, só Free no limite)
     calculadora/          — Regra 50/30/20 + realocação de limites entre categorias (persistida em `configuracoes.ajustes_limite` jsonb) + distribuição de renda extra com aporte direto em fundo de reserva
     historico/            — Analytics (Premium)
@@ -89,11 +102,11 @@ app/
     configuracoes/        — Perfil, referral, exportar PDF
     onboarding/           — Wizard 3 etapas
   (auth)/                 — login, cadastro, recuperar-senha
-  api/                    — stripe, cron, notificacoes, exportar-pdf, taxas
+  api/                    — stripe, cron (relatorio-mensal, open-finance-sync), notificacoes, exportar-pdf, taxas, open-finance (connect-token, webhook)
   page.tsx                — Landing page
 components/               — 55 componentes React (incl. GastoModal, DonutChart, FundoRow, ModalNovoFundo, ModalConfirmarAporte)
-lib/                      — 19 módulos utilitários
-supabase/migrations/      — 8 migrations SQL (incl. 004: ajustes_limite em configuracoes; 005: reserva_emergencia em fundos; 006: renda_extra_historico; 007: parcelas_total/parcela_inicio em gastos; 008: tabela bancos + gastos.banco_id)
+lib/                      — 21 módulos utilitários (incl. open-finance.ts e open-finance-sync.ts, ambos server-only)
+supabase/migrations/      — 9 migrations SQL (incl. 004: ajustes_limite em configuracoes; 005: reserva_emergencia em fundos; 006: renda_extra_historico; 007: parcelas_total/parcela_inicio em gastos; 008: tabela bancos + gastos.banco_id; 009: Open Finance — origem/provider em bancos e gastos, open_finance_eventos)
 ```
 
 ## Variáveis de Ambiente
@@ -109,7 +122,14 @@ NEXT_PUBLIC_APP_URL
 RESEND_API_KEY
 RESEND_FROM
 CRON_SECRET
+PLUGGY_CLIENT_ID
+PLUGGY_CLIENT_SECRET
+PLUGGY_WEBHOOK_URL
 ```
+
+> A API Key da Pluggy **não** é variável de ambiente: expira em 2h e é gerada em
+> runtime pelo SDK a partir do client id + secret. Nenhuma credencial da Pluggy
+> pode receber o prefixo `NEXT_PUBLIC_` — só o connect token vai para o browser.
 
 ## Comandos Úteis
 
