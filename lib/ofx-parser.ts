@@ -72,6 +72,34 @@ function parseValor(raw: string | null): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * O charset varia por banco: alguns declaram `CHARSET:1252` (Latin-1) no
+ * header, outros exportam UTF-8 sem declarar nada. Decodificar como Latin-1
+ * um arquivo que já é UTF-8 (ou vice-versa) produz mojibake nos acentos, então
+ * o charset é decidido a partir dos bytes reais, não de um fixo.
+ */
+export function decodificarOfx(bytes: ArrayBuffer): string {
+  // O header OFX é sempre ASCII puro, então é seguro ler os primeiros bytes
+  // como Latin-1 só para localizar as tags CHARSET/ENCODING.
+  const head = new TextDecoder("ISO-8859-1").decode(bytes.slice(0, 512));
+  const charset = head.match(/CHARSET:(\S+)/i)?.[1]?.toUpperCase();
+
+  if (charset === "UTF-8" || charset === "UTF8") {
+    return new TextDecoder("utf-8").decode(bytes);
+  }
+  if (charset === "1252" || charset === "8859-1" || charset === "ISO-8859-1") {
+    return new TextDecoder("ISO-8859-1").decode(bytes);
+  }
+
+  // Sem declaração confiável: tenta UTF-8 estrito (rejeita bytes inválidos) e
+  // só cai para Latin-1 se o arquivo não for UTF-8 válido.
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder("ISO-8859-1").decode(bytes);
+  }
+}
+
 export function parseOfx(content: string): OfxResultado {
   const errors: string[] = [];
 

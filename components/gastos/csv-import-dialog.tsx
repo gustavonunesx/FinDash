@@ -18,7 +18,7 @@ import {
   importarGastosOfx,
 } from "@/app/(app)/gastos/import-actions";
 import type { CsvGastoRow } from "@/lib/csv-parser";
-import type { OfxTransacao } from "@/lib/ofx-parser";
+import { decodificarOfx, type OfxTransacao } from "@/lib/ofx-parser";
 import { CATEGORIA_LABELS, type Banco, type CategoriaGasto } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
@@ -48,40 +48,36 @@ export function CsvImportDialog({ bancos }: ImportDialogProps) {
     setErrors([]);
   }
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const ehOfx =
       file.name.toLowerCase().endsWith(".ofx") || file.type === "application/x-ofx";
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const content = reader.result as string;
-      startTransition(async () => {
-        if (ehOfx) {
-          const r = await parseOfxPreview(content);
-          setFormato("ofx");
-          setOfxRows(r.transacoes);
-          setJaImportados(new Set(r.jaImportados));
-          setConta(r.conta);
-          setErrors(r.errors);
-          setPreview([]);
-          if (r.transacoes.length === 0) {
-            toast.error(r.errors[0] ?? "Nenhuma despesa encontrada no extrato.");
-          }
-        } else {
-          const r = await parseCsvPreview(content);
-          setFormato("csv");
-          setPreview(r.rows);
-          setErrors(r.errors);
-          setOfxRows([]);
-          if (r.rows.length === 0 && r.errors.length > 0) toast.error(r.errors[0]);
+    const content = ehOfx ? decodificarOfx(await file.arrayBuffer()) : await file.text();
+
+    startTransition(async () => {
+      if (ehOfx) {
+        const r = await parseOfxPreview(content);
+        setFormato("ofx");
+        setOfxRows(r.transacoes);
+        setJaImportados(new Set(r.jaImportados));
+        setConta(r.conta);
+        setErrors(r.errors);
+        setPreview([]);
+        if (r.transacoes.length === 0) {
+          toast.error(r.errors[0] ?? "Nenhuma despesa encontrada no extrato.");
         }
-      });
-    };
-    // OFX brasileiro costuma vir em Latin-1; ler como UTF-8 quebraria acentos.
-    reader.readAsText(file, ehOfx ? "ISO-8859-1" : "UTF-8");
+      } else {
+        const r = await parseCsvPreview(content);
+        setFormato("csv");
+        setPreview(r.rows);
+        setErrors(r.errors);
+        setOfxRows([]);
+        if (r.rows.length === 0 && r.errors.length > 0) toast.error(r.errors[0]);
+      }
+    });
   }
 
   function mudarCategoria(fitid: string, categoria: CategoriaGasto) {

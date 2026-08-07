@@ -1,6 +1,6 @@
 # FinDash 2.0 — Plano e Checklist do Projeto
 
-> Atualizado em: 2026-06-30
+> Atualizado em: 2026-08-07
 
 ---
 
@@ -9,6 +9,24 @@
 - 🔄 Em progresso / parcial
 - ⬜ Pendente
 - 🔒 Premium gate
+
+---
+
+## Onde paramos (2026-08-07)
+
+Trabalho ativo: integração Open Finance na branch `feat/open-finance-pluggy`
+(2 commits locais, **não pusheados/PR ainda** — ver seção "Integração Open
+Finance (via Pluggy)" no backlog abaixo para o detalhe completo).
+
+**Pendências que dependem do usuário, antes de seguir:**
+1. Aplicar a **migration 010** no Supabase (`open_finance_interesse` + `origem` aceita `'ofx'`) — sem ela a importação de OFX falha na constraint
+2. Testar a importação de OFX pela UI com um extrato real de banco (só foi validada com arquivo sintético)
+3. Dizer **"pode commitar"** quando quiser abrir o PR desta branch para `main`
+
+**Pendências técnicas conhecidas (Etapa 5 do Open Finance, ainda com Pluggy dormente):**
+- `consentimento_expira_em` nunca é preenchido no vínculo (o cron já lê a coluna)
+- Excluir a conta do usuário não chama `deleteItem` na Pluggy — fica consentimento órfão
+- Falta UI de reconexão quando o consentimento expira (a action já existe)
 
 ---
 
@@ -232,8 +250,9 @@ autorizada e expõe o widget de consentimento pronto.
 
 > ### ⏸️ Status: implementado e **dormente** (decisão de 2026-08-06)
 >
-> O código está completo e mergeado, mas **desligado**, por economia — não por
-> problema técnico.
+> O código está completo e commitado na branch `feat/open-finance-pluggy`
+> (ainda **não** mergeado em `main` — falta push + PR sob o comando "pode
+> commitar"), mas fica **desligado** por economia, não por problema técnico.
 >
 > **O motivo:** o plano de Dados da Pluggy custa **a partir de R$ 2.500/mês fixo**.
 > Com poucos usuários, isso é custo por usuário impagável; o mínimo mensal só se
@@ -389,7 +408,9 @@ o arquivo.
       então reimportar o mesmo extrato não duplica nada
 - [x] Trata vírgula decimal (`-55,90`), fuso `[-3:BRT]`, data sem hora, `MEMO`/`NAME`
 - [x] Descarta FITID repetido no próprio arquivo, transação sem FITID e valor zero
-- [x] Lê como **ISO-8859-1** — OFX brasileiro raramente é UTF-8 e os acentos quebrariam
+- [x] `decodificarOfx`: detecta o charset real do arquivo (tag `CHARSET:` do header
+      OFX; sem isso, tenta UTF-8 estrito e só cai para Latin-1 se falhar) — o fixo
+      em ISO-8859-1 quebrava acentos em extratos que vêm em UTF-8 (ex: Nubank)
 - [x] Só `DEBIT` vira gasto; crédito (salário) não pesa no 50/30/20
 - [x] Preview mostra o que **já foi importado antes** e será ignorado
 - [x] Categoria editável linha a linha no preview — a sugestão vem de descrição
@@ -402,7 +423,31 @@ o arquivo.
 
 **Testado:** parser validado contra OFX de exemplo com os casos-limite acima
 (vírgula decimal, fuso, FITID duplicado/ausente, valor zero, crédito).
-**Não testado:** importação ponta a ponta pela UI com extrato de banco real.
+**Testado pela UI (2026-08-07):** importação ponta a ponta com extrato real
+(Nubank) funcionou — achado o bug de encoding acima, já corrigido.
+
+---
+
+### 💡 Ideia futura — análise de conformidade do extrato
+
+Discussão de produto em 2026-08-07, ainda **não implementada**: hoje um gasto
+importado (OFX/Pluggy) vira gasto normal após confirmar a categoria em "Revisar
+importados" — mistura no mesmo fluxo do gasto digitado manualmente. A ideia é
+manter uma lista só (sem separar tabelas), mas adicionar:
+
+- Filtro por origem (Todos / Manual / Importado) na tabela de `/gastos` —
+  hoje só existe filtro por categoria
+- Uma visão de conformidade que compara o extrato categorizado contra os
+  limites definidos na calculadora 50/30/20, para responder "estou gastando
+  o quanto realmente deveria?"
+- **Objetivos (30%) continuam vindo dos aportes em `/fundos`, não do extrato**
+  — dinheiro guardado normalmente não aparece como transação de saída no
+  extrato bancário, então tentar inferir "investimento" a partir do OFX não
+  funciona
+- O anel 50/30/20 do dashboard principal já soma manual + importado
+  automaticamente (por `categoria_confirmada`), então nenhum dos dois é
+  "fonte única" — não requer mudança de cálculo, só a visão nova em cima do
+  que já existe
 
 ---
 
@@ -410,7 +455,7 @@ o arquivo.
 
 | Branch | Feature | Status |
 |--------|---------|--------|
-| `feat/bancos-saldo-gastos` | Cadastro de bancos, coluna Banco/Saldo em /gastos | 🚧 Em desenvolvimento |
+| `feat/open-finance-pluggy` | Integração Pluggy (dormente) + importação OFX | 🚧 Commitado localmente, aguardando "pode commitar" para push/PR |
 
 ---
 
@@ -426,3 +471,5 @@ o arquivo.
 | #9 | `fix/auth-inputs-hydration` | Correção de inputs de auth e hydration mismatch | ✅ Mergeado |
 | #11 | `feat/dashboard-502030-redesign` | Dashboard v3 50/30/20-first, anéis SVG, dados reais, seletor de mês | ✅ Mergeado |
 | #12 | `feature/gastos-redesign-modal` | Redesign /gastos: modal centralizado, DonutChart, coluna de insights | ✅ Mergeado |
+| #24 | `fix/revalidacao-entre-rotas` | Revalida todas as rotas que compartilham a entidade alterada | ✅ Mergeado |
+| #25 | `feat/bancos-saldo-gastos` | Cadastro de bancos com saldo manual + integração em gastos e dashboard | ✅ Mergeado |
