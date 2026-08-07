@@ -27,6 +27,8 @@ interface BancosCardProps {
   /** Ausente quando não há banco conectado — não há o que sincronizar. */
   onSincronizar?: () => void;
   sincronizando?: boolean;
+  /** `false` enquanto a Pluggy está dormente: o botão vira "Em breve". */
+  openFinanceAtivo: boolean;
 }
 
 function ehSincronizado(b: Banco): boolean {
@@ -45,6 +47,7 @@ export function BancosCard({
   onDesconectar,
   onSincronizar,
   sincronizando,
+  openFinanceAtivo,
 }: BancosCardProps) {
   const [editandoSaldo, setEditandoSaldo] = useState<string | null>(null);
   const [rascunho, setRascunho] = useState("");
@@ -370,14 +373,19 @@ export function BancosCard({
       <button
         type="button"
         onClick={onConectar}
+        title={
+          openFinanceAtivo
+            ? undefined
+            : "Sincronização automática ainda não disponível — avise que você quer"
+        }
         style={{
           marginTop: 14,
           width: "100%",
           padding: "9px 0",
           borderRadius: 9,
-          border: "none",
-          background: "#0E8F6A",
-          color: "#fff",
+          border: openFinanceAtivo ? "none" : "1.5px solid #D8DCE2",
+          background: openFinanceAtivo ? "#0E8F6A" : "#fff",
+          color: openFinanceAtivo ? "#fff" : "#7C8896",
           fontSize: 12,
           fontWeight: 600,
           cursor: "pointer",
@@ -389,6 +397,20 @@ export function BancosCard({
       >
         <IconBuildingBank style={{ width: 13, height: 13 }} />
         Conectar banco
+        {!openFinanceAtivo && (
+          <span
+            style={{
+              borderRadius: 999,
+              padding: "1px 6px",
+              fontSize: 10,
+              fontWeight: 600,
+              color: "#92620A",
+              background: "#FBF3E2",
+            }}
+          >
+            Em breve
+          </span>
+        )}
       </button>
 
       <button
@@ -399,9 +421,9 @@ export function BancosCard({
           width: "100%",
           padding: "8px 0",
           borderRadius: 9,
-          border: "1.5px dashed #D8DCE2",
-          background: "#fff",
-          color: "#7C8896",
+          border: openFinanceAtivo ? "1.5px dashed #D8DCE2" : "none",
+          background: openFinanceAtivo ? "#fff" : "#0E8F6A",
+          color: openFinanceAtivo ? "#7C8896" : "#fff",
           fontSize: 12,
           fontWeight: 600,
           cursor: "pointer",
@@ -412,7 +434,7 @@ export function BancosCard({
         }}
       >
         <IconPlus style={{ width: 13, height: 13 }} />
-        Cadastrar manualmente
+        Cadastrar banco
       </button>
     </div>
   );

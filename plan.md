@@ -226,9 +226,41 @@ usuário, substituindo a entrada manual.
 
 **Decisão de arquitetura:** agregador **Pluggy** (`pluggy-sdk`).
 Acesso direto ao Open Finance Brasil exigiria ser instituição registrada no
-Banco Central (certificados ICP-Brasil, diretório de participantes, homologação),
-inviável para o FinDash. A Pluggy já é participante autorizada e expõe o widget
-de consentimento pronto.
+Banco Central (certificados ICP-Brasil, diretório de participantes, homologação,
+capital mínimo em milhões), inviável para o FinDash. A Pluggy já é participante
+autorizada e expõe o widget de consentimento pronto.
+
+> ### ⏸️ Status: implementado e **dormente** (decisão de 2026-08-06)
+>
+> O código está completo e mergeado, mas **desligado**, por economia — não por
+> problema técnico.
+>
+> **O motivo:** o plano de Dados da Pluggy custa **a partir de R$ 2.500/mês fixo**.
+> Com poucos usuários, isso é custo por usuário impagável; o mínimo mensal só se
+> dilui em escala.
+>
+> | Usuários pagantes | Custo/mês | Custo por usuário | Viável? |
+> |---|---|---|---|
+> | 50 | R$ 2.500 | R$ 50,00 | não — acima do próprio preço da assinatura |
+> | 500 | ~R$ 2.500 | ~R$ 5,00 | sim — ~25% da receita a R$ 19,90 |
+> | 5.000 | mínimo + excedente | ~R$ 1–3 | margem saudável |
+>
+> **Gatilho para ligar:** ~300–500 assinantes pagantes, ou quando o custo do
+> agregador cair abaixo de 10% da receita. O botão "Conectar banco" fica com selo
+> **"Em breve"** e registra o interesse de quem clica — assim a decisão de assinar
+> vem de demanda medida, não de palpite.
+>
+> **Validação sem custo:** a Pluggy oferece **14 dias de trial em produção, sem
+> cartão**. Dá para validar o fluxo inteiro com contas reais antes de pagar.
+>
+> **Enquanto isso:** importação de **OFX/CSV** cobre o caso "quero meus dados no
+> FinDash" com custo zero. Reaproveita a conciliação e o mapeamento de categoria
+> já construídos para a Pluggy.
+>
+> Alternativas descartadas: nenhum agregador de dados no Brasil é self-service
+> abaixo de ~R$ 540/mês; scraping (pynubank) está quebrado e viola termos;
+> Plaid/Yodlee não cobrem o Brasil; parsing de notificação Android esbarra nas
+> políticas do Google Play.
 
 **Base já entregue** (migration `008_bancos.sql`):
 
@@ -341,6 +373,36 @@ documentação e as assinaturas do SDK, sem uma conexão sandbox de ponta a pont
 - Chaves da Pluggy nunca podem chegar ao client — só connect token
 - Importação precisa ser idempotente no schema; webhook reentrega até 9 vezes
 - Categorização automática é sugestão, nunca decisão silenciosa — o 50/30/20 é o núcleo do produto
+
+---
+
+### ✅ Importação de OFX (branch `feat/open-finance-pluggy`)
+
+Via de custo zero para trazer dados bancários enquanto a Pluggy fica dormente.
+O OFX é o formato de extrato que praticamente todo banco brasileiro exporta —
+estável desde 1997 e legalmente tranquilo, já que o próprio titular baixa e sobe
+o arquivo.
+
+- [x] `lib/ofx-parser.ts` — parser SGML manual (tags OFX podem vir sem fechamento,
+      então parser de XML não serve)
+- [x] **`FITID` → `provider_transaction_id`**: reusa o índice único da migration 009,
+      então reimportar o mesmo extrato não duplica nada
+- [x] Trata vírgula decimal (`-55,90`), fuso `[-3:BRT]`, data sem hora, `MEMO`/`NAME`
+- [x] Descarta FITID repetido no próprio arquivo, transação sem FITID e valor zero
+- [x] Lê como **ISO-8859-1** — OFX brasileiro raramente é UTF-8 e os acentos quebrariam
+- [x] Só `DEBIT` vira gasto; crédito (salário) não pesa no 50/30/20
+- [x] Preview mostra o que **já foi importado antes** e será ignorado
+- [x] Categoria editável linha a linha no preview — a sugestão vem de descrição
+      críptica de extrato e o `mapearCategoria` cai em `necessidade` quando não
+      reconhece; confirmar em silêncio corromperia o score
+- [x] Seletor de banco opcional na importação (alimenta a coluna Banco)
+- [x] `CsvImportDialog` virou importador único: aceita `.ofx` e `.csv`, detectando
+      pelo arquivo. Botão renomeado para "Importar extrato"
+- [x] Migration `010`: tabela `open_finance_interesse` + `origem` aceita `'ofx'`
+
+**Testado:** parser validado contra OFX de exemplo com os casos-limite acima
+(vírgula decimal, fuso, FITID duplicado/ausente, valor zero, crédito).
+**Não testado:** importação ponta a ponta pela UI com extrato de banco real.
 
 ---
 

@@ -75,6 +75,8 @@ Estas regras valem para qualquer pedido de feature, correção, ajuste etc. **fo
 - Gastos com `origem='open_finance'` **não** contam no limite Free (uma conexão traz dezenas de transações de uma vez)
 
 ### Open Finance (invariantes)
+- **Status: implementado e dormente.** O plano de Dados da Pluggy custa a partir de R$ 2.500/mês fixo — só se paga com ~300-500 assinantes. `NEXT_PUBLIC_OPEN_FINANCE_ATIVO=true` liga (inclusive para o trial de 14 dias); sem isso o botão mostra "Em breve" e grava em `open_finance_interesse`, que é o sinal de demanda para decidir quando assinar
+- A via ativa hoje é **importação de OFX** (`lib/ofx-parser.ts`), custo zero. O `FITID` do OFX ocupa o mesmo `provider_transaction_id` da Pluggy, então a dedup vale para as duas fontes
 - `PLUGGY_CLIENT_SECRET` nunca sai do servidor — `lib/open-finance*.ts` são `server-only`. Só o connect token vai ao browser
 - O `onSuccess` do widget entrega apenas o `itemId`; saldos e transações são buscados no servidor com a API Key (payload do client é forjável)
 - Importação é idempotente pelo índice único `gastos (user_id, provider_transaction_id)` — o webhook reentrega até 9 vezes

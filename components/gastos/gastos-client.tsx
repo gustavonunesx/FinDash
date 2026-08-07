@@ -32,6 +32,7 @@ import {
   sincronizarAgora,
   confirmarCategoriaGasto,
   confirmarTodasCategorias,
+  registrarInteresseOpenFinance,
 } from "@/app/(app)/bancos/open-finance-actions";
 import {
   CATEGORIA_LABELS,
@@ -61,6 +62,14 @@ const emptyForm: GastoFormData = {
 };
 
 type FilterTab = CategoriaGasto | "todos";
+
+/**
+ * A integração com a Pluggy está pronta mas desligada: o plano de Dados custa a
+ * partir de R$ 2.500/mês e só se paga com algumas centenas de assinantes. Ligue
+ * com `NEXT_PUBLIC_OPEN_FINANCE_ATIVO=true` — inclusive para usar o trial de 14
+ * dias sem alterar código.
+ */
+const OPEN_FINANCE_ATIVO = process.env.NEXT_PUBLIC_OPEN_FINANCE_ATIVO === "true";
 
 const CATEGORIA_BAR_COLOR: Record<CategoriaGasto, string> = {
   necessidade: "#C4820A",
@@ -204,6 +213,16 @@ export function GastosClient({ gastos, bancos, plano }: GastosClientProps) {
   }
 
   function handleConectar() {
+    // A Pluggy cobra R$ 2.500/mês no mínimo, então a conexão fica dormente até a
+    // base justificar. O clique vira sinal de demanda para decidir quando ligar.
+    if (!OPEN_FINANCE_ATIVO) {
+      startTransition(async () => {
+        await registrarInteresseOpenFinance();
+        toast.success("Avisamos assim que a conexão automática estiver disponível");
+      });
+      return;
+    }
+
     if (plano !== "premium") {
       setUpgradeOpen(true);
       return;
@@ -325,8 +344,8 @@ export function GastosClient({ gastos, bancos, plano }: GastosClientProps) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {/* Importar CSV */}
-          <CsvImportDialog />
+          {/* Importar extrato (OFX/CSV) */}
+          <CsvImportDialog bancos={bancos} />
 
           {/* + Novo gasto */}
           <button
@@ -489,6 +508,7 @@ export function GastosClient({ gastos, bancos, plano }: GastosClientProps) {
             onDesconectar={handleDesconectar}
             onSincronizar={temBancoConectado ? handleSincronizar : undefined}
             sincronizando={pending}
+            openFinanceAtivo={OPEN_FINANCE_ATIVO}
           />
 
           {/* Card: Distribuição por categoria (donut) */}

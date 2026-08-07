@@ -5,12 +5,130 @@ import { isDemoMode } from "@/lib/demo-data";
 import { getDemoGastos } from "@/lib/demo-store";
 import { getProfile } from "@/lib/data";
 import { parseGastosCsv, type CsvGastoRow } from "@/lib/csv-parser";
+import { apenasDebitos, parseOfx, type OfxTransacao } from "@/lib/ofx-parser";
 import { createClient } from "@/lib/supabase/server";
-import { LIMITES_FREE } from "@/lib/types";
+import { LIMITES_FREE, type CategoriaGasto } from "@/lib/types";
 import { criarGasto, type GastoFormData } from "./actions";
 
 export async function parseCsvPreview(content: string) {
   return parseGastosCsv(content);
+}
+
+export type OfxPreview = {
+  transacoes: OfxTransacao[];
+  saldo: number | null;
+  conta: string | null;
+  errors: string[];
+  /** FITIDs que já existem no banco — reimportação do mesmo extrato. */
+  jaImportados: string[];
+};
+
+export async function parseOfxPreview(content: string): Promise<OfxPreview> {
+  const { transacoes, saldo, conta, errors } = parseOfx(content);
+  const debitos = apenasDebitos(transacoes);
+
+  if (debitos.length === 0) {
+    return { transacoes: [], saldo, conta, errors, jaImportados: [] };
+  }
+
+  // Marcar o que já entrou antes é o que torna reimportar o mesmo extrato uma
+  // operação segura — o usuário vê o que será ignorado antes de confirmar.
+  const jaImportados = isDemoMode()
+    ? []
+    : await (async () => {
+        const supabase = await createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return [];
+        const { data } = await supabase
+          .from("gastos")
+          .select("provider_transaction_id")
+          .eq("user_id", user.id)
+          .in(
+            "provider_transaction_id",
+            debitos.map((t) => t.fitid)
+          );
+        return (data ?? []).map((g) => g.provider_transaction_id as string);
+      })();
+
+  return { transacoes: debitos, saldo, conta, errors, jaImportados };
+}
+
+export type OfxImportRow = {
+  fitid: string;
+  nome: string;
+  valor: number;
+  categoria: CategoriaGasto;
+  data: string;
+};
+
+export async function importarGastosOfx(rows: OfxImportRow[], bancoId: string | null) {
+  if (rows.length === 0) return { error: "Nenhuma transação para importar." };
+
+  if (isDemoMode()) {
+    return { error: "Importação de OFX não está disponível no modo demonstração." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Não autenticado" };
+
+  const profile = await getProfile();
+  if (profile?.plano !== "premium") {
+    const { count } = await supabase
+      .from("gastos")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("origem", "manual");
+
+    const restante = LIMITES_FREE.gastos - (count ?? 0);
+    if (restante <= 0) {
+      return { error: `Limite de ${LIMITES_FREE.gastos} gastos no plano Free.` };
+    }
+    rows = rows.slice(0, restante);
+  }
+
+  const linhas = rows.map((r) => ({
+    user_id: user.id,
+    nome: r.nome,
+    valor: r.valor,
+    categoria: r.categoria,
+    subcategoria: null,
+    recorrente: false,
+    dia_recorrencia: null,
+    parcelas_total: null,
+    parcela_inicio: null,
+    banco_id: bancoId,
+    origem: "ofx",
+    provider_transaction_id: r.fitid,
+    // O usuário já revisou a categoria na tela de preview antes de confirmar.
+    categoria_confirmada: true,
+    created_at: r.data,
+  }));
+
+  // O índice único em (user_id, provider_transaction_id) absorve o que já foi
+  // importado antes, então reimportar o mesmo extrato não duplica nada.
+  const { data, error } = await supabase
+    .from("gastos")
+    .upsert(linhas, {
+      onConflict: "user_id,provider_transaction_id",
+      ignoreDuplicates: true,
+    })
+    .select("id");
+
+  if (error) return { error: error.message };
+
+  revalidarEntidade("gastos");
+
+  const importados = data?.length ?? 0;
+  return {
+    success: true,
+    imported: importados,
+    duplicados: rows.length - importados,
+  };
 }
 
 export async function importarGastosCsv(rows: CsvGastoRow[]) {

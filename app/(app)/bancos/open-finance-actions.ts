@@ -144,6 +144,29 @@ export async function desconectarBanco(bancoId: string) {
   return { success: true };
 }
 
+/**
+ * A conexão via Pluggy está desligada até a base justificar o mínimo de
+ * R$ 2.500/mês do plano de Dados. Registrar quem clicou em "Em breve" transforma
+ * essa decisão em demanda medida, em vez de palpite.
+ */
+export async function registrarInteresseOpenFinance() {
+  if (isDemoMode()) return { success: true };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Não autenticado" };
+
+  // Clicar de novo não é erro: o upsert mantém a primeira data.
+  const { error } = await supabase
+    .from("open_finance_interesse")
+    .upsert({ user_id: user.id }, { onConflict: "user_id", ignoreDuplicates: true });
+
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
 /** Botão "Atualizar agora": puxa saldo e transações sem esperar webhook ou cron. */
 export async function sincronizarAgora() {
   if (isDemoMode()) {
