@@ -21,7 +21,12 @@ export async function GET(request: Request) {
         const destination = onboardingCompleted ? next : "/onboarding";
         return NextResponse.redirect(`${origin}${destination}`);
       }
+      console.error("[auth/callback] sem erro na troca de code, mas getUser() veio vazio");
+    } else {
+      console.error("[auth/callback] exchangeCodeForSession falhou:", error.message);
     }
+  } else {
+    console.error("[auth/callback] request sem ?code=");
   }
 
   return NextResponse.redirect(`${origin}/login?error=auth`);
