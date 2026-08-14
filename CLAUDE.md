@@ -106,7 +106,7 @@ app/
   page.tsx                — Landing page
 components/               — 55 componentes React (incl. GastoModal, DonutChart, FundoRow, ModalNovoFundo, ModalConfirmarAporte)
 lib/                      — 21 módulos utilitários (incl. open-finance.ts e open-finance-sync.ts, ambos server-only)
-supabase/migrations/      — 9 migrations SQL (incl. 004: ajustes_limite em configuracoes; 005: reserva_emergencia em fundos; 006: renda_extra_historico; 007: parcelas_total/parcela_inicio em gastos; 008: tabela bancos + gastos.banco_id; 009: Open Finance — origem/provider em bancos e gastos, open_finance_eventos)
+supabase/migrations/      — 10 migrations SQL (incl. 004: ajustes_limite em configuracoes; 005: reserva_emergencia em fundos; 006: renda_extra_historico; 007: parcelas_total/parcela_inicio em gastos; 008: tabela bancos + gastos.banco_id; 009: Open Finance — origem/provider em bancos e gastos, open_finance_eventos; 010: open_finance_interesse + origem 'ofx')
 ```
 
 ## Variáveis de Ambiente

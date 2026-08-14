@@ -1,6 +1,6 @@
 # FinDash 2.0 — Plano e Checklist do Projeto
 
-> Atualizado em: 2026-08-07
+> Atualizado em: 2026-08-14
 
 ---
 
@@ -12,21 +12,26 @@
 
 ---
 
-## Onde paramos (2026-08-07)
+## Onde paramos (2026-08-14)
 
-Trabalho ativo: integração Open Finance na branch `feat/open-finance-pluggy`
-(2 commits locais, **não pusheados/PR ainda** — ver seção "Integração Open
-Finance (via Pluggy)" no backlog abaixo para o detalhe completo).
-
-**Pendências que dependem do usuário, antes de seguir:**
-1. Aplicar a **migration 010** no Supabase (`open_finance_interesse` + `origem` aceita `'ofx'`) — sem ela a importação de OFX falha na constraint
-2. Testar a importação de OFX pela UI com um extrato real de banco (só foi validada com arquivo sintético)
-3. Dizer **"pode commitar"** quando quiser abrir o PR desta branch para `main`
+Open Finance (Pluggy dormente + importação OFX) **mergeado em `main` via PR #26**.
+Bug de login Google em produção (`/login?error=auth` após conectar) investigado
+e corrigido em **PR #27** — callback estava falhando silenciosamente; adicionado
+log do motivo real (`exchangeCodeForSession` / `getUser()` / falta de `?code=`)
+para diagnosticar pelos Vercel Logs. Causa raiz provável: `NEXT_PUBLIC_APP_URL`,
+Supabase Redirect URLs/Site URL ou Google Console (Authorized JavaScript origins)
+desalinhados com o domínio de produção `https://findash-pearl.vercel.app` — em
+correção manual pelo usuário nos consoles externos, fora do código.
 
 **Pendências técnicas conhecidas (Etapa 5 do Open Finance, ainda com Pluggy dormente):**
 - `consentimento_expira_em` nunca é preenchido no vínculo (o cron já lê a coluna)
 - Excluir a conta do usuário não chama `deleteItem` na Pluggy — fica consentimento órfão
 - Falta UI de reconexão quando o consentimento expira (a action já existe)
+
+**Pendência aberta:**
+- Confirmar que o login com Google em produção voltou a funcionar após o ajuste
+  nos consoles (Supabase URL Configuration + Google Cloud Console); remover o
+  log de debug do `app/auth/callback/route.ts` se não for mais necessário
 
 ---
 
@@ -248,11 +253,10 @@ Banco Central (certificados ICP-Brasil, diretório de participantes, homologaç�
 capital mínimo em milhões), inviável para o FinDash. A Pluggy já é participante
 autorizada e expõe o widget de consentimento pronto.
 
-> ### ⏸️ Status: implementado e **dormente** (decisão de 2026-08-06)
+> ### ⏸️ Status: implementado e **dormente** (decisão de 2026-08-06, mergeado em 2026-08-14 via PR #26)
 >
-> O código está completo e commitado na branch `feat/open-finance-pluggy`
-> (ainda **não** mergeado em `main` — falta push + PR sob o comando "pode
-> commitar"), mas fica **desligado** por economia, não por problema técnico.
+> O código está completo e mergeado em `main`, mas fica **desligado** por
+> economia, não por problema técnico.
 >
 > **O motivo:** o plano de Dados da Pluggy custa **a partir de R$ 2.500/mês fixo**.
 > Com poucos usuários, isso é custo por usuário impagável; o mínimo mensal só se
@@ -455,7 +459,7 @@ manter uma lista só (sem separar tabelas), mas adicionar:
 
 | Branch | Feature | Status |
 |--------|---------|--------|
-| `feat/open-finance-pluggy` | Integração Pluggy (dormente) + importação OFX | 🚧 Commitado localmente, aguardando "pode commitar" para push/PR |
+| — | Nenhuma branch ativa no momento | — |
 
 ---
 
@@ -473,3 +477,5 @@ manter uma lista só (sem separar tabelas), mas adicionar:
 | #12 | `feature/gastos-redesign-modal` | Redesign /gastos: modal centralizado, DonutChart, coluna de insights | ✅ Mergeado |
 | #24 | `fix/revalidacao-entre-rotas` | Revalida todas as rotas que compartilham a entidade alterada | ✅ Mergeado |
 | #25 | `feat/bancos-saldo-gastos` | Cadastro de bancos com saldo manual + integração em gastos e dashboard | ✅ Mergeado |
+| #26 | `feat/open-finance-pluggy` | Integração Pluggy dormente + importação de OFX/CSV | ✅ Mergeado |
+| #27 | `fix/auth-callback-google-prod` | Log do motivo real da falha no callback OAuth (debug login Google em prod) | ✅ Mergeado |
