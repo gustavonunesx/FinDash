@@ -4,9 +4,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import {
   buscarContas,
+  buscarItem,
   buscarTransacoes,
   deveVirarGasto,
   mapearTransacao,
+  statusConsentimento,
   type GastoImportado,
 } from "./open-finance";
 import type { Banco, Gasto } from "./types";
@@ -197,8 +199,15 @@ export async function sincronizarItem(
 
   const saldoPorConta = new Map(contas.map((c) => [c.provider_account_id, c.saldo]));
 
+  // Falha ao ler o item não deve travar o sync de saldo: mantém a validade já gravada.
+  const consentimento = await buscarItem(itemId)
+    .then((item) => item.consentimentoExpira)
+    .catch(() => undefined);
+
   for (const banco of lista) {
     const saldo = saldoPorConta.get(banco.provider_account_id ?? "");
+    const expiraEm =
+      consentimento === undefined ? banco.consentimento_expira_em : consentimento;
 
     if (saldo !== undefined) {
       const { error } = await supabase
@@ -207,7 +216,8 @@ export async function sincronizarItem(
           saldo,
           saldo_atualizado_em: agora,
           sincronizado_em: agora,
-          sync_status: "ok",
+          consentimento_expira_em: expiraEm,
+          sync_status: statusConsentimento(expiraEm),
         })
         .eq("id", banco.id);
       if (!error) resultado.saldosAtualizados++;

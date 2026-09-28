@@ -16,13 +16,13 @@ Estas regras valem para qualquer pedido de feature, correção, ajuste etc. **fo
    - Sempre criar a branch a partir de `master` atualizada.
 
 2. **Commit + PR sob comando "pode commitar".** Quando o usuário disser **"pode commitar"** ao finalizar uma feature/correção que pediu:
-   - Fazer o commit das alterações na branch da requisição, incluindo as atualizações dos arquivos de memória, `CLAUDE.md` e `docs/PLAN.md` quando relevantes.
+   - Fazer o commit das alterações na branch da requisição, incluindo as atualizações dos arquivos de memória, `CLAUDE.md` e `plan.md` quando relevantes.
    - Mensagem no padrão Conventional Commits (`type(scope): description`) terminando com a linha de co-autoria.
    - `git push -u origin <branch>`
    - Abrir PR para `master` com `gh pr create`.
    - **Não fazer merge automático** — apenas commit, push e PR, e aguardar instrução.
 
-3. **Gatilho "contexto".** Quando o usuário disser **"contexto"** (geralmente no início de uma nova sessão), isso significa: se contextualizar do projeto para dar seguimento de onde paramos. Ler os arquivos de memória do projeto, o `CLAUDE.md` e o `docs/PLAN.md` (principalmente estes dois), entender o estado atual e o que ficou pendente, e então aguardar o próximo pedido.
+3. **Gatilho "contexto".** Quando o usuário disser **"contexto"** (geralmente no início de uma nova sessão), isso significa: se contextualizar do projeto para dar seguimento de onde paramos. Ler os arquivos de memória do projeto, o `CLAUDE.md` e o `plan.md` (principalmente estes dois), entender o estado atual e o que ficou pendente, e então aguardar o próximo pedido.
 
 ---
 
@@ -34,7 +34,7 @@ Estas regras valem para qualquer pedido de feature, correção, ajuste etc. **fo
 1. Criar branch: `git checkout -b feat/nome-da-milestone`
 
 **Final de cada milestone:**
-1. Marcar todas as entregas como `[x]` no `docs/PLAN.md`
+1. Marcar todas as entregas como `[x]` no `plan.md`
 2. Atualizar status da milestone na tabela de Milestones acima (neste arquivo)
 3. Commit final com a mensagem exata definida no bloco `Commit final` do PLAN.md
 4. Push: `git push -u origin <branch>`

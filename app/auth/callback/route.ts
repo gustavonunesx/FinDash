@@ -5,7 +5,13 @@ import { ensureUserProfile } from "@/lib/auth-bootstrap";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  // `next` é concatenado ao origin: "?next=@evil.com" vira userinfo e o browser
+  // vai para evil.com. Só caminho interno passa.
+  const nextParam = searchParams.get("next");
+  const next =
+    nextParam?.startsWith("/") && !nextParam.startsWith("//") && !/[\\\r\n\t]/.test(nextParam)
+      ? nextParam
+      : "/dashboard";
 
   if (code) {
     const supabase = await createClient();

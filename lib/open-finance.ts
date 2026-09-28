@@ -4,7 +4,7 @@ import { PluggyClient } from "pluggy-sdk";
 import type { Account, Transaction } from "pluggy-sdk";
 
 import { mapearCategoria } from "./csv-parser";
-import { BANCO_CORES, type CategoriaGasto } from "./types";
+import { BANCO_CORES, type CategoriaGasto, type SyncStatus } from "./types";
 
 /**
  * Camada de acesso à Pluggy. Tudo aqui é server-only: o clientSecret dá acesso
@@ -104,8 +104,38 @@ export async function buscarContas(itemId: string): Promise<ContaSincronizada[]>
   return results.map(mapearConta);
 }
 
-export async function buscarItem(itemId: string) {
-  return getPluggyClient().fetchItem(itemId);
+export type ItemResumo = {
+  /** Gravado por `criarConnectToken`: identifica o dono do item. */
+  clientUserId: string | null;
+  /** Validade do consentimento no Open Finance Brasil (12 meses). `null` se o conector não informa. */
+  consentimentoExpira: string | null;
+};
+
+export async function buscarItem(itemId: string): Promise<ItemResumo> {
+  const item = await getPluggyClient().fetchItem(itemId);
+  return {
+    clientUserId: item.clientUserId ?? null,
+    consentimentoExpira: item.consentExpiresAt
+      ? new Date(item.consentExpiresAt).toISOString()
+      : null,
+  };
+}
+
+/** Dias de antecedência para pedir reconexão antes do consentimento vencer. */
+const AVISO_CONSENTIMENTO_DIAS = 15;
+
+/**
+ * O status é derivado da validade a cada sync, e não marcado à parte: se só o
+ * cron marcasse, o próximo webhook gravaria "ok" por cima e o aviso sumiria.
+ */
+export function statusConsentimento(
+  expiraEm: string | null,
+  agora = new Date()
+): SyncStatus {
+  if (!expiraEm) return "ok";
+  const limite = new Date(agora);
+  limite.setDate(limite.getDate() + AVISO_CONSENTIMENTO_DIAS);
+  return new Date(expiraEm) <= limite ? "consentimento_expirado" : "ok";
 }
 
 /**

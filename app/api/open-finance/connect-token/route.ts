@@ -41,6 +41,8 @@ export async function POST(request: Request) {
       .select("id")
       .eq("user_id", user.id)
       .eq("provider_item_id", itemId)
+      // Um item com conta + cartão tem várias linhas; basta existir uma do usuário.
+      .limit(1)
       .maybeSingle();
 
     // Não deixar o usuário pedir token de reconexão para um item que não é dele.

@@ -9,8 +9,8 @@ import { createServiceClient } from "@/lib/supabase/admin";
  * este cron existe porque uma entrega pode se perder de vez (a Pluggy desiste
  * após 9 tentativas) e o usuário ficaria com saldo velho sem nenhum sinal.
  *
- * Também é aqui que o aviso de consentimento a vencer é levantado — a validade
- * no Open Finance Brasil é de 12 meses.
+ * O aviso de consentimento a vencer sai do próprio sync (`statusConsentimento`),
+ * então esta varredura também o mantém em dia para quem não recebe webhook.
  */
 
 function authorize(req: Request): boolean {
@@ -18,9 +18,6 @@ function authorize(req: Request): boolean {
   if (!cronSecret) return process.env.NODE_ENV === "development";
   return req.headers.get("authorization") === `Bearer ${cronSecret}`;
 }
-
-/** Dias de antecedência para sinalizar consentimento perto de expirar. */
-const AVISO_CONSENTIMENTO_DIAS = 15;
 
 export async function GET(req: Request) {
   if (!authorize(req)) {
@@ -35,7 +32,7 @@ export async function GET(req: Request) {
 
   const { data: bancos } = await supabase
     .from("bancos")
-    .select("provider_item_id, consentimento_expira_em")
+    .select("provider_item_id")
     .eq("origem", "open_finance")
     .not("provider_item_id", "is", null);
 
@@ -64,26 +61,11 @@ export async function GET(req: Request) {
     }
   }
 
-  const limite = new Date();
-  limite.setDate(limite.getDate() + AVISO_CONSENTIMENTO_DIAS);
-  const expirando = bancos.filter(
-    (b) => b.consentimento_expira_em && new Date(b.consentimento_expira_em) <= limite
-  ).length;
-
-  if (expirando > 0) {
-    await supabase
-      .from("bancos")
-      .update({ sync_status: "consentimento_expirado" })
-      .eq("origem", "open_finance")
-      .lte("consentimento_expira_em", limite.toISOString());
-  }
-
   return NextResponse.json({
     items: itemIds.length,
     saldosAtualizados: saldos,
     gastosImportados: importados,
     gastosConciliados: conciliados,
-    consentimentosExpirando: expirando,
     erros,
   });
 }
