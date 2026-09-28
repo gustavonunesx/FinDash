@@ -1,6 +1,6 @@
 # FinDash 2.0 — Plano e Checklist do Projeto
 
-> Atualizado em: 2026-08-07
+> Atualizado em: 2026-09-28
 
 ---
 
@@ -12,21 +12,33 @@
 
 ---
 
-## Onde paramos (2026-08-07)
+## Onde paramos (2026-08-14)
 
-Trabalho ativo: integração Open Finance na branch `feat/open-finance-pluggy`
-(2 commits locais, **não pusheados/PR ainda** — ver seção "Integração Open
-Finance (via Pluggy)" no backlog abaixo para o detalhe completo).
+Open Finance (Pluggy dormente + importação OFX) **mergeado em `main` via PR #26**.
+Bug de login Google em produção (`/login?error=auth` após conectar) investigado
+e corrigido em **PR #27** — callback estava falhando silenciosamente; adicionado
+log do motivo real (`exchangeCodeForSession` / `getUser()` / falta de `?code=`)
+para diagnosticar pelos Vercel Logs. Causa raiz provável: `NEXT_PUBLIC_APP_URL`,
+Supabase Redirect URLs/Site URL ou Google Console (Authorized JavaScript origins)
+desalinhados com o domínio de produção `https://findash-pearl.vercel.app` — em
+correção manual pelo usuário nos consoles externos, fora do código.
 
-**Pendências que dependem do usuário, antes de seguir:**
-1. Aplicar a **migration 010** no Supabase (`open_finance_interesse` + `origem` aceita `'ofx'`) — sem ela a importação de OFX falha na constraint
-2. Testar a importação de OFX pela UI com um extrato real de banco (só foi validada com arquivo sintético)
-3. Dizer **"pode commitar"** quando quiser abrir o PR desta branch para `main`
+**2026-09-28 — branch `fix/open-finance-pendencias`:**
+- Build quebrava com `Can't resolve 'pluggy-sdk'`: dependências do PR #26 não
+  estavam instaladas localmente — resolvido com `npm install` (sem mudança de código)
+- Etapa 5 do Open Finance fechada (consentimento + reconexão), ver abaixo
+- `vincularItemConectado` agora confere `item.clientUserId === user.id` — antes um
+  `itemId` de outro usuário puxava as contas dele (IDOR); connect-token de reconexão
+  quebrava com item de 2+ contas (`maybeSingle`), corrigido com `limit(1)`
+- Open redirect corrigido no `/auth/callback` (`?next=@evil.com` levava ao domínio
+  externo); os `console.error` do callback ficam — são log de erro, não debug
 
-**Pendências técnicas conhecidas (Etapa 5 do Open Finance, ainda com Pluggy dormente):**
-- `consentimento_expira_em` nunca é preenchido no vínculo (o cron já lê a coluna)
-- Excluir a conta do usuário não chama `deleteItem` na Pluggy — fica consentimento órfão
-- Falta UI de reconexão quando o consentimento expira (a action já existe)
+**Pendências abertas:**
+- Confirmar que o login com Google em produção voltou a funcionar após o ajuste
+  nos consoles (Supabase URL Configuration + Google Cloud Console)
+- Aplicar migrations 006–010 no Supabase de produção (conferir quais já rodaram)
+- Excluir conta: o app **não tem** esse fluxo. Quando for criado, precisa chamar
+  `deleteItem` na Pluggy antes do `on delete cascade` (senão fica consentimento órfão)
 
 ---
 
@@ -225,7 +237,7 @@ Finance (via Pluggy)" no backlog abaixo para o detalhe completo).
 
 ## Infraestrutura e DevOps
 
-- ✅ Supabase migrations (001, 002, 003)
+- ✅ Supabase migrations (001–010)
 - ✅ Vercel cron jobs (`vercel.json`)
 - ✅ PWA manifest
 - ✅ Playwright E2E setup
@@ -248,11 +260,10 @@ Banco Central (certificados ICP-Brasil, diretório de participantes, homologaç�
 capital mínimo em milhões), inviável para o FinDash. A Pluggy já é participante
 autorizada e expõe o widget de consentimento pronto.
 
-> ### ⏸️ Status: implementado e **dormente** (decisão de 2026-08-06)
+> ### ⏸️ Status: implementado e **dormente** (decisão de 2026-08-06, mergeado em 2026-08-14 via PR #26)
 >
-> O código está completo e commitado na branch `feat/open-finance-pluggy`
-> (ainda **não** mergeado em `main` — falta push + PR sob o comando "pode
-> commitar"), mas fica **desligado** por economia, não por problema técnico.
+> O código está completo e mergeado em `main`, mas fica **desligado** por
+> economia, não por problema técnico.
 >
 > **O motivo:** o plano de Dados da Pluggy custa **a partir de R$ 2.500/mês fixo**.
 > Com poucos usuários, isso é custo por usuário impagável; o mínimo mensal só se
@@ -369,18 +380,20 @@ Supabase e de rodar com credenciais válidas. Nada foi testado contra a API da P
 - [x] `category` da Pluggy → bucket 50/30/20 via `mapearCategoria` do `lib/csv-parser.ts`
 - [x] Gastos `origem='open_finance'` não contam no limite Free de 10
 
-#### 🔄 Etapa 5 — Consentimento e plano
+#### ✅ Etapa 5 — Consentimento e plano
 
 - [x] Gate: conectar banco é **Premium** (Free cai no `UpgradeModal`)
 - [x] Revogação: `desconectarBanco` chama `deleteItem` e volta para `origem='manual'`,
       preservando os gastos já importados
 - [x] Aviso de consentimento a vencer (`sync_status='consentimento_expirado'` pelo cron)
 - [x] Reconexão: o widget aceita `updateItem` e a rota valida que o item é do usuário
-- ⬜ **`consentimento_expira_em` nunca é preenchido** — a coluna existe e o cron já a lê,
-      mas o vínculo não grava a data. Falta extrair a validade do item da Pluggy.
-- ⬜ Excluir conta do usuário → `deleteItem` na Pluggy (hoje o `on delete cascade` apaga
-      a linha em `bancos` e deixa o consentimento órfão no provider)
-- ⬜ UI dedicada para reconectar quando o consentimento expira (a action existe, falta o botão)
+- [x] `consentimento_expira_em` gravado no vínculo e em todo sync (`item.consentExpiresAt`);
+      `sync_status` derivado por `statusConsentimento` — antes o sync gravava "ok" por cima
+      do aviso do cron
+- [x] Selo "expirando" + botão **Reconectar** no card Meus bancos (abre o widget com
+      `updateItem`; a reconexão mantém cor e posição do banco)
+- ⏸️ Excluir conta → `deleteItem` na Pluggy: depende de um fluxo de exclusão de conta,
+      que ainda não existe no app
 
 **Validado:** `tsc --noEmit` limpo, ESLint sem erros nos arquivos novos, `npm run build` OK
 (rotas `/api/open-finance/webhook` e `/api/cron/open-finance-sync` registradas; `/gastos` em 34.3 kB).
@@ -455,7 +468,7 @@ manter uma lista só (sem separar tabelas), mas adicionar:
 
 | Branch | Feature | Status |
 |--------|---------|--------|
-| `feat/open-finance-pluggy` | Integração Pluggy (dormente) + importação OFX | 🚧 Commitado localmente, aguardando "pode commitar" para push/PR |
+| `fix/open-finance-pendencias` | Pendências Etapa 5 Open Finance + open redirect | 🔄 Em andamento |
 
 ---
 
@@ -473,3 +486,6 @@ manter uma lista só (sem separar tabelas), mas adicionar:
 | #12 | `feature/gastos-redesign-modal` | Redesign /gastos: modal centralizado, DonutChart, coluna de insights | ✅ Mergeado |
 | #24 | `fix/revalidacao-entre-rotas` | Revalida todas as rotas que compartilham a entidade alterada | ✅ Mergeado |
 | #25 | `feat/bancos-saldo-gastos` | Cadastro de bancos com saldo manual + integração em gastos e dashboard | ✅ Mergeado |
+| #26 | `feat/open-finance-pluggy` | Integração Pluggy dormente + importação de OFX/CSV | ✅ Mergeado |
+| #27 | `fix/auth-callback-google-prod` | Log do motivo real da falha no callback OAuth (debug login Google em prod) | ✅ Mergeado |
+| — | `fix/open-finance-pendencias` | Consentimento/reconexão Open Finance + open redirect no callback | 🔄 Em andamento |

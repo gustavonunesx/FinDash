@@ -108,7 +108,8 @@ export function GastosClient({ gastos, bancos, plano }: GastosClientProps) {
   const [form, setForm] = useState<GastoFormData>(emptyForm);
   const [bancoModalOpen, setBancoModalOpen] = useState(false);
   const [editingBanco, setEditingBanco] = useState<Banco | null>(null);
-  const [conectarOpen, setConectarOpen] = useState(false);
+  // `itemId` presente = reconexão de um consentimento vencendo; ausente = banco novo.
+  const [conectando, setConectando] = useState<{ itemId?: string } | null>(null);
   const [busca, setBusca] = useState("");
   const [filterTab, setFilterTab] = useState<FilterTab>("todos");
   const [pending, startTransition] = useTransition();
@@ -227,11 +228,15 @@ export function GastosClient({ gastos, bancos, plano }: GastosClientProps) {
       setUpgradeOpen(true);
       return;
     }
-    setConectarOpen(true);
+    setConectando({});
+  }
+
+  function handleReconectar(banco: Banco) {
+    if (banco.provider_item_id) setConectando({ itemId: banco.provider_item_id });
   }
 
   function handleConectado(itemId: string) {
-    setConectarOpen(false);
+    setConectando(null);
     startTransition(async () => {
       const result = await vincularItemConectado(itemId);
       if (result.error) toast.error(result.error);
@@ -506,6 +511,7 @@ export function GastosClient({ gastos, bancos, plano }: GastosClientProps) {
             onSalvarSaldo={handleSalvarSaldo}
             onConectar={handleConectar}
             onDesconectar={handleDesconectar}
+            onReconectar={handleReconectar}
             onSincronizar={temBancoConectado ? handleSincronizar : undefined}
             sincronizando={pending}
             openFinanceAtivo={OPEN_FINANCE_ATIVO}
@@ -809,10 +815,11 @@ export function GastosClient({ gastos, bancos, plano }: GastosClientProps) {
         pending={pending}
       />
 
-      {conectarOpen && (
+      {conectando && (
         <ConectarBanco
+          itemId={conectando.itemId}
           onConectado={handleConectado}
-          onFechar={() => setConectarOpen(false)}
+          onFechar={() => setConectando(null)}
         />
       )}
 

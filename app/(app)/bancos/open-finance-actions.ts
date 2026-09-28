@@ -2,7 +2,14 @@
 
 import { getProfile } from "@/lib/data";
 import { isDemoMode } from "@/lib/demo-data";
-import { buscarContas, corPorOrdem, desconectarItem, PROVIDER } from "@/lib/open-finance";
+import {
+  buscarContas,
+  buscarItem,
+  corPorOrdem,
+  desconectarItem,
+  PROVIDER,
+  statusConsentimento,
+} from "@/lib/open-finance";
 import { sincronizarItem } from "@/lib/open-finance-sync";
 import { revalidarEntidade } from "@/lib/revalidate";
 import { createServiceClient } from "@/lib/supabase/admin";
@@ -37,39 +44,65 @@ export async function vincularItemConectado(itemId: string) {
   if (!user) return { error: "Não autenticado" };
 
   let contas;
+  let item;
   try {
-    contas = await buscarContas(itemId);
+    [contas, item] = await Promise.all([buscarContas(itemId), buscarItem(itemId)]);
   } catch (error) {
     console.error("[open-finance] falha ao buscar contas do item", error);
     return { error: "Não foi possível ler as contas desse banco. Tente novamente." };
+  }
+
+  // O itemId vem do client: sem isso, quem soubesse o id de outro usuário
+  // puxaria as contas e transações dele para a própria conta.
+  if (item.clientUserId !== user.id) {
+    return { error: "Conexão inválida." };
   }
 
   if (contas.length === 0) {
     return { error: "Nenhuma conta encontrada nesse banco." };
   }
 
+  const consentimentoExpira = item.consentimentoExpira;
+
   const { count } = await supabase
     .from("bancos")
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id);
 
-  const agora = new Date().toISOString();
-  let ordem = count ?? 0;
+  // Na reconexão a conta já existe: mantém cor e posição que o usuário conhece.
+  const { data: existentes, error: erroExistentes } = await supabase
+    .from("bancos")
+    .select("provider_account_id, cor, ordem")
+    .eq("user_id", user.id)
+    .in("provider_account_id", contas.map((c) => c.provider_account_id));
+  if (erroExistentes) return { error: erroExistentes.message };
+  const existentePorConta = new Map(
+    (existentes ?? []).map((b) => [b.provider_account_id as string, b])
+  );
 
-  const linhas = contas.map((conta) => ({
-    user_id: user.id,
-    nome: conta.nome,
-    saldo: conta.saldo,
-    cor: corPorOrdem(ordem++),
-    ordem: ordem - 1,
-    saldo_atualizado_em: agora,
-    origem: "open_finance" as const,
-    provider: PROVIDER,
-    provider_item_id: conta.provider_item_id,
-    provider_account_id: conta.provider_account_id,
-    sincronizado_em: agora,
-    sync_status: "ok" as const,
-  }));
+  const agora = new Date().toISOString();
+  let proximaOrdem = count ?? 0;
+
+  const linhas = contas.map((conta) => {
+    const existente = existentePorConta.get(conta.provider_account_id);
+    const ordem = existente?.ordem ?? proximaOrdem++;
+    return {
+      user_id: user.id,
+      nome: conta.nome,
+      saldo: conta.saldo,
+      cor: existente?.cor ?? corPorOrdem(ordem),
+      ordem,
+      saldo_atualizado_em: agora,
+      origem: "open_finance" as const,
+      provider: PROVIDER,
+      provider_item_id: conta.provider_item_id,
+      provider_account_id: conta.provider_account_id,
+      sincronizado_em: agora,
+      // Reconectar renova o consentimento, e o upsert limpa o aviso de expiração.
+      consentimento_expira_em: consentimentoExpira,
+      sync_status: statusConsentimento(consentimentoExpira),
+    };
+  });
 
   // Reconectar o mesmo banco atualiza a linha existente em vez de duplicar —
   // o índice único em (user_id, provider_account_id) é a chave do upsert.

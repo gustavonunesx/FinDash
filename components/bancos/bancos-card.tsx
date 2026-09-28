@@ -24,6 +24,8 @@ interface BancosCardProps {
   onSalvarSaldo: (id: string, saldo: number) => void;
   onConectar: () => void;
   onDesconectar: (banco: Banco) => void;
+  /** Renova o consentimento de um banco sincronizado (expirando ou com erro). */
+  onReconectar: (banco: Banco) => void;
   /** Ausente quando não há banco conectado — não há o que sincronizar. */
   onSincronizar?: () => void;
   sincronizando?: boolean;
@@ -35,6 +37,16 @@ function ehSincronizado(b: Banco): boolean {
   return b.origem === "open_finance";
 }
 
+const SELO_SYNC = {
+  ok: { texto: "auto", cor: "#0E8F6A", fundo: "rgba(14,143,106,0.10)" },
+  erro: { texto: "erro", cor: "#DC2626", fundo: "rgba(220,38,38,0.10)" },
+  consentimento_expirado: {
+    texto: "expirando",
+    cor: "#C4820A",
+    fundo: "rgba(196,130,10,0.12)",
+  },
+} as const;
+
 export function BancosCard({
   bancos,
   gastosPorBanco,
@@ -45,6 +57,7 @@ export function BancosCard({
   onSalvarSaldo,
   onConectar,
   onDesconectar,
+  onReconectar,
   onSincronizar,
   sincronizando,
   openFinanceAtivo,
@@ -154,6 +167,10 @@ export function BancosCard({
             // Saldo vindo do banco não pode ser sobrescrito à mão: o próximo
             // sync desfaria a edição e o usuário veria o valor "voltar sozinho".
             const editando = editandoSaldo === b.id && !sincronizado;
+            const selo =
+              b.sync_status === "erro" || b.sync_status === "consentimento_expirado"
+                ? SELO_SYNC[b.sync_status]
+                : SELO_SYNC.ok;
 
             return (
               <div
@@ -204,9 +221,11 @@ export function BancosCard({
                     {sincronizado && (
                       <span
                         title={
-                          b.sincronizado_em
-                            ? `Sincronizado em ${new Date(b.sincronizado_em).toLocaleString("pt-BR")}`
-                            : "Conta sincronizada"
+                          b.sync_status === "consentimento_expirado" && b.consentimento_expira_em
+                            ? `Acesso ao banco expira em ${new Date(b.consentimento_expira_em).toLocaleDateString("pt-BR")}`
+                            : b.sincronizado_em
+                              ? `Sincronizado em ${new Date(b.sincronizado_em).toLocaleString("pt-BR")}`
+                              : "Conta sincronizada"
                         }
                         style={{
                           display: "inline-flex",
@@ -216,15 +235,12 @@ export function BancosCard({
                           padding: "1px 6px",
                           fontSize: 10,
                           fontWeight: 600,
-                          color: b.sync_status === "erro" ? "#DC2626" : "#0E8F6A",
-                          background:
-                            b.sync_status === "erro"
-                              ? "rgba(220,38,38,0.10)"
-                              : "rgba(14,143,106,0.10)",
+                          color: selo.cor,
+                          background: selo.fundo,
                         }}
                       >
                         <IconRefresh style={{ width: 9, height: 9 }} />
-                        {b.sync_status === "erro" ? "erro" : "auto"}
+                        {selo.texto}
                       </span>
                     )}
                     {gastoDoBanco > 0
@@ -289,6 +305,28 @@ export function BancosCard({
                     >
                       {formatCurrency(b.saldo)}
                     </span>
+                    {/* Consentimento vencido faz a Pluggy falhar e o status virar "erro":
+                        reconectar é a saída nos dois casos. */}
+                    {(b.sync_status === "consentimento_expirado" || b.sync_status === "erro") &&
+                      b.provider_item_id && (
+                      <button
+                        type="button"
+                        onClick={() => onReconectar(b)}
+                        title="Renovar o acesso ao banco"
+                        style={{
+                          border: "none",
+                          borderRadius: 7,
+                          padding: "3px 7px",
+                          cursor: "pointer",
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: "#C4820A",
+                          background: "rgba(196,130,10,0.12)",
+                        }}
+                      >
+                        Reconectar
+                      </button>
+                    )}
                     <span className="opacity-0 transition-opacity group-hover:opacity-100">
                       <button
                         type="button"
