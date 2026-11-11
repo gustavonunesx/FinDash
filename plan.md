@@ -22,7 +22,7 @@ Módulo paralelo (tabelas novas, página `/agente`), só Premium, `@anthropic-ai
 - [x] Task 1 — vitest, dependências, `lib/agente/datas.ts`
 - [x] Task 2 — tipos e utilitários de mensagens (`tipos.ts`, `mensagens.ts`)
 - [x] Task 3 — `projetar_caixa` (`lib/agente/projecao.ts`)
-- [ ] Task 4 — definições das ferramentas e validação
+- [x] Task 4 — definições das ferramentas e validação (`ferramentas.ts`, `validacao.ts`)
 - [ ] Task 5 — migration 011
 - [ ] Task 6 — executor das ferramentas
 - [ ] Task 7 — prompt, adaptador do modelo e laço
