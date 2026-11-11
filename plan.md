@@ -12,6 +12,14 @@
 
 ---
 
+## Em andamento (2026-11-11) — Agente Financeiro
+
+Branch `feat/agente-financeiro`. Design fechado e spec escrita; **sem código ainda**.
+Ler `docs/agente/README.md` e `docs/superpowers/specs/2026-11-11-agente-financeiro-design.md`.
+Módulo paralelo (tabelas novas, página `/agente`), só Premium, `@anthropic-ai/sdk` na Route Handler.
+
+---
+
 ## Onde paramos (2026-08-14)
 
 Open Finance (Pluggy dormente + importação OFX) **mergeado em `main` via PR #26**.
