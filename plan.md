@@ -14,9 +14,21 @@
 
 ## Em andamento (2026-11-11) — Agente Financeiro
 
-Branch `feat/agente-financeiro`. Design fechado e spec escrita; **sem código ainda**.
+Branch `feat/agente-financeiro`. Design e spec fechados; implementação em andamento, task a task
+(plano: `docs/superpowers/plans/2026-11-11-agente-financeiro.md`), com commit + push ao fim de cada task.
 Ler `docs/agente/README.md` e `docs/superpowers/specs/2026-11-11-agente-financeiro-design.md`.
 Módulo paralelo (tabelas novas, página `/agente`), só Premium, `@anthropic-ai/sdk` na Route Handler.
+
+- [x] Task 1 — vitest, dependências, `lib/agente/datas.ts`
+- [ ] Task 2 — tipos e utilitários de mensagens
+- [ ] Task 3 — `projetar_caixa` (função pura)
+- [ ] Task 4 — definições das ferramentas e validação
+- [ ] Task 5 — migration 011
+- [ ] Task 6 — executor das ferramentas
+- [ ] Task 7 — prompt, adaptador do modelo e laço
+- [ ] Task 8 — SSE e rota `POST /api/agente`
+- [ ] Task 9 — página `/agente`, chat e menu
+- [ ] Task 10 — documentação final, verificação e checklist manual
 
 ---
 
