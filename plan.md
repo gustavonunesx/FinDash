@@ -20,7 +20,7 @@ Ler `docs/agente/README.md` e `docs/superpowers/specs/2026-11-11-agente-financei
 Módulo paralelo (tabelas novas, página `/agente`), só Premium, `@anthropic-ai/sdk` na Route Handler.
 
 - [x] Task 1 — vitest, dependências, `lib/agente/datas.ts`
-- [ ] Task 2 — tipos e utilitários de mensagens
+- [x] Task 2 — tipos e utilitários de mensagens (`tipos.ts`, `mensagens.ts`)
 - [ ] Task 3 — `projetar_caixa` (função pura)
 - [ ] Task 4 — definições das ferramentas e validação
 - [ ] Task 5 — migration 011
