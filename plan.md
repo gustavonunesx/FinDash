@@ -23,7 +23,7 @@ Módulo paralelo (tabelas novas, página `/agente`), só Premium, `@anthropic-ai
 - [x] Task 2 — tipos e utilitários de mensagens (`tipos.ts`, `mensagens.ts`)
 - [x] Task 3 — `projetar_caixa` (`lib/agente/projecao.ts`)
 - [x] Task 4 — definições das ferramentas e validação (`ferramentas.ts`, `validacao.ts`)
-- [ ] Task 5 — migration 011
+- [x] Task 5 — migration 011 (`supabase/migrations/011_agente_financeiro.sql`, verificada em PGlite: `docs/agente/verificar-migration-011.mjs`)
 - [ ] Task 6 — executor das ferramentas
 - [ ] Task 7 — prompt, adaptador do modelo e laço
 - [ ] Task 8 — SSE e rota `POST /api/agente`

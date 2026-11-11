@@ -19,3 +19,6 @@ O usuário revisa o plano e escolhe como executar (subagentes ou nativo) → imp
 - Commit/push/PR **só** quando o usuário disser "pode commitar"; sem merge automático.
 - Branch por requisição a partir da `main` (o CLAUDE.md fala `master`, o repo usa `main`).
 - Ao concluir: atualizar `CLAUDE.md` (seção "Agente Financeiro (invariantes)", variáveis, migration 011, estrutura), `plan.md` e este README com o mapa final dos arquivos.
+
+## Verificação da migration 011 sem Supabase
+`npm i --no-save @electric-sql/pglite && node docs/agente/verificar-migration-011.mjs` roda a migration num Postgres em memória (2 usuários, RLS real) e confere RPCs, atomicidade, dia 31 e isolamento. Não substitui testar no Supabase de verdade.
