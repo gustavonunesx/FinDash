@@ -46,7 +46,9 @@ export async function executarLoop(
     } catch {
       return { novas, status: deps.signal?.aborted ? "interrompida" : "erro" };
     }
-    if (conteudo.length === 0) return { novas, status: "erro" };
+    if (!conteudo.some((b) => b.type === "text" || b.type === "tool_use")) {
+      return { novas, status: "erro" };
+    }
 
     const assistente: MensagemAgente = { papel: "assistant", conteudo };
     const usos = conteudo.filter((b): b is Extract<Bloco, { type: "tool_use" }> => b.type === "tool_use");

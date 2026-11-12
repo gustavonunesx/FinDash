@@ -131,6 +131,14 @@ describe("executarLoop", () => {
     expect(aoNovas).not.toHaveBeenCalled();
   });
 
+  it("resposta so com pensamento vira erro sem gravar mensagem", async () => {
+    const aoNovas = vi.fn<(msgs: MensagemAgente[]) => Promise<void>>(async () => {});
+    const pensamento: Bloco = { type: "thinking", thinking: "", signature: "sig" };
+    const r = await executarLoop(historico, { chamarModelo: modelo([[pensamento]]), executar: vi.fn(), aoNovas });
+    expect(r.status).toBe("erro");
+    expect(aoNovas).not.toHaveBeenCalled();
+  });
+
   it("mantem blocos de pensamento no historico em memoria para o proximo passo", async () => {
     const pensamento: Bloco = { type: "thinking", thinking: "", signature: "sig" };
     const chamar = modelo([[pensamento, uso("t1")], [texto("ok")]]);
