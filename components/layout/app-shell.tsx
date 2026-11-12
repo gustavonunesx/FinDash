@@ -11,6 +11,7 @@ import {
   IconPigMoney,
   IconReceipt,
   IconSettings,
+  IconSparkles,
   IconUsers,
   IconX,
 } from "@tabler/icons-react";
@@ -27,6 +28,7 @@ const navMain = [
   { href: "/gastos",      label: "Gastos",      icon: IconReceipt },
   { href: "/fundos",      label: "Fundos",      icon: IconPigMoney },
   { href: "/calculadora", label: "Calculadora", icon: IconCalculator },
+  { href: "/agente",      label: "Agente",      icon: IconSparkles },
   { href: "/historico",   label: "Histórico",   icon: IconChartBar },
   { href: "/familia",     label: "Família",     icon: IconUsers },
 ];

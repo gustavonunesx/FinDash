@@ -27,7 +27,7 @@ Módulo paralelo (tabelas novas, página `/agente`), só Premium, `@anthropic-ai
 - [x] Task 6 — executor das ferramentas (`executar-ferramenta.ts`)
 - [x] Task 7 — prompt, adaptador do modelo e laço (`prompt.ts`, `loop.ts`, `modelo.ts`)
 - [x] Task 8 — SSE e rota `POST /api/agente` (`sse.ts`, `app/api/agente/route.ts`)
-- [ ] Task 9 — página `/agente`, chat e menu
+- [x] Task 9 — página `/agente`, chat e menu (`app/(app)/agente/page.tsx`, `components/agente/`)
 - [ ] Task 10 — documentação final, verificação e checklist manual
 
 ---
