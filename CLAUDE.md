@@ -86,6 +86,19 @@ Estas regras valem para qualquer pedido de feature, correção, ajuste etc. **fo
 - Transação importada entra com `categoria_confirmada=false`; categorizar em silêncio corromperia o score 50/30/20
 - Conciliação nunca casa gasto `recorrente` ou parcelado — são modelos de lançamento repetido
 
+### Agente Financeiro (invariantes)
+- **Módulo paralelo**: as tabelas do agente (`caixinhas`, `gastos_fixos`, `entradas`, `fontes_renda`, `compromissos`, `parcelas`…) **não** substituem `fundos`/`gastos`/`configuracoes`, que seguem alimentando dashboard, PDF, histórico e Open Finance. Unificar os dois modelos é decisão futura, não pendência
+- Só Premium (`profiles.plano === "premium"`, mesmo gate de `historico`). Modo demo não chama a API (`503`); a rota `/api/agente` autentica sozinha porque `/api` não passa pelo `proxy.ts`
+- Nunca service role: toda ferramenta roda com o cliente Supabase da sessão e o RLS (`user_id = auth.uid()`) é a única barreira entre usuários. `ANTHROPIC_API_KEY` só no servidor
+- Só dinheiro `recebido` é distribuído. Saída de parcela = **valor integral**; ajuda de terceiros só vira dinheiro quando chega (entrada `recebido`) ou, só no cenário otimista, quando `confirmada`
+- Gravações compostas só por RPC transacional (`criar_caixinha`, `movimentar_caixinha`, `registrar_devolucao`, `registrar_compromisso`) — o modelo repete chamadas e não pode deixar estado parcial
+- `lib/agente/prompt.ts` é a **fonte única** do prompt; `docs/agente/origem/` guarda os originais do usuário (histórico). Todo nome de ferramenta tem de aparecer no prompt (`prompt.test.ts` guarda isso)
+- Projeção, calendário de 60 dias, cenários e provisão vêm de `projetar_caixa` (`lib/agente/projecao.ts`, função pura testada); o modelo narra os números e não refaz as contas
+- A conversa é persistida **por rodada concluída** em `agente_mensagens` (ordem por `ordem`, não por `criado_em`) e **sem blocos de `thinking`**; dentro de um turno os blocos de thinking ficam em memória porque a API exige devolvê-los no laço de ferramentas
+- Datas em `America/Sao_Paulo` (`hojeSaoPaulo()`; o banco e o Vercel rodam em UTC). Limites: 2.000 caracteres/mensagem, 40 rodadas/hora, janela de 30 mensagens em fronteira de rodada, 8 iterações do laço, `maxDuration = 60`
+- Sem `fallbacks` do servidor na v1: recusa do modelo (`refusal`) vira erro amigável. Modelo: `AGENTE_MODELO` (padrão `claude-sonnet-5-5`), `effort: "medium"`
+- Mapa completo dos arquivos e como verificar a migration: `docs/agente/README.md`
+
 ## Estrutura Rápida
 
 ```
@@ -97,16 +110,17 @@ app/
     bancos/               — Server actions do CRUD de bancos (sem página própria; a UI vive em /gastos). `actions.ts` = saldo manual; `open-finance-actions.ts` = vincular/desconectar item da Pluggy (Premium)
     fundos/               — CRUD de fundos + CDI; lista compacta FundoRow (barra colorida, progresso, badge meta), ModalNovoFundo (responsivo, scroll interno, checkbox reserva_emergencia), ModalConfirmarAporte (atalhos rápidos, celebração), coluna direita com ResumoGeralCard + RendimentoCard (verde sólido, CDI/12) + PlanoStatusCard (âmbar, só Free no limite)
     calculadora/          — Regra 50/30/20 + realocação de limites entre categorias (persistida em `configuracoes.ajustes_limite` jsonb) + distribuição de renda extra com aporte direto em fundo de reserva
+    agente/               — Agente Financeiro (Premium): chat em streaming (`components/agente/`) que lê/grava a ficha financeira por 13 ferramentas; página só faz o gate (demo/Free/Premium) e carrega o histórico
     historico/            — Analytics (Premium)
     familia/              — Plano Família
     configuracoes/        — Perfil, referral, exportar PDF
     onboarding/           — Wizard 3 etapas
   (auth)/                 — login, cadastro, recuperar-senha
-  api/                    — stripe, cron (relatorio-mensal, open-finance-sync), notificacoes, exportar-pdf, taxas, open-finance (connect-token, webhook)
+  api/                    — stripe, cron (relatorio-mensal, open-finance-sync), notificacoes, exportar-pdf, taxas, open-finance (connect-token, webhook), agente (POST com SSE)
   page.tsx                — Landing page
-components/               — 55 componentes React (incl. GastoModal, DonutChart, FundoRow, ModalNovoFundo, ModalConfirmarAporte)
-lib/                      — 21 módulos utilitários (incl. open-finance.ts e open-finance-sync.ts, ambos server-only)
-supabase/migrations/      — 10 migrations SQL (incl. 004: ajustes_limite em configuracoes; 005: reserva_emergencia em fundos; 006: renda_extra_historico; 007: parcelas_total/parcela_inicio em gastos; 008: tabela bancos + gastos.banco_id; 009: Open Finance — origem/provider em bancos e gastos, open_finance_eventos; 010: open_finance_interesse + origem 'ofx')
+components/               — 55 componentes React (incl. GastoModal, DonutChart, FundoRow, ModalNovoFundo, ModalConfirmarAporte) + `agente/` (AgenteChat, MarkdownResposta)
+lib/                      — 21 módulos utilitários (incl. open-finance.ts e open-finance-sync.ts, ambos server-only) + `agente/` (prompt, ferramentas, executor, projeção, laço, adaptador do modelo, SSE; testes `*.test.ts` ao lado)
+supabase/migrations/      — 11 migrations SQL (incl. 011: Agente Financeiro — 9 tabelas, `agente_mensagens`, view `painel_saude`, `dinheiro_livre_real` e 4 RPCs; 004: ajustes_limite em configuracoes; 005: reserva_emergencia em fundos; 006: renda_extra_historico; 007: parcelas_total/parcela_inicio em gastos; 008: tabela bancos + gastos.banco_id; 009: Open Finance — origem/provider em bancos e gastos, open_finance_eventos; 010: open_finance_interesse + origem 'ofx')
 ```
 
 ## Variáveis de Ambiente
@@ -125,6 +139,8 @@ CRON_SECRET
 PLUGGY_CLIENT_ID
 PLUGGY_CLIENT_SECRET
 PLUGGY_WEBHOOK_URL
+ANTHROPIC_API_KEY
+AGENTE_MODELO            # opcional; padrão claude-sonnet-5-5
 ```
 
 > A API Key da Pluggy **não** é variável de ambiente: expira em 2h e é gerada em
@@ -138,4 +154,7 @@ npm run dev       # Dev server (Turbopack) — localhost:3000
 npm run build     # Build de produção
 npm run lint      # ESLint
 npm run test:e2e  # Playwright E2E tests
+npm run test      # Vitest (lib/**/*.test.ts, app/**/*.test.ts) — Agente Financeiro
 ```
+
+> `npm run build` sem `.env` (modo demo) falha no prerender de `/calculadora` ("Cannot read properties of null (reading 'nome')") — já falha na `main`. Para validar o build localmente use `NEXT_PUBLIC_SUPABASE_URL=https://x.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=x npm run build`.

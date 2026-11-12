@@ -1,6 +1,6 @@
 # FinDash 2.0 — Plano e Checklist do Projeto
 
-> Atualizado em: 2026-09-28
+> Atualizado em: 2026-11-11
 
 ---
 
@@ -12,12 +12,21 @@
 
 ---
 
-## Em andamento (2026-11-11) — Agente Financeiro
+## Agente Financeiro (2026-11-11) — implementado, aguardando revisão e PR
 
-Branch `feat/agente-financeiro`. Design e spec fechados; implementação em andamento, task a task
-(plano: `docs/superpowers/plans/2026-11-11-agente-financeiro.md`), com commit + push ao fim de cada task.
-Ler `docs/agente/README.md` e `docs/superpowers/specs/2026-11-11-agente-financeiro-design.md`.
+Branch `feat/agente-financeiro` (commits + push a cada task; **sem PR aberto**).
+Ler `docs/agente/README.md` (mapa dos arquivos + checklist manual) e
+`docs/superpowers/specs/2026-11-11-agente-financeiro-design.md` (decisões e motivos);
+plano executado: `docs/superpowers/plans/2026-11-11-agente-financeiro.md`.
 Módulo paralelo (tabelas novas, página `/agente`), só Premium, `@anthropic-ai/sdk` na Route Handler.
+
+**Pendências abertas (fora do código):**
+- Aplicar a migration `011` no Supabase (e as 006–010 em produção, se ainda não foram) e definir `ANTHROPIC_API_KEY` (+ `AGENTE_MODELO`, opcional) no `.env.local` e no Vercel
+- Rodar o checklist manual de `docs/agente/README.md` com uma conta Premium real (o chat interativo, as telas Free/Premium e o replay de histórico sem blocos de thinking não foram verificados por máquina)
+- Política de privacidade precisa dizer que os dados financeiros vão para a API da Anthropic antes de ligar em produção
+- Medir o custo real por conversa (a ficha e a janela de mensagens são reenviadas a cada turno; só prompt e ferramentas ficam em cache)
+- `maxDuration = 60` exige plano do Vercel que permita 60s de função
+- `npm run build` sem `.env` falha em `/calculadora` (já falhava na `main`; ver CLAUDE.md)
 
 - [x] Task 1 — vitest, dependências, `lib/agente/datas.ts`
 - [x] Task 2 — tipos e utilitários de mensagens (`tipos.ts`, `mensagens.ts`)
@@ -28,7 +37,7 @@ Módulo paralelo (tabelas novas, página `/agente`), só Premium, `@anthropic-ai
 - [x] Task 7 — prompt, adaptador do modelo e laço (`prompt.ts`, `loop.ts`, `modelo.ts`)
 - [x] Task 8 — SSE e rota `POST /api/agente` (`sse.ts`, `app/api/agente/route.ts`)
 - [x] Task 9 — página `/agente`, chat e menu (`app/(app)/agente/page.tsx`, `components/agente/`)
-- [ ] Task 10 — documentação final, verificação e checklist manual
+- [x] Task 10 — documentação final, verificação e checklist manual
 
 ---
 

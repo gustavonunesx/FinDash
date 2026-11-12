@@ -1,6 +1,6 @@
 # Agente Financeiro — Design
 
-> Data: 2026-11-11 · Branch: `feat/agente-financeiro` · Status: **spec aprovada; plano em `docs/superpowers/plans/2026-11-11-agente-financeiro.md` aguardando revisão** (nenhum código de produto escrito)
+> Data: 2026-11-11 · Branch: `feat/agente-financeiro` · Status: **implementado** (plano em `docs/superpowers/plans/2026-11-11-agente-financeiro.md`; ver §14 para o que mudou na execução). Falta o checklist manual em `docs/agente/README.md`
 > Fonte do comportamento do agente: `docs/agente/origem/prompt-agente-financeiro.md` (o usuário pediu para tomá-lo como base).
 
 ---
@@ -38,7 +38,7 @@ Unificar `fundos`↔`caixinhas` ou `gastos`↔`gastos_fixos`; card do agente no 
 3. Carrega as últimas 30 mensagens, **cortando sempre em fronteira de rodada** (todo `tool_use` precisa do seu `tool_result`), e acrescenta a nova.
 4. `lib/agente/loop.ts`: chama o modelo, executa cada `tool_use` com `executarFerramenta` (cliente da sessão, nunca service role), devolve o `tool_result` e repete até o modelo não pedir mais ferramenta. **Máx. 8 iterações**; `maxDuration = 60`; respeita `req.signal`.
 5. Texto sai por **SSE**: eventos `texto`, `ferramenta` (status humano: "lendo sua ficha…"), `fim`, `erro`.
-6. Grava na `agente_mensagens` a mensagem do usuário e cada rodada **concluída** (`tool_use` + `tool_result` pareados + texto final). `tool_use` sem resultado é descartado. Se a conexão cair no meio, as gravações já feitas ficam registradas e o próximo turno não duplica.
+6. Grava na `agente_mensagens` a mensagem do usuário e cada rodada **concluída** (`tool_use` + `tool_result` pareados + texto final). `tool_use` sem resultado é descartado. Se a conexão cair no meio, as gravações já feitas ficam registradas e o próximo turno não duplica. Os blocos de `thinking` **não** são persistidos (ver §14).
 
 ### Arquivos
 
@@ -158,3 +158,17 @@ Saída: 3 cenários × cada mês (entradas, saídas, saldo final) + **mês mais 
 - **Privacidade:** ver §9.
 - **Migrations 006–010** ainda precisam ser aplicadas em produção (pendência do `plan.md`); a 011 não depende delas.
 - **Saldo da conta não é salvo** (decisão do prompt): o agente pergunta a cada cálculo.
+
+## 14. Como ficou a implementação (divergências da spec e do plano)
+
+Registro das decisões tomadas durante a execução (o ledger completo ficou em `.superpowers/sdd/`, fora do git).
+
+- **Thinking blocks (Sonnet 5.5 roda com thinking adaptativo).** Dentro de um turno os blocos voltam ao modelo, porque a API exige no laço de ferramentas. A conversa persistida **não** os guarda (`removerPensamento`), então nenhuma rodada futura reenvia thinking nem depende dele. Risco: se a API recusar histórico sem esses blocos, o segundo turno falha — só se confirma com chave real (README, "Decisões abertas").
+- **Sem `fallbacks` do servidor.** Exigiria o endpoint beta e devolver blocos `fallback` ao histórico. `modelo.ts` lança em `stop_reason` `refusal` ou `max_tokens` e o usuário vê um erro genérico. `effort: "medium"`, `max_tokens: 16000` (o thinking conta no limite), `eager_input_streaming` desligado.
+- **`aoNovas` / `mensagemDeFechamento`.** O laço chama `aoNovas` a cada rodada concluída (par `tool_use`+`tool_result`, depois o texto final); a rota grava ali. No limite de iterações, erro ou aborto, `mensagemDeFechamento` acrescenta uma mensagem do assistente para o histórico não terminar em `tool_result`. Resposta só com blocos de pensamento conta como erro.
+- **Calendário sempre de 60 dias**, mesmo com `horizonte_meses` curto; provisões também olham além do horizonte quando a parcela vence depois. (O plano dizia o contrário em um teste.)
+- **Verificação da migration em Postgres em memória** (`docs/agente/verificar-migration-011.mjs`, PGlite, RLS real): cobre quase todo o checklist de banco da §11. O restante depende do Supabase do usuário.
+- **Guardas extras nas RPCs:** `'O valor precisa ser maior que zero.'` e `'Tipo de movimentação inválido.'`; `devolver_ate` é checado antes do saldo (como no executor original).
+- **UI com tokens de tema** (`bg-card`, `border-border`…), como `historico/page.tsx`, e não o `#1a1a24` fixo do `CLAUDE.md` (nenhum componente do repo usa essa cor e o app tem tema claro/escuro).
+- **Testes:** além de `lib/agente/*.test.ts`, a rota tem `app/api/agente/route.test.ts` (Supabase e modelo simulados: 401/403/400/429/503, SSE, persistência por rodada, thinking fora do banco). O `vitest.config.mts` inclui `lib/**` e `app/**`.
+- **Build:** `npm run build` sem `.env` falha em `/calculadora` também na `main` (anterior a esta feature); com `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` quaisquer o build passa.
