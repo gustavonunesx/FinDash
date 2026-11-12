@@ -81,3 +81,8 @@ export function paraExibicao(linhas: LinhaMensagem[]): MensagemExibicao[] {
     return [{ id: l.id, papel: l.papel, texto }];
   });
 }
+
+export function removerPensamento(msg: MensagemAgente): MensagemAgente | null {
+  const conteudo = msg.conteudo.filter((b) => b.type !== "thinking" && b.type !== "redacted_thinking");
+  return conteudo.length > 0 ? { papel: msg.papel, conteudo } : null;
+}

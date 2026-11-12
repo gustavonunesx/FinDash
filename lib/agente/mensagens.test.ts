@@ -3,6 +3,7 @@ import {
   janelaDeMensagens,
   mensagemDeFechamento,
   paraExibicao,
+  removerPensamento,
   sanitizarPares,
   validarMensagemUsuario,
 } from "./mensagens";
@@ -154,5 +155,32 @@ describe("paraExibicao", () => {
       { id: "l1", papel: "user", texto: "oi" },
       { id: "l4", papel: "assistant", texto: "olá" },
     ]);
+  });
+});
+
+describe("removerPensamento", () => {
+  it("remove blocos de pensamento e preserva texto e tool_use", () => {
+    const msg: MensagemAgente = {
+      papel: "assistant",
+      conteudo: [
+        { type: "thinking", thinking: "", signature: "sig" },
+        { type: "redacted_thinking", data: "x" },
+        { type: "text", text: "vou ver" },
+        { type: "tool_use", id: "a", name: "ler_ficha_financeira", input: {} },
+      ],
+    };
+    expect(removerPensamento(msg)).toEqual({
+      papel: "assistant",
+      conteudo: [
+        { type: "text", text: "vou ver" },
+        { type: "tool_use", id: "a", name: "ler_ficha_financeira", input: {} },
+      ],
+    });
+  });
+
+  it("devolve null quando so havia pensamento", () => {
+    expect(
+      removerPensamento({ papel: "assistant", conteudo: [{ type: "thinking", thinking: "", signature: "s" }] })
+    ).toBeNull();
   });
 });
