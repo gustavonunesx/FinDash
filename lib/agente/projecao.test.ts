@@ -185,3 +185,54 @@ describe("projetarCaixa - bordas", () => {
     expect(p.sobra_estrutural.sobra).toBe(0);
   });
 });
+
+describe("projetarCaixa - meses parciais", () => {
+  it("rotula o primeiro e o ultimo mes como parciais e informa o periodo coberto", () => {
+    const base = cenario(projetarCaixa(exemploDoPrompt, 1000, "2026-11-10"), "base");
+    expect(base.meses.map((m) => m.parcial)).toEqual([true, false, false, true]);
+    expect(base.meses[0]).toMatchObject({ de: "2026-11-10", ate: "2026-11-30" });
+    expect(base.meses[1]).toMatchObject({ de: "2026-12-01", ate: "2026-12-31" });
+    expect(base.meses[3]).toMatchObject({ de: "2027-02-01", ate: "2027-02-10" });
+  });
+
+  it("nao marca como parcial o primeiro mes quando hoje e dia 1", () => {
+    const meses = cenario(projetarCaixa(vazia, 100, "2026-11-01", 1), "base").meses;
+    expect(meses.map((m) => m.parcial)).toEqual([false, true]);
+    expect(meses[1]).toMatchObject({ de: "2026-12-01", ate: "2026-12-01" });
+  });
+});
+
+describe("projetarCaixa - renda recorrente ja recebida", () => {
+  const salario = fonte({ id: "f1", nome: "Salario", valor: 1200, tipo: "contrato", dia_pagamento: 5 });
+  const entradasDatas = (p: ReturnType<typeof projetarCaixa>) =>
+    p.calendario_60d.filter((e) => e.tipo === "entrada").map((e) => e.data);
+
+  it("entrada recebida da fonte no mes tira a ocorrencia daquele mes", () => {
+    const ficha: FichaProjecao = {
+      ...vazia,
+      fontes: [salario],
+      entradas: [{ id: "e1", descricao: "Salario", valor: 1200, status: "recebido", data_prevista: null, data_recebida: "2026-11-03", fonte_id: "f1" }],
+    };
+    const p = projetarCaixa(ficha, 5000, "2026-11-03", 1);
+    expect(entradasDatas(p)).toEqual(["2026-12-05"]);
+    expect(cenario(p, "base").meses[0].entradas).toBe(0);
+  });
+
+  it("recebida sem data_recebida conta como recebida no mes de hoje", () => {
+    const ficha: FichaProjecao = {
+      ...vazia,
+      fontes: [salario],
+      entradas: [{ id: "e1", descricao: "Salario", valor: 1200, status: "recebido", data_prevista: null, data_recebida: null, fonte_id: "f1" }],
+    };
+    expect(entradasDatas(projetarCaixa(ficha, 5000, "2026-11-03", 1))).toEqual(["2026-12-05"]);
+  });
+
+  it("recebida de outro mes nao tira a ocorrencia deste mes", () => {
+    const ficha: FichaProjecao = {
+      ...vazia,
+      fontes: [salario],
+      entradas: [{ id: "e1", descricao: "Salario", valor: 1200, status: "recebido", data_prevista: null, data_recebida: "2026-10-05", fonte_id: "f1" }],
+    };
+    expect(entradasDatas(projetarCaixa(ficha, 5000, "2026-11-03", 1))).toEqual(["2026-11-05", "2026-12-05"]);
+  });
+});

@@ -3,6 +3,13 @@
 import { IconSend } from "@tabler/icons-react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { MarkdownResposta } from "@/components/agente/markdown-resposta";
+import {
+  aoFecharStream,
+  aplicarEvento,
+  estadoInicial,
+  type EstadoResposta,
+  type ErroChat,
+} from "@/lib/agente/chat-estado";
 import { separarEventosSse } from "@/lib/agente/sse";
 import type { MensagemExibicao } from "@/lib/agente/tipos";
 import { cn } from "@/lib/utils";
@@ -35,7 +42,7 @@ export function AgenteChat({ mensagensIniciais }: { mensagensIniciais: MensagemE
   const [entrada, setEntrada] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-  const [erro, setErro] = useState<string | null>(null);
+  const [erro, setErro] = useState<ErroChat | null>(null);
   const ultimaEnviada = useRef("");
   const lista = useRef<HTMLDivElement>(null);
   const aborto = useRef<AbortController | null>(null);
@@ -66,33 +73,30 @@ export function AgenteChat({ mensagensIniciais }: { mensagensIniciais: MensagemE
 
     const controle = new AbortController();
     aborto.current = controle;
-    let quebrarAntes = false;
-    let recebeuTexto = false;
+    let resposta: EstadoResposta = estadoInicial;
+    let iniciouStream = false;
 
-    const acrescentar = (trecho: string) => {
-      recebeuTexto = true;
-      setMensagens((m) =>
-        m.map((x) => {
-          if (x.id !== idAssistente) return x;
-          const separador = quebrarAntes && x.texto ? "\n\n" : "";
-          return { ...x, texto: x.texto + separador + trecho };
-        })
-      );
+    const aplicar = (novo: EstadoResposta) => {
+      resposta = novo;
+      setMensagens((m) => m.map((x) => (x.id === idAssistente ? { ...x, texto: novo.texto } : x)));
+      setStatus(novo.status);
+      if (novo.erro) setErro(novo.erro);
     };
 
     try {
-      const resposta = await fetch("/api/agente", {
+      const res = await fetch("/api/agente", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mensagem: limpo }),
         signal: controle.signal,
       });
-      if (!resposta.ok || !resposta.body) {
-        const corpo = await resposta.json().catch(() => null);
+      if (!res.ok || !res.body) {
+        const corpo = await res.json().catch(() => null);
         throw new Error(corpo?.error ?? ERRO_PADRAO);
       }
 
-      const leitor = resposta.body.getReader();
+      iniciouStream = true;
+      const leitor = res.body.getReader();
       const decodificador = new TextDecoder();
       let buffer = "";
       for (;;) {
@@ -101,29 +105,21 @@ export function AgenteChat({ mensagensIniciais }: { mensagensIniciais: MensagemE
         buffer += decodificador.decode(value, { stream: true });
         const separado = separarEventosSse(buffer);
         buffer = separado.resto;
-        for (const { evento, dados } of separado.eventos) {
-          const d = dados as { t?: string; rotulo?: string; mensagem?: string };
-          if (evento === "texto" && d.t) {
-            acrescentar(d.t);
-            quebrarAntes = false;
-            setStatus(null);
-          } else if (evento === "ferramenta") {
-            quebrarAntes = true;
-            setStatus(d.rotulo ?? null);
-          } else if (evento === "erro") {
-            setErro(d.mensagem ?? ERRO_PADRAO);
-          }
-        }
+        for (const { evento, dados } of separado.eventos) aplicar(aplicarEvento(resposta, evento, dados));
       }
+      aplicar(aoFecharStream(resposta));
     } catch (e) {
-      if (!controle.signal.aborted) setErro(e instanceof Error ? e.message : ERRO_PADRAO);
+      if (controle.signal.aborted) return;
+      if (iniciouStream) {
+        aplicar(aoFecharStream(resposta));
+      } else {
+        setMensagens((m) => m.filter((x) => x.id !== idAssistente && x.id !== idUsuario));
+        setEntrada((atual) => atual || limpo);
+        setErro({ mensagem: e instanceof Error ? e.message : ERRO_PADRAO, podeTentarDeNovo: true });
+      }
     } finally {
       setEnviando(false);
       setStatus(null);
-      if (!recebeuTexto) {
-        setMensagens((m) => m.filter((x) => x.id !== idAssistente && x.id !== idUsuario));
-        setEntrada((atual) => atual || limpo);
-      }
     }
   }
 
@@ -194,15 +190,17 @@ export function AgenteChat({ mensagensIniciais }: { mensagensIniciais: MensagemE
           role="alert"
           className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-fd-amber/30 bg-fd-amber/10 px-4 py-3 text-sm font-medium"
         >
-          <span>{erro}</span>
-          <button
-            type="button"
-            onClick={() => void enviar(ultimaEnviada.current)}
-            disabled={enviando}
-            className="rounded-full bg-fd-amber/20 px-3 py-1 text-xs font-bold text-foreground disabled:opacity-50"
-          >
-            Tentar de novo
-          </button>
+          <span>{erro.mensagem}</span>
+          {erro.podeTentarDeNovo && (
+            <button
+              type="button"
+              onClick={() => void enviar(ultimaEnviada.current)}
+              disabled={enviando}
+              className="rounded-full bg-fd-amber/20 px-3 py-1 text-xs font-bold text-foreground disabled:opacity-50"
+            >
+              Tentar de novo
+            </button>
+          )}
         </div>
       )}
 

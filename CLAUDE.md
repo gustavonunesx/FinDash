@@ -95,7 +95,7 @@ Estas regras valem para qualquer pedido de feature, correção, ajuste etc. **fo
 - `lib/agente/prompt.ts` é a **fonte única** do prompt; `docs/agente/origem/` guarda os originais do usuário (histórico). Todo nome de ferramenta tem de aparecer no prompt (`prompt.test.ts` guarda isso)
 - Projeção, calendário de 60 dias, cenários e provisão vêm de `projetar_caixa` (`lib/agente/projecao.ts`, função pura testada); o modelo narra os números e não refaz as contas
 - A conversa é persistida **por rodada concluída** em `agente_mensagens` (ordem por `ordem`, não por `criado_em`) e **sem blocos de `thinking`**; dentro de um turno os blocos de thinking ficam em memória porque a API exige devolvê-los no laço de ferramentas
-- Datas em `America/Sao_Paulo` (`hojeSaoPaulo()`; o banco e o Vercel rodam em UTC). Limites: 2.000 caracteres/mensagem, 40 rodadas/hora, janela de 30 mensagens em fronteira de rodada, 8 iterações do laço, `maxDuration = 60`
+- Datas em `America/Sao_Paulo` (`hojeSaoPaulo()`; o banco e o Vercel rodam em UTC). Limites: 2.000 caracteres/mensagem, 40 rodadas/hora (a rodada é gravada e contada **antes** de chamar o modelo), janela de 30 mensagens em fronteira de rodada, 8 iterações do laço, prazo de 50s com `maxDuration = 60`. Quando uma resposta é interrompida o servidor grava e envia uma mensagem de fechamento, e o evento `erro` diz se algo já foi gravado (`gravou`) — o cliente só oferece "Tentar de novo" quando nada foi gravado
 - Sem `fallbacks` do servidor na v1: recusa do modelo (`refusal`) vira erro amigável. Modelo: `AGENTE_MODELO` (padrão `claude-sonnet-5-5`), `effort: "medium"`
 - Mapa completo dos arquivos e como verificar a migration: `docs/agente/README.md`
 

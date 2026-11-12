@@ -20,6 +20,8 @@ export const runtime = "nodejs";
 
 const MODELO_PADRAO = "claude-sonnet-5-5";
 const MENSAGEM_ERRO = "Não consegui responder agora. Tente de novo.";
+// Folga de 10s sobre maxDuration para gravar o fechamento e avisar o cliente.
+const TEMPO_MAXIMO_MS = 50_000;
 
 const falha = (status: number, error: string) => Response.json({ error }, { status });
 
@@ -44,17 +46,6 @@ export async function POST(req: Request): Promise<Response> {
   const validada = validarMensagemUsuario(corpo?.mensagem);
   if (!validada.ok) return falha(400, validada.erro);
 
-  const umaHoraAtras = new Date(Date.now() - 3_600_000).toISOString();
-  const { count } = await supabase
-    .from("agente_mensagens")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .eq("inicio_rodada", true)
-    .gte("criado_em", umaHoraAtras);
-  if ((count ?? 0) >= LIMITE_RODADAS_POR_HORA) {
-    return falha(429, "Você atingiu o limite de mensagens por hora. Tente de novo mais tarde.");
-  }
-
   const { data: recentes, error: erroLeitura } = await supabase
     .from("agente_mensagens")
     .select("id, ordem, papel, conteudo, inicio_rodada, criado_em")
@@ -70,6 +61,31 @@ export async function POST(req: Request): Promise<Response> {
     papel: "user",
     conteudo: [{ type: "text", text: validada.texto }],
   };
+
+  // A rodada é reservada (e contada no limite) antes de qualquer chamada ao modelo: se ela só
+  // fosse gravada na primeira resposta, abortar ou falhar logo no início escaparia do limite.
+  const { data: reservada, error: erroReserva } = await supabase
+    .from("agente_mensagens")
+    .insert({ papel: "user", conteudo: mensagemUsuario.conteudo, inicio_rodada: true })
+    .select("id")
+    .single();
+  if (erroReserva || !reservada) {
+    console.error("agente: falha ao gravar a mensagem", erroReserva);
+    return falha(500, MENSAGEM_ERRO);
+  }
+
+  const umaHoraAtras = new Date(Date.now() - 3_600_000).toISOString();
+  const { count } = await supabase
+    .from("agente_mensagens")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("inicio_rodada", true)
+    .gte("criado_em", umaHoraAtras);
+  if ((count ?? 0) > LIMITE_RODADAS_POR_HORA) {
+    await supabase.from("agente_mensagens").delete().eq("id", reservada.id);
+    return falha(429, "Você atingiu o limite de mensagens por hora. Tente de novo mais tarde.");
+  }
+
   const historico = [
     ...janelaDeMensagens(((recentes ?? []) as LinhaMensagem[]).slice().reverse()),
     mensagemUsuario,
@@ -90,18 +106,14 @@ export async function POST(req: Request): Promise<Response> {
       };
 
       const persistidas: MensagemAgente[] = [];
-      let primeiraGravacao = true;
       const gravar = async (msgs: MensagemAgente[]) => {
-        const limpas = msgs.flatMap((m) => removerPensamento(m) ?? []);
-        const linhas: { papel: string; conteudo: unknown; inicio_rodada: boolean }[] = [];
-        if (primeiraGravacao) {
-          linhas.push({ papel: "user", conteudo: mensagemUsuario.conteudo, inicio_rodada: true });
-          primeiraGravacao = false;
-        }
-        for (const m of limpas) linhas.push({ papel: m.papel, conteudo: m.conteudo, inicio_rodada: false });
+        const linhas = msgs
+          .flatMap((m) => removerPensamento(m) ?? [])
+          .map((m) => ({ papel: m.papel, conteudo: m.conteudo, inicio_rodada: false }));
+        if (linhas.length === 0) return;
         const { error } = await supabase.from("agente_mensagens").insert(linhas);
         if (error) throw error;
-        persistidas.push(...limpas);
+        persistidas.push(...(linhas as MensagemAgente[]));
       };
 
       try {
@@ -117,17 +129,22 @@ export async function POST(req: Request): Promise<Response> {
           aoFerramenta: (nome) =>
             enviar("ferramenta", { nome, rotulo: ROTULOS_FERRAMENTA[nome] ?? "Trabalhando…" }),
           aoNovas: gravar,
-          signal: req.signal,
+          signal: AbortSignal.any([req.signal, AbortSignal.timeout(TEMPO_MAXIMO_MS)]),
         });
 
+        const gravou = persistidas.length > 0;
         const fechamento = mensagemDeFechamento(persistidas, status);
-        if (fechamento) await gravar([fechamento]);
+        if (fechamento) {
+          await gravar([fechamento]);
+          const bloco = fechamento.conteudo[0];
+          if (bloco.type === "text") enviar("texto", { t: `\n\n${bloco.text}` });
+        }
 
-        if (status === "erro") enviar("erro", { mensagem: MENSAGEM_ERRO });
+        if (status === "erro") enviar("erro", { mensagem: MENSAGEM_ERRO, gravou });
         else enviar("fim", {});
       } catch (e) {
         console.error("agente: falha no atendimento", e);
-        enviar("erro", { mensagem: MENSAGEM_ERRO });
+        enviar("erro", { mensagem: MENSAGEM_ERRO, gravou: persistidas.length > 0 });
       } finally {
         if (aberto) {
           try {

@@ -21,6 +21,7 @@
 | `lib/agente/modelo.ts` | adaptador do `@anthropic-ai/sdk` (prompt caching, streaming, `effort: "medium"`); sem teste automatizado |
 | `lib/agente/mensagens.ts` | janela em fronteira de rodada, validação da mensagem, fechamento de rodada, `removerPensamento`, exibição |
 | `lib/agente/sse.ts` | formato dos eventos SSE (`texto`, `ferramenta`, `fim`, `erro`) — servidor e cliente |
+| `lib/agente/chat-estado.ts` | estado puro de uma resposta em streaming (texto, rótulo da ferramenta, erro, "terminou"); usado por `agente-chat.tsx` |
 | `lib/agente/datas.ts` | datas puras em `America/Sao_Paulo` |
 | `lib/agente/tipos.ts` | tipos de mensagens e blocos |
 | `app/api/agente/route.ts` | auth → plano → chave → corpo → limite/hora → laço em SSE → persistência |
@@ -44,7 +45,9 @@ Testes (`npm run test`, Vitest): `lib/agente/*.test.ts` e `app/api/agente/route.
 - [ ] Tabelas do Markdown legíveis em tema claro e escuro; botão "Tentar de novo" após forçar um erro (ex.: chave inválida)
 
 ## Decisões abertas / riscos conhecidos
-- **Thinking blocks**: o Sonnet 5.5 roda com thinking adaptativo. Dentro de um turno os blocos voltam ao modelo (a API exige); entre turnos o histórico persistido não os inclui. Se a API rejeitar isso, a correção é persistir os blocos e **nunca** alterar a janela — o que conflita com a janela deslizante e com o cache.
+- **Thinking blocks**: o Sonnet 5.5 roda com thinking adaptativo. Dentro de um turno os blocos voltam ao modelo (a API exige); entre turnos o histórico persistido não os inclui. A revisão final confirmou na documentação da Anthropic que histórico sem blocos de thinking é um estado válido (e o caminho de recuperação documentado). **Não persista thinking**: a janela deslizante e o bloco de data no prompt mudam o prefixo, e contas novas passariam a receber 400. Se um dia precisar, use `prefix_mismatch_behavior: "drop_block"` ou edição de contexto no servidor.
+- **SEGURANÇA, já existia na main (migration 001)**: a policy `profiles_own` é `for all using (auth.uid() = id)`, então qualquer usuário logado consegue trocar o **próprio** `profiles.plano` para `premium` com a chave anon + o próprio JWT. Antes isso só liberava recursos; agora libera custo de API do agente (limitado a 40 rodadas/hora por conta). Correção sugerida, fora do módulo do agente e a decidir: trigger `BEFORE UPDATE` em `profiles` (ou privilégios por coluna) que só deixe `service_role` alterar `plano`, `stripe_customer_id`, `stripe_subscription_id` e `assinatura_status`; conferir antes os caminhos de escrita do Stripe webhook e de `lib/referral-rewards.ts`.
+- **Limite por hora**: a rodada é gravada e contada **antes** de chamar o modelo (se falhar a contagem, a linha é desfeita com 429); falhas, abortos e timeout também contam. O laço tem prazo de 50s (`maxDuration` 60) e, ao estourar, grava e mostra uma mensagem de interrupção.
 - **Sem `fallbacks` do servidor**: uma recusa do modelo (`refusal`) vira erro amigável. Habilitar exige o endpoint beta e devolver blocos `fallback` ao histórico.
 - **Custo**: a ficha e as últimas 30 mensagens são reenviadas a cada turno; só prompt e ferramentas ficam em cache. O limite de 40 rodadas/hora é a proteção.
 - **Privacidade**: os dados financeiros vão para a API da Anthropic; a política de privacidade do FinDash precisa dizer isso antes de produção.

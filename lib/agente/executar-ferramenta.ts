@@ -65,7 +65,7 @@ async function lerFicha(supabase: SupabaseClient, hoje: string): Promise<Dados> 
   };
 }
 
-async function carregarFichaProjecao(supabase: SupabaseClient): Promise<FichaProjecao> {
+async function carregarFichaProjecao(supabase: SupabaseClient, hoje: string): Promise<FichaProjecao> {
   const [fontes, gastos, parcelas, emprestimos, entradas] = (await Promise.all([
     ler(supabase.from("fontes_renda").select("id, nome, valor, dia_pagamento, tipo, ativo_ate, ativo")),
     ler(supabase.from("gastos_fixos").select("nome, valor, dia_vencimento, ativo")),
@@ -84,8 +84,8 @@ async function carregarFichaProjecao(supabase: SupabaseClient): Promise<FichaPro
     ler(
       supabase
         .from("entradas")
-        .select("id, descricao, valor, status, data_prevista, fonte_id")
-        .neq("status", "recebido")
+        .select("id, descricao, valor, status, data_prevista, data_recebida, fonte_id")
+        .or(`status.neq.recebido,criado_em.gte.${somarDias(hoje, -35)}`)
     ),
   ])) as Dados[][];
 
@@ -131,6 +131,7 @@ async function carregarFichaProjecao(supabase: SupabaseClient): Promise<FichaPro
       valor: Number(e.valor),
       status: e.status as FichaProjecao["entradas"][number]["status"],
       data_prevista: (e.data_prevista as string | null) ?? null,
+      data_recebida: (e.data_recebida as string | null) ?? null,
       fonte_id: (e.fonte_id as string | null) ?? null,
     })),
   };
@@ -214,7 +215,7 @@ async function executar(
       if (horizonte < 1 || horizonte > 6) {
         return { erro: 'Campo "horizonte_meses" deve estar entre 1 e 6.' };
       }
-      const ficha = await carregarFichaProjecao(supabase);
+      const ficha = await carregarFichaProjecao(supabase, hoje);
       return projetarCaixa(ficha, dados.saldo_conta as number, hoje, horizonte);
     }
 

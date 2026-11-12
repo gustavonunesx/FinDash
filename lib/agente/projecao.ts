@@ -38,6 +38,7 @@ export interface EntradaProj {
   valor: number;
   status: "recebido" | "confirmado" | "incerto";
   data_prevista: string | null;
+  data_recebida?: string | null;
   fonte_id: string | null;
 }
 export interface FichaProjecao {
@@ -49,6 +50,9 @@ export interface FichaProjecao {
 }
 export interface MesProjetado {
   mes: string;
+  de: string;
+  ate: string;
+  parcial: boolean;
   entradas: number;
   saidas: number;
   saldo_final: number;
@@ -163,6 +167,11 @@ function eventosDoCenario(
     (e) => e.status === "confirmado" || (e.status === "incerto" && otimista)
   );
   const substituidas = new Set<string>();
+  for (const e of ficha.entradas) {
+    if (e.status === "recebido" && e.fonte_id) {
+      substituidas.add(`${e.fonte_id}|${mesDe(e.data_recebida ?? hoje)}`);
+    }
+  }
   for (const e of entradasContadas) {
     const data = e.data_prevista ?? ultimoDiaDoMes(hoje);
     if (e.fonte_id) substituidas.add(`${e.fonte_id}|${mesDe(data)}`);
@@ -252,7 +261,18 @@ function simular(
         mesMenor = mes;
       }
     }
-    return { mes, entradas: round2(entradas), saidas: round2(saidas), saldo_final: round2(saldo) };
+    const de = mes === mesDe(hoje) ? hoje : `${mes}-01`;
+    const ate = mes === mesDe(fim) ? fim : ultimoDiaDoMes(`${mes}-01`);
+    const parcial = de !== `${mes}-01` || ate !== ultimoDiaDoMes(`${mes}-01`);
+    return {
+      mes,
+      de,
+      ate,
+      parcial,
+      entradas: round2(entradas),
+      saidas: round2(saidas),
+      saldo_final: round2(saldo),
+    };
   });
   return { nome, meses, menor_saldo: round2(menor), mes_mais_apertado: mesMenor };
 }

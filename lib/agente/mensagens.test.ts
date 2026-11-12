@@ -138,8 +138,14 @@ describe("mensagemDeFechamento", () => {
     expect(mensagemDeFechamento([texto("assistant", "oi")], "ok")).toBeNull();
   });
 
-  it("nao fecha rodada vazia", () => {
-    expect(mensagemDeFechamento([], "erro")).toBeNull();
+  it("fecha a rodada que nao gravou nada, porque a mensagem do usuario ja esta no historico", () => {
+    expect(mensagemDeFechamento([], "erro")).toEqual(
+      texto(
+        "assistant",
+        "(Resposta interrompida. Confira acima o que foi salvo e me avise se faltou algo.)"
+      )
+    );
+    expect(mensagemDeFechamento([], "limite")?.conteudo[0]).toMatchObject({ type: "text" });
   });
 });
 

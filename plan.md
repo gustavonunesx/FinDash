@@ -21,6 +21,7 @@ plano executado: `docs/superpowers/plans/2026-11-11-agente-financeiro.md`.
 Módulo paralelo (tabelas novas, página `/agente`), só Premium, `@anthropic-ai/sdk` na Route Handler.
 
 **Pendências abertas (fora do código):**
+- **SEGURANÇA (anterior ao agente):** `profiles_own` (migration 001) deixa qualquer usuário trocar o próprio `plano` para `premium`; agora isso libera custo de API. Decidir a correção (trigger/privilégio por coluna só para `service_role`) — detalhes em `docs/agente/README.md`
 - Aplicar a migration `011` no Supabase (e as 006–010 em produção, se ainda não foram) e definir `ANTHROPIC_API_KEY` (+ `AGENTE_MODELO`, opcional) no `.env.local` e no Vercel
 - Rodar o checklist manual de `docs/agente/README.md` com uma conta Premium real (o chat interativo, as telas Free/Premium e o replay de histórico sem blocos de thinking não foram verificados por máquina)
 - Política de privacidade precisa dizer que os dados financeiros vão para a API da Anthropic antes de ligar em produção

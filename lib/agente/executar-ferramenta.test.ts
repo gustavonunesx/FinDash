@@ -203,6 +203,16 @@ describe("executarFerramenta - tabelas", () => {
 });
 
 describe("executarFerramenta - leitura", () => {
+  it("projetar_caixa tambem le as entradas recebidas recentes (para nao contar a renda do mes duas vezes)", async () => {
+    const { supabase, chamadas } = criarSupabase();
+    await executarFerramenta("projetar_caixa", { saldo_conta: 100 }, supabase, HOJE);
+    expect(chamadas).toContainEqual({
+      tabela: "entradas",
+      metodo: "or",
+      args: ["status.neq.recebido,criado_em.gte.2026-10-06"],
+    });
+  });
+
   it("ler_ficha_financeira devolve uma chave por tabela e limita a janela a 60 dias", async () => {
     const { supabase, chamadas } = criarSupabase({ tabelas: { caixinhas: [{ id: UUID2 }] } });
     const ficha = (await executarFerramenta("ler_ficha_financeira", {}, supabase, HOJE)) as Record<string, unknown>;

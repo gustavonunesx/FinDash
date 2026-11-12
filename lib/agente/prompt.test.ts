@@ -11,6 +11,10 @@ describe("PROMPT_SISTEMA", () => {
     expect(PROMPT_SISTEMA).toContain("Quem calcula");
   });
 
+  it("avisa que meses parciais nao sao comparaveis com meses inteiros", () => {
+    expect(PROMPT_SISTEMA).toContain("parcial: true");
+  });
+
   it("preserva blocos de codigo e crases do prompt original", () => {
     expect(PROMPT_SISTEMA).toContain("Dinheiro Livre Real = Saldo RECEBIDO");
     expect(PROMPT_SISTEMA).toContain("`ler_ficha_financeira`");

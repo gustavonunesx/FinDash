@@ -172,3 +172,15 @@ Registro das decisões tomadas durante a execução (o ledger completo ficou em 
 - **UI com tokens de tema** (`bg-card`, `border-border`…), como `historico/page.tsx`, e não o `#1a1a24` fixo do `CLAUDE.md` (nenhum componente do repo usa essa cor e o app tem tema claro/escuro).
 - **Testes:** além de `lib/agente/*.test.ts`, a rota tem `app/api/agente/route.test.ts` (Supabase e modelo simulados: 401/403/400/429/503, SSE, persistência por rodada, thinking fora do banco). O `vitest.config.mts` inclui `lib/**` e `app/**`.
 - **Build:** `npm run build` sem `.env` falha em `/calculadora` também na `main` (anterior a esta feature); com `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` quaisquer o build passa.
+
+### Correções da revisão final
+
+Um revisor independente (modelo mais capaz) encontrou 0 críticos e 6 importantes; cinco foram corrigidos com teste antes do código:
+
+- **Limite por hora burlável**: a linha que o limite contava só era gravada na primeira resposta do modelo. Agora a rodada é gravada e contada antes de qualquer chamada (desfeita com 429 se passar de 40), e falhas, abortos e timeout contam.
+- **Cliente e servidor dessincronizados**: o fechamento da rodada era gravado, mas não enviado ao cliente, que apagava a pergunta e convidava a repetir (risco de gravar duas vezes). Agora o servidor envia o fechamento como `texto`, o evento `erro` leva `gravou` e a UI só oferece "Tentar de novo" quando nada foi gravado. O estado do chat virou uma função pura testada (`lib/agente/chat-estado.ts`), o que também elimina o bug do separador de parágrafo perdido dentro do updater do React.
+- **Timeout de 60s e stream sem `fim`**: prazo de 50s no laço (interrupção graceful) e o cliente trata stream que fecha sem `fim`/`erro` como interrompido.
+- **Renda recorrente já recebida contada de novo** na projeção: entradas `recebido` ligadas a uma fonte agora suprimem a ocorrência daquele mês (o executor lê as recebidas dos últimos 35 dias).
+- **Meses parciais sem rótulo**: cada mês projetado traz `de`, `ate` e `parcial`; o prompt manda não compará-los com meses inteiros.
+
+Não corrigido por exigir decisão do usuário: o **autoconcessão de Premium** via `profiles_own` (migration 001), anterior a esta feature — ver README. Os demais achados menores ficaram registrados como adiados no ledger da execução.

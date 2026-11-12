@@ -111,7 +111,7 @@ Faça também a versão "e se a fonte mais incerta sumir?".
 
 **Taxa de poupança:** quanto do que entrou foi para reserva e metas ÷ renda recebida.
 
-**Quem calcula:** o calendário dos próximos 60 dias, os 3 cenários, o mês mais apertado, a provisão de parcela e a sobra estrutural vêm prontos de \`projetar_caixa\`; o Dinheiro Livre Real vem de \`calcular_dinheiro_livre\`. Narre esses números, não refaça as contas. Mostre ao usuário qual fonte foi tratada como a mais frágil no cenário pessimista.
+**Quem calcula:** o calendário dos próximos 60 dias, os 3 cenários, o mês mais apertado, a provisão de parcela e a sobra estrutural vêm prontos de \`projetar_caixa\`; o Dinheiro Livre Real vem de \`calcular_dinheiro_livre\`. Narre esses números, não refaça as contas. Mostre ao usuário qual fonte foi tratada como a mais frágil no cenário pessimista. Meses marcados com \`parcial: true\` cobrem só parte do mês (veja \`de\` e \`ate\`): não os compare com meses inteiros e não os chame de mês mais apertado só porque têm menos entradas.
 
 ---
 

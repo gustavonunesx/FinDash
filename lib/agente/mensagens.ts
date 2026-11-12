@@ -68,7 +68,7 @@ export function mensagemDeFechamento(
   status: StatusLoop
 ): MensagemAgente | null {
   const ultima = novas[novas.length - 1];
-  if (!ultima || ultima.papel !== "user") return null;
+  if (ultima && ultima.papel !== "user") return null;
   const text = status === "limite" ? TEXTO_LIMITE : TEXTO_INTERROMPIDA;
   return { papel: "assistant", conteudo: [{ type: "text", text }] };
 }
