@@ -56,3 +56,25 @@ Testes (`npm run test`, Vitest): `lib/agente/*.test.ts` e `app/api/agente/route.
 ## Regras do projeto que valem aqui (CLAUDE.md)
 - Commit/push/PR conforme pedido do usuário; sem merge automático. Branch por requisição a partir da `main`.
 - Ao mudar o agente: atualizar este README, a seção "Agente Financeiro (invariantes)" do `CLAUDE.md` e `plan.md`.
+
+## Achados menores adiados (revisão final, 2026-11-11)
+Nenhum foi corrigido; todos têm baixo impacto hoje. Em ordem aproximada de valor:
+- **Entrada sem `data_prevista` se repete todo mês** (cai no último dia do mês corrente) e nenhuma ferramenta cancela ou apaga uma entrada; a saída é rebaixá-la para `incerto` ou marcá-la `recebido` falsamente. Falta uma ferramenta para cancelar entrada.
+- **`salvar_caixinha` com `id` pode trocar `tipo` de `protecao` para `pessoal`**, e depois disso retirar não vira empréstimo; `devolver_ate` no passado também é aceito (a validação só confere o formato).
+- **`ate` sem limite em `dinheiro_livre_real`**: `"9999-12-31"` passa na validação e gera milhões de linhas em `generate_series` (só o statement timeout protege). Limitar a data a poucos anos.
+- **Duas `sobra_estrutural`** chegam ao modelo: a da view `painel_saude` (sem provisões) e a de `projetar_caixa` (com). O prompt diz que a segunda vale; a primeira continua em `ler_ficha_financeira`.
+- **Imagens em Markdown não estão bloqueadas** (`components/agente/markdown-resposta.tsx`): `![](url)` carrega sozinha. Hoje o alcance é só o texto do próprio usuário; vira canal de exfiltração se descrições do Open Finance passarem a alimentar o agente. Basta `img: () => null` em `components`.
+- **a11y do chat**: a lista de mensagens não tem `role="log"`/`aria-live` e o textarea só tem placeholder (sem `label`); ele também perde o foco enquanto envia.
+- **`emprestimos_caixinha.data_retirada`** usa `current_date` em UTC (depois das 21h de Brasília grava o dia seguinte); o resto do módulo usa `America/Sao_Paulo`.
+- **FKs sem checagem de dono** (`entradas.fonte_id`, `movimentacoes.entrada_id`) e escritas diretas via PostgREST pulam as guardas das RPCs (só afetam linhas do próprio usuário).
+- **`atualizar_parcela` só com `id`** manda um update vazio e devolve "Registro não encontrado".
+- **Custo**: só prompt e ferramentas ficam em cache; cada iteração (até 8) reenvia a janela inteira, incluindo o `ler_ficha_financeira` anterior. Um breakpoint de `cache_control` na última mensagem resolveria (o histórico é append-only dentro do turno).
+- **Fronteira de "hoje"** na projeção: fonte que paga hoje é tratada como já no saldo; conta que vence hoje, como ainda não paga. Razoável, mas o modelo não é avisado.
+- **Conta fixa paga antes do vencimento** continua sendo subtraída até a data passar (não há estado "pago neste mês"), então o Dinheiro Livre sai conservador (menor).
+
+## Retomar em outra máquina
+1. `git fetch && git checkout feat/agente-financeiro` e `npm install`.
+2. Contexto: leia este README, `plan.md` (pendências) e a spec (§14 e "Correções da revisão final"). A memória do Claude **não** viaja entre máquinas; tudo o que importa está no repositório.
+3. `npm run test` (145 testes) e, se quiser rever a migration sem Supabase, `npm i --no-save @electric-sql/pglite && node docs/agente/verificar-migration-011.mjs`.
+4. Build local: `NEXT_PUBLIC_SUPABASE_URL=https://x.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=x npm run build` (sem `.env`, `/calculadora` falha, como na `main`).
+5. Próximos passos, nesta ordem: aplicar a migration `011` no Supabase → definir `ANTHROPIC_API_KEY` → rodar o checklist manual acima com uma conta Premium → decidir a correção do `profiles_own` (autoconcessão de Premium) → só então abrir o PR para `main`.

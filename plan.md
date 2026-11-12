@@ -27,6 +27,7 @@ Módulo paralelo (tabelas novas, página `/agente`), só Premium, `@anthropic-ai
 - Política de privacidade precisa dizer que os dados financeiros vão para a API da Anthropic antes de ligar em produção
 - Medir o custo real por conversa (a ficha e a janela de mensagens são reenviadas a cada turno; só prompt e ferramentas ficam em cache)
 - `maxDuration = 60` exige plano do Vercel que permita 60s de função
+- Achados menores adiados da revisão final (entrada sem data que se repete, troca de `tipo` da caixinha, `ate` sem limite, imagens em Markdown, a11y, custo de cache…): lista completa em `docs/agente/README.md`
 - `npm run build` sem `.env` falha em `/calculadora` (já falhava na `main`; ver CLAUDE.md)
 
 - [x] Task 1 — vitest, dependências, `lib/agente/datas.ts`
